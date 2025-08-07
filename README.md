@@ -9,6 +9,7 @@ A modern, feature-rich web-based viewer for Gaussian Splatting models built with
 - drag and drop is not wokring, either remove or fix
 - mobilie icons
 - remove vr icon
+- add gltf compatibility
 
 ## 🌟 Features
 
