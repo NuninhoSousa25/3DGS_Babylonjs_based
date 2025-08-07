@@ -2,13 +2,13 @@
 
 A modern, feature-rich web-based viewer for Gaussian Splatting models built with Babylon.js. This application provides an intuitive interface for loading and interacting with 3D Gaussian splat models (`.splat`, `.ply`, `.spz`) with advanced camera controls, post-processing effects, and mobile optimization.
 
-###To implement / Fix
+### To implement / Fix
 - pinch on mobile, 
 - camera colision by object or by setting
 - local model loading
 - drag and drop is not wokring, either remove or fix
 - mobilie icons
-- remove vr icon
+- remove vr icon in mobile
 - add gltf compatibility
 
 ## 🌟 Features
