@@ -1,0 +1,273 @@
+// js/main.js
+import { setupCamera, animateCamera } from './cameraControl.js';
+import { loadModel, disposeCurrentModel } from './modelLoader.js';
+import { setupUI } from './ui.js';
+import { addPostEffects } from './postProcessing.js';
+import { getPickResult } from './picking.js';
+import { CONFIG } from './config.js';  // Import the centralized configuration
+import { setupMobileControls } from './mobileControl.js';
+
+/**
+ * Global Variables
+ */
+let engine, scene, camera;
+let pipeline = null; // For post-process reuse
+let xrHelper = null; // XR Helper
+let gestureController = null; // For mobile gesture control
+
+/**
+ * Initialize Engine and Scene
+ */
+function initializeEngineAndScene() {
+    const canvas = document.getElementById("renderCanvas");
+    // Using config to fine-tune engine
+    engine = new BABYLON.Engine(canvas, true, {
+        preserveDrawingBuffer: CONFIG.engine.preserveDrawingBuffer,
+        stencil: CONFIG.engine.stencil,
+        disableWebGL2Support: CONFIG.engine.disableWebGL2Support,
+        antialias: CONFIG.engine.antialias
+    });
+    scene = new BABYLON.Scene(engine);
+    scene.clearColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+
+    // Initialize custom properties for tracking loaded model
+    scene.currentModel = null;
+    scene.currentModelType = null;
+
+    return { engine, scene, canvas };
+}
+
+/**
+ * Setup Double-Click Pan
+ */
+function setupDoubleClickPan(scene, camera) {
+    // Animation lock flag to prevent overlapping animations
+    let isAnimating = false;
+
+    const onDoubleTap = () => {
+        handleDoubleTap(scene, camera, isAnimating, (val) => { isAnimating = val; });
+    };
+
+    scene.onPointerObservable.add((pointerInfo) => {
+        if (
+            pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOUBLETAP &&
+            pointerInfo.event.button === 0
+        ) {
+            onDoubleTap();
+        }
+    });
+
+    // Double-tap for touch
+    let lastTap = 0;
+    const doubleTapThreshold = CONFIG.gesture.doubleTapThreshold; // ms
+    scene.onPointerObservable.add((pointerInfo) => {
+        if (pointerInfo.type === BABYLON.PointerEventTypes.POINTERDOWN) {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < doubleTapThreshold && tapLength > 0) {
+                onDoubleTap();
+                lastTap = 0;
+            } else {
+                lastTap = currentTime;
+            }
+        }
+    });
+}
+
+/**
+ * Handles the double-tap/double-click event to animate the camera.
+ */
+function handleDoubleTap(scene, camera, isAnimating, setAnimating) {
+    if (isAnimating) {
+        return;
+    }
+    const pickResult = getPickResult(scene, camera, scene.pointerX, scene.pointerY);
+    if (pickResult && pickResult.hit && pickResult.pickedPoint) {
+        const distanceToPoint = BABYLON.Vector3.Distance(camera.target, pickResult.pickedPoint);
+        // Use fixed camera limits from config
+        const targetRadius = Math.max(
+            Math.min(distanceToPoint * 2, CONFIG.camera.upperRadiusLimit),
+            CONFIG.camera.lowerRadiusLimit
+        );
+
+        setAnimating(true);
+        const animationGroup = animateCamera(camera, pickResult.pickedPoint, targetRadius, 30, () => {
+            setAnimating(false);
+        });
+        animationGroup.play();
+    }
+}
+
+/**
+ * Configure auto rotation
+ */
+function configureAutoRotation(camera) {
+    if (camera.useAutoRotationBehavior && camera.autoRotationBehavior) {
+        const autoConfig = CONFIG.camera.autoRotation;
+        camera.autoRotationBehavior.idleRotationWaitTime = autoConfig.idleRotationWaitTime;
+        camera.autoRotationBehavior.idleRotationSpeed = autoConfig.idleRotationSpeed;
+        camera.autoRotationBehavior.idleRotationSpinUpTime = autoConfig.idleRotationSpinUpTime;
+        console.log("Auto-rotation configured");
+    }
+}
+
+/**
+ * Cleanup Resources
+ */
+function cleanup(scene, engine) {
+    // Dispose gesture controller if it exists
+    if (gestureController) {
+        try {
+            gestureController.dispose();
+            console.log("Gesture controller disposed.");
+        } catch (e) {
+            console.warn("Error disposing gesture controller:", e);
+        }
+        gestureController = null;
+    }
+
+    // Dispose XR Helper if initialized
+    if (xrHelper) {
+        xrHelper.dispose();
+        xrHelper = null;
+        console.log("XR Helper disposed.");
+    }
+
+    // Dispose post-processing pipeline
+    if (pipeline) {
+        pipeline.dispose();
+        pipeline = null;
+        console.log("Post-processing pipeline disposed.");
+    }
+
+    // Dispose current model
+    disposeCurrentModel(scene.currentModel, scene.currentModelType);
+    scene.currentModel = null;
+    scene.currentModelType = null;
+    console.log("Current model disposed.");
+
+    // Dispose scene
+    if (scene) {
+        scene.dispose();
+        console.log("Scene disposed.");
+    }
+
+    // Dispose engine
+    if (engine) {
+        engine.dispose();
+        console.log("Engine disposed.");
+    }
+}
+
+/**
+ * Create the Scene
+ */
+async function createScene() {
+    try {
+        const { engine: eng, scene: scn, canvas } = initializeEngineAndScene();
+        engine = eng;
+        scene = scn;
+
+        // Detect if the device is mobile using the engine's built-in detection
+        const isMobile = engine.isMobile;
+
+        // Determine initial pixel ratio based on device type
+        const initialPixelRatio = isMobile ? CONFIG.pixelRatio.mobile : CONFIG.pixelRatio.pc;
+
+        // Set hardware scaling level based on initial pixel ratio
+        engine.setHardwareScalingLevel(1 / initialPixelRatio);
+        console.log(`Initial hardware scaling level set to: ${1 / initialPixelRatio} for ${isMobile ? 'mobile' : 'PC'}`);
+
+        // Setup camera
+        camera = setupCamera(scene, canvas, CONFIG);
+        
+        // Configure camera auto-rotation
+        configureAutoRotation(camera);
+
+        // Double-click to center - keep this for all devices
+        setupDoubleClickPan(scene, camera);
+        console.log("Double-click pan setup.");
+
+        // Setup mobile-specific controls if on mobile device
+        // This is additional to the default controls
+        if (isMobile) {
+            try {
+                console.log("Setting up mobile-specific controls");
+                // Setup mobile controls - this doesn't replace default controls
+                // but adds better touch handling
+                setupMobileControls(camera, scene);
+            } catch (e) {
+                console.warn("Error setting up mobile controls:", e);
+                // The default controls will still work even if this fails
+            }
+        }
+
+        // Optional: Enable WebXR if needed
+        try {
+            xrHelper = await scene.createDefaultXRExperienceAsync({
+                uiOptions: {
+                    sessionMode: 'immersive-vr',
+                    referenceSpaceType: 'local-floor'
+                },
+                optionalFeatures: CONFIG.xr.optionalFeatures
+            });
+            console.log("XR Experience initialized.");
+        } catch (xrError) {
+            console.log("XR not available or not supported by browser:", xrError);
+        }
+
+        // Post-processing
+        pipeline = addPostEffects(scene, camera);
+        console.log("Post-processing pipeline added.");
+
+        // UI
+        setupUI(camera, scene, xrHelper, engine, initialPixelRatio);
+        console.log("UI handlers set up.");
+
+        // Attempt to load a model from URL param or default
+        const urlParams = new URLSearchParams(window.location.search);
+        const modelUrl = urlParams.get('model');
+
+        if (modelUrl) {
+            try {
+                const decodedModelUrl = decodeURIComponent(modelUrl);
+                console.log(`Loading model from URL parameter: ${decodedModelUrl}`);
+                await loadModel(scene, decodedModelUrl, CONFIG.modelLoader.defaultFallbackModel);
+            } catch (error) {
+                console.error("Error loading model from URL parameter:", error);
+                await loadModel(scene, CONFIG.modelLoader.defaultFallbackModel, CONFIG.modelLoader.defaultFallbackModel);
+            }
+        } else {
+            console.log("Loading default model:", CONFIG.defaultModelUrl);
+            await loadModel(scene, CONFIG.defaultModelUrl, CONFIG.modelLoader.defaultFallbackModel);
+        }
+
+        // Start render loop
+        engine.runRenderLoop(() => {
+            if (scene) {
+                scene.render();
+            }
+        });
+        console.log("Render loop started.");
+
+        // Handle window resize
+        window.addEventListener("resize", () => {
+            engine.resize();
+            console.log("Engine resized.");
+        });
+
+        // Handle scene disposal for cleanup
+        scene.onDisposeObservable.add(() => {
+            cleanup(scene, engine);
+            console.log("Scene disposed and resources cleaned up.");
+        });
+
+        console.log("Scene created and ready!");
+    } catch (error) {
+        console.error("Error during scene creation:", error);
+        cleanup(scene, engine);
+    }
+}
+
+// Start the application
+createScene();
