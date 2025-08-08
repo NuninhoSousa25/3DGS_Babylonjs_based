@@ -162,6 +162,7 @@ async function createScene() {
         const { engine: eng, scene: scn, canvas } = initializeEngineAndScene();
         engine = eng;
         scene = scn;
+        setupLighting(scene);
 
         // Detect device using consolidated detection system
         const device = detectDevice();
@@ -327,6 +328,8 @@ function setupLighting(scene) {
         scene
     );
     light.intensity = 0.7;
+
+    
 }
 
 // Start the application
