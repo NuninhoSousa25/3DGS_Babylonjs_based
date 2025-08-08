@@ -57,4 +57,6 @@ export function setupUIUpdates(scene, engine) {
             verticesCounter.textContent = totalVertices;
         }
     });
+
+       
 }

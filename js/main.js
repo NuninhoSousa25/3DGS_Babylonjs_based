@@ -8,6 +8,7 @@ import { CONFIG } from './config.js';  // Import the centralized configuration
 import { setupMobileControls } from './mobileControl.js';
 import { detectDevice } from './deviceDetection.js';
 
+
 /**
  * Global Variables
  */

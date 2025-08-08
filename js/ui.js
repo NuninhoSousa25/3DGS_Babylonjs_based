@@ -507,7 +507,7 @@ function resetCameraView(camera, scene) {
         
         animation.setKeys([
             { frame: 0, value: startValue },
-            { frame: 30, value: endValue }
+            { frame: 60, value: endValue }
         ]);
         
         animationGroup.addTargetedAnimation(animation, camera);
