@@ -11,6 +11,8 @@ A modern, responsive 3D model viewer built with Babylon.js, featuring a unified 
 - mobilie icons -- icon bar on mobile should be Hamburger based currently hamburger menu only apears in fullscreen mode
 - consolidate sharing
 - lights or hdri for gltfs
+- reset view not working properly
+
 
 ### **Completed Improvements**
 - ✅ **Unified UI System**: Consistent 6-icon top bar across all devices
