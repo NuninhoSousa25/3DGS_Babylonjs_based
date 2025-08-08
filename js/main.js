@@ -303,5 +303,30 @@ function isValidModelFile(file) {
     return CONFIG.modelLoader.supportedFormats.includes(extension);
 }
 
+// Add to main.js
+function setupLighting(scene) {
+    // Add HDR environment
+    const hdrTexture = new BABYLON.CubeTexture(
+        "https://playground.babylonjs.com/textures/environment.dds",
+        scene
+    );
+    scene.environmentTexture = hdrTexture;
+    
+    // Add IBL
+    scene.createDefaultEnvironment({
+        createSkybox: false,
+        createGround: false,
+        enableGroundMirror: false
+    });
+    
+    // Add hemisphere light for better visibility
+    const light = new BABYLON.HemisphericLight(
+        "light",
+        new BABYLON.Vector3(0, 1, 0),
+        scene
+    );
+    light.intensity = 0.7;
+}
+
 // Start the application
 createScene();

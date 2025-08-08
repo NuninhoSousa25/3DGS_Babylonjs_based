@@ -443,27 +443,67 @@ function setupSettingsControls(camera, scene) {
 /**
  * Reset camera to initial view with smooth animation
  */
+/**
+ * Reset camera to initial view with smooth animation
+ */
 function resetCameraView(camera, scene) {
     if (!camera) return;
     
+    // Ensure we're within camera limits
+    const targetAlpha = CONFIG.camera.alpha;
+    const targetBeta = Math.max(
+        Math.min(CONFIG.camera.beta, 1.75), // Upper limit from cameraControl.js
+        0.2 // Lower limit from cameraControl.js
+    );
+    const targetRadius = Math.max(
+        Math.min(CONFIG.camera.radius, CONFIG.camera.upperRadiusLimit),
+        CONFIG.camera.lowerRadiusLimit
+    );
+    
+    // Create animation group
     const animationGroup = new BABYLON.AnimationGroup("resetViewAnimation");
     
     // Create animations for each camera property
     const animations = [
-        { property: "target", startValue: camera.target.clone(), endValue: new BABYLON.Vector3(0, 0, 0) },
-        { property: "alpha", startValue: camera.alpha, endValue: CONFIG.camera.alpha },
-        { property: "beta", startValue: camera.beta, endValue: CONFIG.camera.beta },
-        { property: "radius", startValue: camera.radius, endValue: CONFIG.camera.radius }
+        { 
+            property: "target", 
+            startValue: camera.target.clone(), 
+            endValue: BABYLON.Vector3.Zero(),
+            type: BABYLON.Animation.ANIMATIONTYPE_VECTOR3
+        },
+        { 
+            property: "alpha", 
+            startValue: camera.alpha, 
+            endValue: targetAlpha,
+            type: BABYLON.Animation.ANIMATIONTYPE_FLOAT
+        },
+        { 
+            property: "beta", 
+            startValue: camera.beta, 
+            endValue: targetBeta,
+            type: BABYLON.Animation.ANIMATIONTYPE_FLOAT
+        },
+        { 
+            property: "radius", 
+            startValue: camera.radius, 
+            endValue: targetRadius,
+            type: BABYLON.Animation.ANIMATIONTYPE_FLOAT
+        }
     ];
     
-    animations.forEach(({ property, startValue, endValue }) => {
+    animations.forEach(({ property, startValue, endValue, type }) => {
         const animation = new BABYLON.Animation(
             `reset${property.charAt(0).toUpperCase() + property.slice(1)}`,
             property,
-            30,
-            property === "target" ? BABYLON.Animation.ANIMATIONTYPE_VECTOR3 : BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+            60, // Higher framerate for smoother animation
+            type,
             BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
         );
+        
+        // Use easing function for smoother animation
+        const easingFunction = new BABYLON.CircleEase();
+        easingFunction.setEasingMode(BABYLON.EasingFunction.EASINGMODE_EASEINOUT);
+        animation.setEasingFunction(easingFunction);
         
         animation.setKeys([
             { frame: 0, value: startValue },
@@ -473,7 +513,16 @@ function resetCameraView(camera, scene) {
         animationGroup.addTargetedAnimation(animation, camera);
     });
     
-    animationGroup.play(true);
+    // Play the animation
+    animationGroup.play();
+    
+    // Ensure camera limits are enforced after animation
+    scene.onBeforeRenderObservable.addOnce(() => {
+        camera.alpha = targetAlpha;
+        camera.beta = targetBeta;
+        camera.radius = targetRadius;
+        camera.target = BABYLON.Vector3.Zero();
+    });
 }
 
 /**
@@ -611,15 +660,13 @@ function setupModelLoading(scene) {
     const spinner = document.getElementById("loadingSpinner");
     
     // File loading handler
-    if (fileButton) {
-        fileButton.addEventListener("click", async () => {
-            const fileInput = document.getElementById("modelLoader");
-            if (!fileInput || fileInput.files.length === 0) {
-                showToast("Please select a file to load", 3000);
-                return;
+  // Add this to setupModelLoading function
+    const fileInput = document.getElementById("modelLoader");
+    if (fileInput) {
+        fileInput.addEventListener("change", async (e) => {
+            if (e.target.files.length > 0) {
+                await loadModelWithSpinner(scene, e.target.files[0], spinner, "file");
             }
-            
-            await loadModelWithSpinner(scene, fileInput.files[0], spinner, "file");
         });
     }
     

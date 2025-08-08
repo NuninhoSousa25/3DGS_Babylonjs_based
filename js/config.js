@@ -100,6 +100,12 @@ export const CONFIG = {
         defaultModelScale: 1.0,         // Default fixed scale for all models
     },
 
+    performance: {
+    enableOcclusion: true,
+    enableFrustumClipping: true,
+    enableLOD: true,
+    maxMeshesPerFrame: 100
+    },
 
     pixelRatio: {
         mobile: 0.8,   // Pixel ratio for mobile devices

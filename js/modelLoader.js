@@ -1,12 +1,10 @@
-// js/modelLoader.js
+// js/modelLoader.js - FIXED VERSION
 import { setMeshesPickable } from './helpers.js';
-import { CONFIG } from './config.js'; // Import CONFIG for modelLoader configurations
+import { CONFIG } from './config.js';
+import { animateCamera } from './cameraControl.js';
 
 /**
  * Disposes the current model if any.
- * @param {BABYLON.Mesh | BABYLON.GaussianSplattingMesh} currentModel 
- * @param {string} currentModelType 
- * @returns {object} Updated currentModel and currentModelType
  */
 export function disposeCurrentModel(currentModel, currentModelType) {
     if (!currentModel) return { currentModel, currentModelType };
@@ -20,14 +18,10 @@ export function disposeCurrentModel(currentModel, currentModelType) {
 
 /**
  * Loads a .splat or .ply model using GaussianSplattingMesh.
- * @param {BABYLON.Scene} scene 
- * @param {string} url 
- * @returns {Promise<BABYLON.GaussianSplattingMesh>}
  */
 export async function loadSplatModel(scene, url) {
     console.log(`Loading .splat/.ply model from URL: ${url}`);
 
-    // Ensure GaussianSplattingMesh is available
     if (!BABYLON.GaussianSplattingMesh) {
         throw new Error("GaussianSplattingMesh is not defined. Ensure the necessary plugin or script is loaded.");
     }
@@ -42,25 +36,82 @@ export async function loadSplatModel(scene, url) {
 }
 
 /**
+ * Centers and fits model to view
+ */
+export function centerAndFitModel(model, camera, scene) {
+    if (!model) return;
+    
+    try {
+        // Get bounding info
+        let boundingInfo;
+        if (model.getHierarchyBoundingVectors) {
+            boundingInfo = model.getHierarchyBoundingVectors();
+        } else if (model.getBoundingInfo) {
+            const info = model.getBoundingInfo();
+            boundingInfo = {
+                min: info.minimum,
+                max: info.maximum
+            };
+        } else {
+            console.log("Model doesn't have bounding info");
+            return;
+        }
+        
+        const size = boundingInfo.max.subtract(boundingInfo.min);
+        const center = boundingInfo.max.add(boundingInfo.min).scale(0.5);
+        
+        // Center the model
+        model.position = center.negate();
+        
+        // Calculate appropriate camera radius
+        const maxDimension = Math.max(size.x, size.y, size.z);
+        const targetRadius = maxDimension * 2;
+        
+        // Set camera to fit model
+        camera.radius = Math.min(targetRadius, CONFIG.camera.upperRadiusLimit);
+        camera.target = BABYLON.Vector3.Zero();
+        
+        console.log("Model centered and fitted to view");
+    } catch (error) {
+        console.warn("Could not auto-center model:", error);
+    }
+}
+
+/**
  * Loads a model based on the source type.
- * @param {BABYLON.Scene} scene 
- * @param {string | File} modelSource 
- * @param {string} defaultModelUrl 
- * @returns {Promise<{ currentModel: BABYLON.AbstractMesh, currentModelType: string }>}
  */
 export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.modelLoader.defaultFallbackModel) {
     let { currentModel, currentModelType } = disposeCurrentModel(scene.currentModel, scene.currentModelType);
 
     // Show loading spinner
     const spinner = document.getElementById("loadingSpinner");
-    if (spinner) spinner.style.display = "block";  // Show spinner
+    if (spinner) spinner.style.display = "block";
+
+    // Setup progress callback
+    BABYLON.SceneLoader.OnProgress = (event) => {
+        const percentage = event.loaded && event.total 
+            ? Math.floor((event.loaded / event.total) * 100) 
+            : 0;
+        
+        const spinnerText = document.querySelector('.spinner-text');
+        if (spinnerText && percentage > 0) {
+            spinnerText.textContent = `Loading Model... ${percentage}%`;
+        }
+    };
 
     let url = '';
     let extension = '';
+    let isFile = false;
 
+    // Determine source type and extension
     if (modelSource instanceof File) {
-        url = URL.createObjectURL(modelSource);
+        isFile = true;
         extension = modelSource.name.split('.').pop().toLowerCase();
+        
+        // Create object URL for splat/ply files
+        if (extension === 'splat' || extension === 'ply') {
+            url = URL.createObjectURL(modelSource);
+        }
     } else if (typeof modelSource === 'string') {
         url = modelSource;
         try {
@@ -79,7 +130,7 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
         extension = defaultModelUrl.split('.').pop().toLowerCase();
     }
 
-    console.log(`Attempting to load model from ${url} with extension .${extension}`);
+    console.log(`Attempting to load model with extension .${extension}`);
 
     try {
         if (CONFIG.modelLoader.supportedFormats.includes(extension)) {
@@ -90,12 +141,40 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
                 currentModel.position.y = 0;
                 currentModelType = 'mesh';
                 console.log("Successfully loaded .spz model:", currentModel);
+                
             } else if (extension === 'gltf' || extension === 'glb') {
                 console.log(`Loading as .${extension} using SceneLoader.ImportMeshAsync`);
-                const result = await BABYLON.SceneLoader.ImportMeshAsync(null, "", url, scene);
+                
+                let result;
+                if (isFile) {
+                    // For File objects, pass the file directly
+                    result = await BABYLON.SceneLoader.ImportMeshAsync(
+                        "", 
+                        "", 
+                        modelSource, 
+                        scene
+                    );
+                } else {
+                    // For URLs, load normally
+                    result = await BABYLON.SceneLoader.ImportMeshAsync(
+                        "", 
+                        url, 
+                        "", 
+                        scene
+                    );
+                }
+                
+                // Get the root mesh
                 currentModel = result.meshes[0];
                 currentModelType = 'mesh';
+                
+                // Make all meshes pickable
+                result.meshes.forEach(mesh => {
+                    mesh.isPickable = true;
+                });
+                
                 console.log("Successfully loaded GLTF/GLB model:", currentModel);
+                
             } else if (extension === 'splat' || extension === 'ply') {
                 console.log(`Loading as .${extension} using GaussianSplattingMesh`);
                 currentModel = await loadSplatModel(scene, url);
@@ -111,19 +190,34 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
 
         // Apply fixed default scale from config
         applyDefaultScale(currentModel);
+        
+        // Center and fit the model to view
+        const camera = scene.activeCamera;
+        if (camera) {
+            centerAndFitModel(currentModel, camera, scene);
+        }
+        
     } catch (err) {
         console.error("Failed to load model:", err);
-        alert("Failed to load model. Creating fallback box.");
+        alert(`Failed to load model: ${err.message}\nCreating fallback box.`);
 
-        currentModel = BABYLON.MeshBuilder.CreateBox("fallbackBox", {}, scene);
+        currentModel = BABYLON.MeshBuilder.CreateBox("fallbackBox", { size: 2 }, scene);
         currentModelType = 'mesh';
         
-        // Apply fixed default scale to fallback box too
         applyDefaultScale(currentModel);
+    } finally {
+        // Clean up object URL if created
+        if (isFile && url && (extension === 'splat' || extension === 'ply')) {
+            // Delay cleanup to ensure model is fully loaded
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        
+        // Clear progress callback
+        BABYLON.SceneLoader.OnProgress = null;
     }
 
     // Hide loading spinner
-    if (spinner) spinner.style.display = "none"; // Hide spinner
+    if (spinner) spinner.style.display = "none";
 
     // Update scene properties
     scene.currentModel = currentModel;
@@ -134,15 +228,16 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
 
 /**
  * Applies the default scale from config to the model.
- * @param {BABYLON.Mesh | BABYLON.GaussianSplattingMesh} model 
  */
 function applyDefaultScale(model) {
     if (!model) return;
     
     const defaultScale = CONFIG.modelLoader.defaultModelScale;
     try {
-        model.scaling.set(defaultScale, defaultScale, defaultScale);
-        console.log(`Model scaled to fixed default scale: ${defaultScale}`);
+        if (model.scaling) {
+            model.scaling.set(defaultScale, defaultScale, defaultScale);
+            console.log(`Model scaled to fixed default scale: ${defaultScale}`);
+        }
     } catch (error) {
         console.error("Error applying default scale to model:", error);
     }
