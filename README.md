@@ -8,8 +8,6 @@ A modern, feature-rich web-based viewer for Gaussian Splatting models built with
 - local model loading
 - drag and drop is not wokring, either remove or fix
 - mobilie icons -- icon bar on mobile should be Hamburger based currently hamburger menu only apears in fullscreen mode
-
-- remove vr icon in mobile
 - add gltf compatibility
 
 ## 🌟 Features
