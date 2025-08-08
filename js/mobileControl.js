@@ -2,6 +2,7 @@
 
 import { CONFIG } from './config.js';
 import { GestureControl } from './gestureControl.js';
+import { detectDevice } from './deviceDetection.js';
 
 /**
  * Sets up mobile-optimized controls based on device detection.
@@ -11,7 +12,8 @@ import { GestureControl } from './gestureControl.js';
  */
 export function setupMobileControls(camera, scene) {
     // Check if this is a mobile device
-    if (!isMobileDevice()) {
+    const device = detectDevice();
+    if (!device.isMobile) {
         console.log("Desktop device detected. Using standard controls.");
         return null;
     }

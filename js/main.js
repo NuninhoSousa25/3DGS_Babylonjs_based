@@ -6,6 +6,7 @@ import { addPostEffects } from './postProcessing.js';
 import { getPickResult } from './picking.js';
 import { CONFIG } from './config.js';  // Import the centralized configuration
 import { setupMobileControls } from './mobileControl.js';
+import { detectDevice } from './deviceDetection.js';
 
 /**
  * Global Variables
@@ -161,8 +162,9 @@ async function createScene() {
         engine = eng;
         scene = scn;
 
-        // Detect if the device is mobile using the engine's built-in detection
-        const isMobile = engine.isMobile;
+        // Detect device using consolidated detection system
+        const device = detectDevice();
+        const isMobile = device.isMobile;
 
         // Determine initial pixel ratio based on device type
         const initialPixelRatio = isMobile ? CONFIG.pixelRatio.mobile : CONFIG.pixelRatio.pc;
@@ -176,6 +178,9 @@ async function createScene() {
         
         // Configure camera auto-rotation
         configureAutoRotation(camera);
+
+        // Setup drag & drop functionality
+        setupDragAndDrop(canvas, scene);
 
         // Double-click to center - keep this for all devices
         setupDoubleClickPan(scene, camera);
@@ -247,6 +252,55 @@ async function createScene() {
         console.error("Error during scene creation:", error);
         cleanup(scene, engine);
     }
+}
+
+/**
+ * Setup drag and drop functionality for model files
+ * @param {HTMLCanvasElement} canvas - The canvas element
+ * @param {BABYLON.Scene} scene - The Babylon.js scene
+ */
+function setupDragAndDrop(canvas, scene) {
+    // Prevent default drag behaviors on canvas
+    canvas.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        canvas.style.filter = 'brightness(1.2)';
+    });
+
+    canvas.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        canvas.style.filter = 'none';
+    });
+
+    canvas.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        canvas.style.filter = 'none';
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0 && isValidModelFile(files[0])) {
+            console.log('Drag & drop file detected:', files[0].name);
+            try {
+                // Pass the File object directly to loadModel
+                await loadModel(scene, files[0], CONFIG.modelLoader.defaultFallbackModel);
+            } catch (error) {
+                console.error('Error loading dropped file:', error);
+            }
+        } else {
+            console.warn('Invalid file format. Supported formats:', CONFIG.modelLoader.supportedFormats);
+        }
+    });
+}
+
+/**
+ * Check if a file is a valid model file
+ * @param {File} file - The file to validate
+ * @returns {boolean} - True if file is valid
+ */
+function isValidModelFile(file) {
+    if (!file || !file.name) return false;
+    
+    const extension = file.name.split('.').pop().toLowerCase();
+    return CONFIG.modelLoader.supportedFormats.includes(extension);
 }
 
 // Start the application

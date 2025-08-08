@@ -90,6 +90,12 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
                 currentModel.position.y = 0;
                 currentModelType = 'mesh';
                 console.log("Successfully loaded .spz model:", currentModel);
+            } else if (extension === 'gltf' || extension === 'glb') {
+                console.log(`Loading as .${extension} using SceneLoader.ImportMeshAsync`);
+                const result = await BABYLON.SceneLoader.ImportMeshAsync(null, "", url, scene);
+                currentModel = result.meshes[0];
+                currentModelType = 'mesh';
+                console.log("Successfully loaded GLTF/GLB model:", currentModel);
             } else if (extension === 'splat' || extension === 'ply') {
                 console.log(`Loading as .${extension} using GaussianSplattingMesh`);
                 currentModel = await loadSplatModel(scene, url);

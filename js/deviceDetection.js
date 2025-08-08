@@ -11,6 +11,16 @@ export const DEVICE_BREAKPOINTS = {
 };
 
 /**
+ * Simple mobile device detection function
+ * @returns {boolean} True if mobile device detected
+ */
+export function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+           ('ontouchstart' in window) || 
+           (navigator.maxTouchPoints > 0);
+}
+
+/**
  * Simple and reliable device detection - user-agent only
  * @returns {Object} Device information object
  */

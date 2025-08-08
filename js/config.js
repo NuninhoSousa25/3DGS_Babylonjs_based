@@ -95,7 +95,7 @@ export const CONFIG = {
      * Model Loader Configuration
      */
     modelLoader: {
-        supportedFormats: ['splat', 'ply', 'spz'],  // Supported file formats
+        supportedFormats: ['splat', 'ply', 'spz', 'gltf', 'glb'],  // Supported file formats
         defaultFallbackModel: "https://raw.githubusercontent.com/CedricGuillemet/dump/master/Halo_Believe.splat", // Fallback model URL
         defaultModelScale: 1.0,         // Default fixed scale for all models
     },
