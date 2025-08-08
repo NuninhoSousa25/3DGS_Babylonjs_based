@@ -100,15 +100,6 @@ export const CONFIG = {
         defaultModelScale: 1.0,         // Default fixed scale for all models
     },
 
-    /**
-     * XR (Extended Reality) Configuration
-     */
-    xr: {
-        optionalFeatures: ['teleportation', 'hand-tracking'], // Example features
-        teleportation: {
-            floorMesh: null, // Optional: Define or reference a floor mesh for teleportation
-        },
-    },
 
     pixelRatio: {
         mobile: 0.8,   // Pixel ratio for mobile devices

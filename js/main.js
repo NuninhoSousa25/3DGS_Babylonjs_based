@@ -12,7 +12,6 @@ import { setupMobileControls } from './mobileControl.js';
  */
 let engine, scene, camera;
 let pipeline = null; // For post-process reuse
-let xrHelper = null; // XR Helper
 let gestureController = null; // For mobile gesture control
 
 /**
@@ -126,12 +125,6 @@ function cleanup(scene, engine) {
         gestureController = null;
     }
 
-    // Dispose XR Helper if initialized
-    if (xrHelper) {
-        xrHelper.dispose();
-        xrHelper = null;
-        console.log("XR Helper disposed.");
-    }
 
     // Dispose post-processing pipeline
     if (pipeline) {
@@ -202,26 +195,13 @@ async function createScene() {
             }
         }
 
-        // Optional: Enable WebXR if needed
-        try {
-            xrHelper = await scene.createDefaultXRExperienceAsync({
-                uiOptions: {
-                    sessionMode: 'immersive-vr',
-                    referenceSpaceType: 'local-floor'
-                },
-                optionalFeatures: CONFIG.xr.optionalFeatures
-            });
-            console.log("XR Experience initialized.");
-        } catch (xrError) {
-            console.log("XR not available or not supported by browser:", xrError);
-        }
 
         // Post-processing
         pipeline = addPostEffects(scene, camera);
         console.log("Post-processing pipeline added.");
 
         // UI
-        setupUI(camera, scene, xrHelper, engine, initialPixelRatio);
+        setupUI(camera, scene, engine, initialPixelRatio);
         console.log("UI handlers set up.");
 
         // Attempt to load a model from URL param or default

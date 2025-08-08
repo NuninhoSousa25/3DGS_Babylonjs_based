@@ -1,120 +1,173 @@
-// js/ui.js
+/* ========================================================================
+   3D VIEWER UI CONTROLLER - CLEAN & ORGANIZED
+   ======================================================================== */
+
 import { setupUIUpdates } from './helpers.js';
 import { loadModel } from './modelLoader.js';
-import { CONFIG } from './config.js'; // Import CONFIG for UI configurations
+import { CONFIG } from './config.js';
 
-// --- SVG Icons (Inline) ---
+/* ========================================================================
+   SVG ICONS DEFINITIONS
+   ======================================================================== */
 const ICONS = {
-    settings: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>`, // Material Icons Tune
-    info: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>`, // Material Icons Info
-    dev: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>`, // Material Icons Developer Board
-    fullscreen: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>`, // Material Icons Fullscreen
-    fullscreen_exit: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>`, // Material Icons Fullscreen Exit
-    reset_view: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>`, // Material Icons Refresh
-    share: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92zM18 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM6 13c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm12 7.02c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>`, // Material Icons Share
-    help: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/></svg>` // Material Icons Help
+    settings: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"/></svg>`,
+    info: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>`,
+    dev: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>`,
+    fullscreen: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>`,
+    fullscreen_exit: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>`,
+    reset_view: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>`,
+    share: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92zM18 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM6 13c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm12 7.02c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>`
 };
 
+/* ========================================================================
+   MAIN UI SETUP FUNCTION
+   ======================================================================== */
 /**
- * Sets up the user interface with an improved icon bar.
- * @param {BABYLON.ArcRotateCamera} camera 
- * @param {BABYLON.Scene} scene 
- * @param {BABYLON.WebXRDefaultExperience} xrHelper 
- * @param {BABYLON.Engine} engine
- * @param {number} initialPixelRatio - The initial pixel ratio based on device type
+ * Sets up the unified user interface for all devices
+ * @param {BABYLON.ArcRotateCamera} camera - The main camera
+ * @param {BABYLON.Scene} scene - The 3D scene
+ * @param {BABYLON.Engine} engine - The Babylon.js engine
+ * @param {number} initialPixelRatio - Initial device pixel ratio
  */
-export function setupUI(camera, scene, xrHelper, engine, initialPixelRatio) {
-    // Apply camera/engine settings from CONFIG
+export function setupUI(camera, scene, engine, initialPixelRatio) {
+    // Initialize camera and engine settings
+    initializeCameraSettings(camera);
+    initializeEngineSettings(engine, initialPixelRatio);
+    initializePostProcessingSettings(scene);
+    
+    // Detect if device has touch capabilities
+    const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    
+    // Remove existing UI and create new one
+    removeExistingUI();
+    const controlPanel = createControlPanel();
+    const iconBar = createIconBar();
+    const contentArea = createContentArea(hasTouch);
+    
+    // Assemble UI
+    controlPanel.appendChild(iconBar);
+    controlPanel.appendChild(contentArea);
+    document.body.appendChild(controlPanel);
+    
+    // Setup event handlers
+    setupIconButtonHandlers(camera, scene);
+    setupSettingsControls(camera, scene);
+    setupModelLoading(scene);
+    
+    // Setup responsive features
+    if (hasTouch) {
+        setupTouchUI(controlPanel, camera);
+    }
+    
+    // Start UI update loop
+    setupUIUpdates(scene, engine);
+}
+
+/* ========================================================================
+   INITIALIZATION FUNCTIONS
+   ======================================================================== */
+/**
+ * Initialize camera settings from configuration
+ */
+function initializeCameraSettings(camera) {
     camera.useAutoRotationBehavior = CONFIG.camera.useAutoRotationBehavior;
+    
     if (camera.useAutoRotationBehavior && camera.autoRotationBehavior) {
         const autoConfig = CONFIG.camera.autoRotation;
         camera.autoRotationBehavior.idleRotationWaitTime = autoConfig.idleRotationWaitTime;
         camera.autoRotationBehavior.idleRotationSpeed = autoConfig.idleRotationSpeed;
         camera.autoRotationBehavior.idleRotationSpinUpTime = autoConfig.idleRotationSpinUpTime;
     }
-    
-    // Apply hardware scaling for performance
+}
+
+/**
+ * Initialize engine settings
+ */
+function initializeEngineSettings(engine, initialPixelRatio) {
     engine.setHardwareScalingLevel(1 / initialPixelRatio);
     console.log(`Hardware scaling level set to: ${1 / initialPixelRatio}`);
-    
-    // Apply post-processing settings
+}
+
+/**
+ * Initialize post-processing settings
+ */
+function initializePostProcessingSettings(scene) {
     if (scene.pipeline) {
         scene.pipeline.sharpen.edgeAmount = CONFIG.postProcessing.sharpenEdgeAmount;
         scene.pipeline.sharpenEnabled = CONFIG.postProcessing.sharpenEnabled;
         scene.pipeline.fxaaEnabled = CONFIG.postProcessing.fxaaEnabled;
         console.log(`Post-processing settings applied from config`);
     }
+}
 
-    // Remove existing panel if it exists
+/* ========================================================================
+   UI CREATION FUNCTIONS
+   ======================================================================== */
+/**
+ * Remove any existing control panel
+ */
+function removeExistingUI() {
     const existingPanel = document.getElementById("controlPanel");
     if (existingPanel) {
         existingPanel.remove();
     }
+}
 
-    // Check if this is a mobile device
-    const isMobile = _isMobileDevice();
-
-    // Create UI container with mobile detection
+/**
+ * Create the main control panel container
+ */
+function createControlPanel() {
     const controlPanel = document.createElement("div");
     controlPanel.id = "controlPanel";
-    controlPanel.className = isMobile ? "control-panel control-panel-mobile" : "control-panel";
+    controlPanel.className = "control-panel";
+    return controlPanel;
+}
 
-    // Create Icon Bar - Now with better organization
+/**
+ * Create the unified 6-icon bar
+ */
+function createIconBar() {
     const iconBar = document.createElement("div");
     iconBar.id = "iconBar";
     iconBar.className = "icon-bar";
     
-    // Create floating action button for mobile
-    if (isMobile) {
-        const fabContainer = document.createElement("div");
-        fabContainer.className = "fab-container";
-        const mainFab = document.createElement("button");
-        mainFab.className = "main-fab";
-        mainFab.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>`;
-        fabContainer.appendChild(mainFab);
-        document.body.appendChild(fabContainer);
-        
-        // Show/hide the panel when FAB is clicked
-        mainFab.addEventListener("click", () => {
-            controlPanel.classList.toggle("show-panel");
-            mainFab.classList.toggle("active");
-        });
-        
-        // Close panel when clicking outside
-        document.addEventListener("click", (e) => {
-            if (!controlPanel.contains(e.target) && !fabContainer.contains(e.target) && controlPanel.classList.contains("show-panel")) {
-                controlPanel.classList.remove("show-panel");
-                mainFab.classList.remove("active");
-            }
-        });
-    }
-
-    // Organized icon bar with grouped functions
     iconBar.innerHTML = `
-        <div class="icon-group">
-            <button id="settingsButton" class="icon-button" title="Settings">${ICONS.settings}</button>
-            <button id="infoButton" class="icon-button" title="Controls Info">${ICONS.info}</button>
-        </div>
-        <div class="icon-group">
-            <button id="resetViewButton" class="icon-button" title="Reset View">${ICONS.reset_view}</button>
-            <button id="fullscreenButton" class="icon-button" title="Toggle Fullscreen">${ICONS.fullscreen}</button>
-        </div>
-        <div class="icon-group">
-            <button id="devButton" class="icon-button" title="Developer Tools">${ICONS.dev}</button>
-            ${isMobile ? '' : `<button id="shareButton" class="icon-button" title="Share View">${ICONS.share}</button>`}
-        </div>
+        <button id="settingsButton" class="icon-button" title="Settings">${ICONS.settings}</button>
+        <button id="infoButton" class="icon-button" title="Controls Info">${ICONS.info}</button>
+        <button id="resetViewButton" class="icon-button" title="Reset View">${ICONS.reset_view}</button>
+        <button id="fullscreenButton" class="icon-button" title="Toggle Fullscreen">${ICONS.fullscreen}</button>
+        <button id="devButton" class="icon-button" title="Developer Tools">${ICONS.dev}</button>
+        <button id="shareButton" class="icon-button" title="Share View">${ICONS.share}</button>
     `;
-    controlPanel.appendChild(iconBar);
+    
+    return iconBar;
+}
 
-    // Create Content Area with improved organization
+/**
+ * Create the content area with all sections
+ */
+function createContentArea(hasTouch) {
     const contentArea = document.createElement("div");
     contentArea.id = "controlPanelContent";
-    contentArea.className = "control-panel-content"; 
-    contentArea.style.display = "none"; // Hide initially
+    contentArea.className = "control-panel-content";
+    contentArea.style.display = "none";
+    
     contentArea.innerHTML = `
         <button id="closePanelButton" class="close-panel-button" title="Close Panel">×</button>
+        
+        ${createSettingsSection(hasTouch)}
+        ${createInfoSection(hasTouch)}
+        ${createDevSection()}
+    `;
+    
+    return contentArea;
+}
 
-        <!-- Settings Section -->
+/**
+ * Create settings section HTML
+ */
+function createSettingsSection(hasTouch) {
+    return `
         <div id="settingsContent" class="content-section" style="display: none;">
             <h4>Settings</h4>
             
@@ -123,11 +176,11 @@ export function setupUI(camera, scene, xrHelper, engine, initialPixelRatio) {
                 <div class="control-group">
                     <label for="autoRotateToggle">Auto Rotation</label>
                     <label class="switch">
-                        <input type="checkbox" id="autoRotateToggle" ${camera.useAutoRotationBehavior ? 'checked' : ''}>
+                        <input type="checkbox" id="autoRotateToggle" ${CONFIG.camera.useAutoRotationBehavior ? 'checked' : ''}>
                         <span class="slider round"></span>
                     </label>
                 </div>
-            
+                
                 <div class="control-group">
                     <label for="qualitySelect">Quality</label>
                     <select id="qualitySelect" class="settings-select">
@@ -143,20 +196,20 @@ export function setupUI(camera, scene, xrHelper, engine, initialPixelRatio) {
                 <div class="control-group">
                     <label for="sharpenToggle">Sharpening</label>
                     <label class="switch">
-                        <input type="checkbox" id="sharpenToggle" ${scene.pipeline?.sharpenEnabled ? 'checked' : ''}>
+                        <input type="checkbox" id="sharpenToggle" ${CONFIG.postProcessing.sharpenEnabled ? 'checked' : ''}>
                         <span class="slider round"></span>
                     </label>
                 </div>
                 <div class="control-group">
                     <label for="fxaaToggle">Anti-Aliasing</label>
                     <label class="switch">
-                        <input type="checkbox" id="fxaaToggle" ${scene.pipeline?.fxaaEnabled ? 'checked' : ''}>
+                        <input type="checkbox" id="fxaaToggle" ${CONFIG.postProcessing.fxaaEnabled ? 'checked' : ''}>
                         <span class="slider round"></span>
                     </label>
                 </div>
             </div>
             
-            ${isMobile ? `
+            ${hasTouch ? `
             <div class="settings-category">
                 <div class="settings-title">Touch Controls</div>
                 <div class="control-group">
@@ -165,10 +218,17 @@ export function setupUI(camera, scene, xrHelper, engine, initialPixelRatio) {
                 </div>
             </div>` : ''}
         </div>
+    `;
+}
 
-        <!-- Info Section -->
+/**
+ * Create info section HTML
+ */
+function createInfoSection(hasTouch) {
+    return `
         <div id="infoContent" class="content-section" style="display: none;">
             <h4>Controls</h4>
+            
             <div class="info-group">
                 <div class="info-title">Navigation</div>
                 <ul class="info-list">
@@ -179,7 +239,7 @@ export function setupUI(camera, scene, xrHelper, engine, initialPixelRatio) {
                 </ul>
             </div>
             
-            ${isMobile ? `
+            ${hasTouch ? `
             <div class="info-group">
                 <div class="info-title">Touch Controls</div>
                 <ul class="info-list">
@@ -198,8 +258,14 @@ export function setupUI(camera, scene, xrHelper, engine, initialPixelRatio) {
                 </ul>
             </div>
         </div>
+    `;
+}
 
-        <!-- Dev Panel Section -->
+/**
+ * Create developer tools section HTML
+ */
+function createDevSection() {
+    return `
         <div id="devContent" class="content-section" style="display: none;">
             <h4>Developer Tools</h4>
             
@@ -241,17 +307,22 @@ export function setupUI(camera, scene, xrHelper, engine, initialPixelRatio) {
                 </div>
             </div>
             
-            <!-- Loading Spinner -->
             <div id="loadingSpinner" class="loading-spinner">
                 <div class="spinner-animation"></div>
                 <div class="spinner-text">Loading Model...</div>
             </div>
         </div>
     `;
-    controlPanel.appendChild(contentArea);
-    document.body.appendChild(controlPanel);
+}
 
-    // --- Get references to elements ---
+/* ========================================================================
+   EVENT HANDLERS
+   ======================================================================== */
+/**
+ * Setup all icon button event handlers
+ */
+function setupIconButtonHandlers(camera, scene) {
+    // Get button references
     const settingsButton = document.getElementById("settingsButton");
     const infoButton = document.getElementById("infoButton");
     const devButton = document.getElementById("devButton");
@@ -259,29 +330,30 @@ export function setupUI(camera, scene, xrHelper, engine, initialPixelRatio) {
     const fullscreenButton = document.getElementById("fullscreenButton");
     const shareButton = document.getElementById("shareButton");
     const closePanelButton = document.getElementById("closePanelButton");
-
+    
+    // Get content sections
     const settingsContent = document.getElementById("settingsContent");
     const infoContent = document.getElementById("infoContent");
     const devContent = document.getElementById("devContent");
     const allContentSections = [settingsContent, infoContent, devContent];
-
-    let currentlyOpenSection = null; // Track which section is open
-
-    // --- Helper Function to Toggle Content ---
+    
+    let currentlyOpenSection = null;
+    
+    // Content section toggle function
     function toggleContentSection(sectionToShow) {
         const isAlreadyOpen = currentlyOpenSection === sectionToShow;
         
         // Close all sections first
         allContentSections.forEach(section => section.style.display = "none");
-        contentArea.style.display = "none";
+        document.getElementById("controlPanelContent").style.display = "none";
         
-        // Reset all active button states
+        // Reset all button states
         [settingsButton, infoButton, devButton].forEach(btn => btn.classList.remove('active'));
         
         if (!isAlreadyOpen) {
-            // Open the requested section
+            // Open requested section
             sectionToShow.style.display = "block";
-            contentArea.style.display = "block";
+            document.getElementById("controlPanelContent").style.display = "block";
             currentlyOpenSection = sectionToShow;
             
             // Set active button state
@@ -289,79 +361,35 @@ export function setupUI(camera, scene, xrHelper, engine, initialPixelRatio) {
             else if (sectionToShow === infoContent) infoButton.classList.add('active');
             else if (sectionToShow === devContent) devButton.classList.add('active');
             
-            // If mobile, ensure the close button is visible
-            if (isMobile) {
-                closePanelButton.style.display = 'block';
-                controlPanel.classList.add("expanded");
-            }
+            // Show close button and expand panel
+            closePanelButton.style.display = 'block';
+            document.getElementById("controlPanel").classList.add("expanded");
         } else {
             currentlyOpenSection = null;
-            if (isMobile) {
-                controlPanel.classList.remove("expanded");
-            }
+            document.getElementById("controlPanel").classList.remove("expanded");
         }
     }
-
-    // --- Event Listeners for Icons ---
+    
+    // Setup button event listeners
     settingsButton.addEventListener("click", () => toggleContentSection(settingsContent));
     infoButton.addEventListener("click", () => toggleContentSection(infoContent));
     devButton.addEventListener("click", () => toggleContentSection(devContent));
-
-    // Reset View Button
-    resetViewButton.addEventListener("click", () => {
-        resetCameraView(camera, scene);
-    });
-
-    // Close Button Listener
-    closePanelButton.addEventListener("click", () => {
-        toggleContentSection(null); // Pass null to just close everything
-    });
-
-    // Fullscreen Button Listener
-    fullscreenButton.addEventListener("click", () => {
-        toggleFullscreen(fullscreenButton);
-    });
+    resetViewButton.addEventListener("click", () => resetCameraView(camera, scene));
+    fullscreenButton.addEventListener("click", () => toggleFullscreen(fullscreenButton));
+    shareButton.addEventListener("click", () => shareCameraView(camera, scene));
+    closePanelButton.addEventListener("click", () => toggleContentSection(null));
     
-    // Share Button (desktop only)
-    if (shareButton) {
-        shareButton.addEventListener("click", () => {
-            shareCameraView(camera, scene);
-        });
-    }
-
-    // Update fullscreen icon if exited via Esc key
+    // Update fullscreen icon on ESC key
     document.addEventListener('fullscreenchange', () => {
         updateFullscreenButton(fullscreenButton);
     });
-
-    // --- Settings Toggles ---
-    setupSettingsControls(camera, scene);
-    
-    // Set up UI update loop
-    setupUIUpdates(scene, engine);
-
-    // Handle Model Loading Buttons
-    setupModelLoading(scene);
-    
-    // Mobile-specific adjustments
-    if (isMobile) {
-        setupMobileSpecificUI(controlPanel, camera);
-    }
 }
 
+/* ========================================================================
+   SETTINGS CONTROLS
+   ======================================================================== */
 /**
- * Helper function to detect mobile devices
- */
-function _isMobileDevice() {
-    const userAgentCheck = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const touchCheck = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    const smallScreen = window.innerWidth <= 1024;
-    
-    return (userAgentCheck || (touchCheck && smallScreen));
-}
-
-/**
- * Sets up all settings controls
+ * Setup all settings controls and their event handlers
  */
 function setupSettingsControls(camera, scene) {
     // Auto Rotation toggle
@@ -375,7 +403,7 @@ function setupSettingsControls(camera, scene) {
         });
     }
 
-    // Sharpen toggle
+    // Sharpening toggle
     const sharpenToggle = document.getElementById('sharpenToggle');
     if (sharpenToggle && scene.pipeline) {
         sharpenToggle.addEventListener('change', (e) => {
@@ -383,7 +411,7 @@ function setupSettingsControls(camera, scene) {
         });
     }
 
-    // FXAA toggle
+    // Anti-aliasing toggle
     const fxaaToggle = document.getElementById('fxaaToggle');
     if (fxaaToggle && scene.pipeline) {
         fxaaToggle.addEventListener('change', (e) => {
@@ -391,170 +419,71 @@ function setupSettingsControls(camera, scene) {
         });
     }
     
-    // Quality select
+    // Quality selector
     const qualitySelect = document.getElementById('qualitySelect');
     if (qualitySelect) {
         qualitySelect.addEventListener('change', (e) => {
-            const quality = e.target.value;
-            updateQualitySettings(quality, scene);
+            updateQualitySettings(e.target.value, scene);
         });
     }
     
-    // Touch sensitivity on mobile
+    // Touch sensitivity (if available)
     const touchSensitivityRange = document.getElementById('touchSensitivityRange');
     if (touchSensitivityRange) {
         touchSensitivityRange.addEventListener('input', (e) => {
-            const sensitivity = parseFloat(e.target.value) / 5.0; // normalize to 0.2-2.0 range
+            const sensitivity = parseFloat(e.target.value) / 5.0;
             updateTouchSensitivity(sensitivity, camera);
         });
     }
 }
 
+/* ========================================================================
+   CAMERA AND VIEW FUNCTIONS
+   ======================================================================== */
 /**
- * Updates quality settings based on selection
- */
-function updateQualitySettings(quality, scene) {
-    const engine = scene.getEngine();
-    
-    switch(quality) {
-        case 'low':
-            engine.setHardwareScalingLevel(1.5);
-            if (scene.pipeline) {
-                scene.pipeline.fxaaEnabled = false;
-                scene.pipeline.sharpenEnabled = false;
-            }
-            break;
-        case 'medium':
-            engine.setHardwareScalingLevel(1.0);
-            if (scene.pipeline) {
-                scene.pipeline.fxaaEnabled = true;
-                scene.pipeline.sharpenEnabled = false;
-            }
-            break;
-        case 'high':
-            engine.setHardwareScalingLevel(0.75);
-            if (scene.pipeline) {
-                scene.pipeline.fxaaEnabled = true;
-                scene.pipeline.sharpenEnabled = true;
-            }
-            break;
-    }
-    
-    // Update toggle states to match quality setting
-    if (scene.pipeline) {
-        const sharpenToggle = document.getElementById('sharpenToggle');
-        const fxaaToggle = document.getElementById('fxaaToggle');
-        
-        if (sharpenToggle) sharpenToggle.checked = scene.pipeline.sharpenEnabled;
-        if (fxaaToggle) fxaaToggle.checked = scene.pipeline.fxaaEnabled;
-    }
-}
-
-/**
- * Updates touch sensitivity
- */
-function updateTouchSensitivity(sensitivity, camera) {
-    if (!camera) return;
-    
-    // Adjust camera sensitivity parameters for touch
-    camera.angularSensibilityX = 2500 / sensitivity;
-    camera.angularSensibilityY = 2500 / sensitivity;
-    camera.panningSensibility = 1000 / sensitivity;
-    
-    // If we have a gesture controller, update it too
-    if (window.gestureController) {
-        const thresholds = window.gestureController.thresholds;
-        if (thresholds) {
-            thresholds.pinchSensitivity = CONFIG.gesture.pinchSensitivity * sensitivity;
-            thresholds.panSensitivity = (CONFIG.mobile.panningSensibility / 1000) * sensitivity;
-        }
-    }
-}
-
-/**
- * Resets camera to initial view
+ * Reset camera to initial view with smooth animation
  */
 function resetCameraView(camera, scene) {
     if (!camera) return;
     
-    // Create animation to reset camera
     const animationGroup = new BABYLON.AnimationGroup("resetViewAnimation");
     
-    // Target animation
-    const targetAnimation = new BABYLON.Animation(
-        "resetTarget",
-        "target",
-        30,
-        BABYLON.Animation.ANIMATIONTYPE_VECTOR3,
-        BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
-    );
+    // Create animations for each camera property
+    const animations = [
+        { property: "target", startValue: camera.target.clone(), endValue: new BABYLON.Vector3(0, 0, 0) },
+        { property: "alpha", startValue: camera.alpha, endValue: CONFIG.camera.alpha },
+        { property: "beta", startValue: camera.beta, endValue: CONFIG.camera.beta },
+        { property: "radius", startValue: camera.radius, endValue: CONFIG.camera.radius }
+    ];
     
-    // Alpha (horizontal rotation) animation
-    const alphaAnimation = new BABYLON.Animation(
-        "resetAlpha",
-        "alpha",
-        30,
-        BABYLON.Animation.ANIMATIONTYPE_FLOAT,
-        BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
-    );
+    animations.forEach(({ property, startValue, endValue }) => {
+        const animation = new BABYLON.Animation(
+            `reset${property.charAt(0).toUpperCase() + property.slice(1)}`,
+            property,
+            30,
+            property === "target" ? BABYLON.Animation.ANIMATIONTYPE_VECTOR3 : BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+            BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
+        );
+        
+        animation.setKeys([
+            { frame: 0, value: startValue },
+            { frame: 30, value: endValue }
+        ]);
+        
+        animationGroup.addTargetedAnimation(animation, camera);
+    });
     
-    // Beta (vertical rotation) animation
-    const betaAnimation = new BABYLON.Animation(
-        "resetBeta",
-        "beta",
-        30,
-        BABYLON.Animation.ANIMATIONTYPE_FLOAT,
-        BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
-    );
-    
-    // Radius animation
-    const radiusAnimation = new BABYLON.Animation(
-        "resetRadius",
-        "radius",
-        30,
-        BABYLON.Animation.ANIMATIONTYPE_FLOAT,
-        BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
-    );
-    
-    // Set keyframes
-    targetAnimation.setKeys([
-        { frame: 0, value: camera.target.clone() },
-        { frame: 30, value: new BABYLON.Vector3(0, 0, 0) }
-    ]);
-    
-    alphaAnimation.setKeys([
-        { frame: 0, value: camera.alpha },
-        { frame: 30, value: CONFIG.camera.alpha }
-    ]);
-    
-    betaAnimation.setKeys([
-        { frame: 0, value: camera.beta },
-        { frame: 30, value: CONFIG.camera.beta }
-    ]);
-    
-    radiusAnimation.setKeys([
-        { frame: 0, value: camera.radius },
-        { frame: 30, value: CONFIG.camera.radius }
-    ]);
-    
-    // Add animations to group
-    animationGroup.addTargetedAnimation(targetAnimation, camera);
-    animationGroup.addTargetedAnimation(alphaAnimation, camera);
-    animationGroup.addTargetedAnimation(betaAnimation, camera);
-    animationGroup.addTargetedAnimation(radiusAnimation, camera);
-    
-    // Play animation
     animationGroup.play(true);
 }
 
 /**
- * Toggles fullscreen mode
+ * Toggle fullscreen mode
  */
 function toggleFullscreen(fullscreenButton) {
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(err => {
             console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-            alert('Fullscreen mode failed. It might be disabled in your browser settings.');
+            showToast('Fullscreen mode failed. It might be disabled in your browser settings.');
         });
     } else {
         if (document.exitFullscreen) {
@@ -566,7 +495,7 @@ function toggleFullscreen(fullscreenButton) {
 }
 
 /**
- * Updates fullscreen button icon
+ * Update fullscreen button icon based on current state
  */
 function updateFullscreenButton(fullscreenButton) {
     if (!fullscreenButton) return;
@@ -581,7 +510,7 @@ function updateFullscreenButton(fullscreenButton) {
 }
 
 /**
- * Share current camera view (via URL)
+ * Share current camera view via URL
  */
 function shareCameraView(camera, scene) {
     if (!camera) return;
@@ -589,35 +518,231 @@ function shareCameraView(camera, scene) {
     // Get current model URL
     const currentModelUrl = scene.currentModelUrl || CONFIG.defaultModelUrl;
     
-    // Get camera position parameters
-    const alpha = camera.alpha.toFixed(2);
-    const beta = camera.beta.toFixed(2);
-    const radius = camera.radius.toFixed(2);
-    const targetX = camera.target.x.toFixed(2);
-    const targetY = camera.target.y.toFixed(2);
-    const targetZ = camera.target.z.toFixed(2);
+    // Build shareable URL with camera parameters
+    const params = new URLSearchParams({
+        model: currentModelUrl,
+        alpha: camera.alpha.toFixed(2),
+        beta: camera.beta.toFixed(2),
+        radius: camera.radius.toFixed(2),
+        tx: camera.target.x.toFixed(2),
+        ty: camera.target.y.toFixed(2),
+        tz: camera.target.z.toFixed(2)
+    });
     
-    // Build URL with camera parameters
-    const baseUrl = window.location.href.split('?')[0];
-    const shareUrl = `${baseUrl}?model=${encodeURIComponent(currentModelUrl)}&alpha=${alpha}&beta=${beta}&radius=${radius}&tx=${targetX}&ty=${targetY}&tz=${targetZ}`;
+    const shareUrl = `${window.location.href.split('?')[0]}?${params.toString()}`;
     
-    // Create temporary input to copy URL
-    const tempInput = document.createElement('input');
-    tempInput.value = shareUrl;
-    document.body.appendChild(tempInput);
-    tempInput.select();
-    document.execCommand('copy');
-    document.body.removeChild(tempInput);
+    // Copy to clipboard
+    navigator.clipboard.writeText(shareUrl).then(() => {
+        showToast('URL copied to clipboard!');
+    }).catch(() => {
+        // Fallback for older browsers
+        const tempInput = document.createElement('input');
+        tempInput.value = shareUrl;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        showToast('URL copied to clipboard!');
+    });
+}
+
+/* ========================================================================
+   QUALITY AND PERFORMANCE FUNCTIONS
+   ======================================================================== */
+/**
+ * Update rendering quality settings
+ */
+function updateQualitySettings(quality, scene) {
+    const engine = scene.getEngine();
     
-    // Show success toast
-    showToast('URL copied to clipboard!');
+    const qualitySettings = {
+        low: { scaling: 1.5, fxaa: false, sharpen: false },
+        medium: { scaling: 1.0, fxaa: true, sharpen: false },
+        high: { scaling: 0.75, fxaa: true, sharpen: true }
+    };
+    
+    const settings = qualitySettings[quality];
+    if (!settings) return;
+    
+    // Apply settings
+    engine.setHardwareScalingLevel(settings.scaling);
+    
+    if (scene.pipeline) {
+        scene.pipeline.fxaaEnabled = settings.fxaa;
+        scene.pipeline.sharpenEnabled = settings.sharpen;
+        
+        // Update UI toggles to match
+        const sharpenToggle = document.getElementById('sharpenToggle');
+        const fxaaToggle = document.getElementById('fxaaToggle');
+        
+        if (sharpenToggle) sharpenToggle.checked = settings.sharpen;
+        if (fxaaToggle) fxaaToggle.checked = settings.fxaa;
+    }
 }
 
 /**
- * Shows a temporary toast message
+ * Update touch sensitivity for camera controls
+ */
+function updateTouchSensitivity(sensitivity, camera) {
+    if (!camera) return;
+    
+    // Adjust camera sensitivity parameters
+    camera.angularSensibilityX = 2500 / sensitivity;
+    camera.angularSensibilityY = 2500 / sensitivity;
+    camera.panningSensibility = 1000 / sensitivity;
+    
+    // Update gesture controller if available
+    if (window.gestureController && window.gestureController.thresholds) {
+        const thresholds = window.gestureController.thresholds;
+        thresholds.pinchSensitivity = CONFIG.gesture.pinchSensitivity * sensitivity;
+        thresholds.panSensitivity = (CONFIG.mobile.panningSensibility / 1000) * sensitivity;
+    }
+}
+
+/* ========================================================================
+   MODEL LOADING FUNCTIONS
+   ======================================================================== */
+/**
+ * Setup model loading functionality
+ */
+function setupModelLoading(scene) {
+    const fileButton = document.getElementById("loadModelFileButton");
+    const urlButton = document.getElementById("loadModelUrlButton");
+    const spinner = document.getElementById("loadingSpinner");
+    
+    // File loading handler
+    if (fileButton) {
+        fileButton.addEventListener("click", async () => {
+            const fileInput = document.getElementById("modelLoader");
+            if (!fileInput || fileInput.files.length === 0) {
+                showToast("Please select a file to load", 3000);
+                return;
+            }
+            
+            await loadModelWithSpinner(scene, fileInput.files[0], spinner, "file");
+        });
+    }
+    
+    // URL loading handler
+    if (urlButton) {
+        urlButton.addEventListener("click", async () => {
+            const urlInput = document.getElementById("modelUrlInput");
+            if (!urlInput || !urlInput.value.trim()) {
+                showToast("Please enter a URL to load", 3000);
+                return;
+            }
+            
+            await loadModelWithSpinner(scene, urlInput.value.trim(), spinner, "url");
+        });
+    }
+}
+
+/**
+ * Load model with loading spinner and error handling
+ */
+async function loadModelWithSpinner(scene, source, spinner, type) {
+    try {
+        // Show loading spinner
+        if (spinner) spinner.style.display = "flex";
+        
+        console.log(`Loading model from ${type}: ${type === 'file' ? source.name : source}`);
+        const result = await loadModel(scene, source, CONFIG.modelLoader.defaultFallbackModel);
+        
+        // Store model URL for sharing
+        if (result && result.currentModel) {
+            scene.currentModelUrl = type === 'file' ? URL.createObjectURL(source) : source;
+        }
+        
+        // Show success message
+        const fileName = type === 'file' ? source.name : 'URL';
+        showToast(`Model "${fileName}" loaded successfully`);
+        
+        // Close panel
+        closeAllPanels();
+        
+    } catch (error) {
+        console.error("Error loading model:", error);
+        showToast(`Error loading model: ${error.message}`, 5000);
+    } finally {
+        // Hide loading spinner
+        if (spinner) spinner.style.display = "none";
+    }
+}
+
+/* ========================================================================
+   TOUCH UI FUNCTIONS
+   ======================================================================== */
+/**
+ * Setup touch-specific UI features
+ */
+function setupTouchUI(controlPanel, camera) {
+    // Add swipe-to-close gesture for expanded panel
+    let touchStartY = 0;
+    
+    const handleTouchStart = (e) => {
+        if (controlPanel.classList.contains('expanded')) {
+            touchStartY = e.touches[0].clientY;
+        }
+    };
+    
+    const handleTouchMove = (e) => {
+        if (controlPanel.classList.contains('expanded') && touchStartY > 0) {
+            const touchY = e.touches[0].clientY;
+            const diff = touchY - touchStartY;
+            
+            // Swipe down by 50px to close
+            if (diff > 50) {
+                closeAllPanels();
+                touchStartY = 0;
+                e.preventDefault();
+            }
+        }
+    };
+    
+    const handleTouchEnd = () => {
+        touchStartY = 0;
+    };
+    
+    // Add touch event listeners
+    controlPanel.addEventListener('touchstart', handleTouchStart, { passive: true });
+    controlPanel.addEventListener('touchmove', handleTouchMove, { passive: false });
+    controlPanel.addEventListener('touchend', handleTouchEnd, { passive: true });
+    
+    // Add visual feedback for touch buttons
+    const buttons = controlPanel.querySelectorAll('button');
+    buttons.forEach(button => {
+        button.addEventListener('touchstart', () => button.classList.add('touch-active'), { passive: true });
+        button.addEventListener('touchend', () => button.classList.remove('touch-active'), { passive: true });
+        button.addEventListener('touchcancel', () => button.classList.remove('touch-active'), { passive: true });
+    });
+    
+    // Apply default touch settings
+    updateTouchSensitivity(1.0, camera);
+}
+
+/* ========================================================================
+   UTILITY FUNCTIONS
+   ======================================================================== */
+/**
+ * Close all open panels and reset UI state
+ */
+function closeAllPanels() {
+    const allContentSections = document.querySelectorAll(".content-section");
+    const controlPanelContent = document.getElementById("controlPanelContent");
+    const controlPanel = document.getElementById("controlPanel");
+    const buttons = document.querySelectorAll(".icon-button");
+    
+    allContentSections.forEach(section => section.style.display = "none");
+    if (controlPanelContent) controlPanelContent.style.display = "none";
+    if (controlPanel) controlPanel.classList.remove("expanded");
+    buttons.forEach(btn => btn.classList.remove('active'));
+}
+
+/**
+ * Show a temporary toast message
  */
 function showToast(message, duration = 3000) {
-    // Remove any existing toast
+    // Remove existing toast
     const existingToast = document.getElementById('toast-message');
     if (existingToast) {
         document.body.removeChild(existingToast);
@@ -629,15 +754,12 @@ function showToast(message, duration = 3000) {
     toast.className = 'toast-message';
     toast.textContent = message;
     
-    // Add to document
+    // Add to document and show
     document.body.appendChild(toast);
     
-    // Show toast
-    setTimeout(() => {
-        toast.classList.add('show');
-    }, 10);
+    setTimeout(() => toast.classList.add('show'), 10);
     
-    // Hide toast after duration
+    // Hide after duration
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => {
@@ -649,81 +771,16 @@ function showToast(message, duration = 3000) {
 }
 
 /**
- * Mobile-specific UI adjustments
+ * Apply camera parameters from URL (for sharing feature)
  */
-function setupMobileSpecificUI(controlPanel, camera) {
-    // Add swipe down to close gesture for expanded panel
-    let touchStartY = 0;
-    
-    controlPanel.addEventListener('touchstart', (e) => {
-        if (controlPanel.classList.contains('expanded')) {
-            touchStartY = e.touches[0].clientY;
-        }
-    }, { passive: true });
-    
-    controlPanel.addEventListener('touchmove', (e) => {
-        if (controlPanel.classList.contains('expanded') && touchStartY > 0) {
-            const touchY = e.touches[0].clientY;
-            const diff = touchY - touchStartY;
-            
-            // If swiped down by at least 50 pixels
-            if (diff > 50) {
-                // Close the panel
-                const allContentSections = document.querySelectorAll(".content-section");
-                allContentSections.forEach(section => section.style.display = "none");
-                document.getElementById("controlPanelContent").style.display = "none";
-                controlPanel.classList.remove("expanded");
-                
-                // Reset active state on buttons
-                const buttons = document.querySelectorAll(".icon-button");
-                buttons.forEach(btn => btn.classList.remove('active'));
-                
-                // Reset touch state
-                touchStartY = 0;
-                
-                // Prevent default behavior
-                e.preventDefault();
-            }
-        }
-    }, { passive: false });
-    
-    controlPanel.addEventListener('touchend', () => {
-        touchStartY = 0;
-    }, { passive: true });
-    
-    // Add visual feedback for touch
-    const buttons = controlPanel.querySelectorAll('button');
-    buttons.forEach(button => {
-        button.addEventListener('touchstart', () => {
-            button.classList.add('touch-active');
-        }, { passive: true });
-        
-        button.addEventListener('touchend', () => {
-            button.classList.remove('touch-active');
-        }, { passive: true });
-        
-        button.addEventListener('touchcancel', () => {
-            button.classList.remove('touch-active');
-        }, { passive: true });
-    });
-    
-    // Apply mobile-specific settings
-    updateTouchSensitivity(1.0, camera);
-}
-
-/**
- * Handle camera parameters from URL (for sharing feature)
- */
-function applyCameraParametersFromUrl(camera) {
+export function applyCameraParametersFromUrl(camera) {
     const urlParams = new URLSearchParams(window.location.search);
     
-    // Check if camera parameters are in URL
     if (urlParams.has('alpha') && urlParams.has('beta') && urlParams.has('radius')) {
         const alpha = parseFloat(urlParams.get('alpha'));
         const beta = parseFloat(urlParams.get('beta'));
         const radius = parseFloat(urlParams.get('radius'));
         
-        // Apply camera rotation and zoom if valid
         if (!isNaN(alpha) && !isNaN(beta) && !isNaN(radius)) {
             camera.alpha = alpha;
             camera.beta = beta;
@@ -742,92 +799,5 @@ function applyCameraParametersFromUrl(camera) {
         }
         
         console.log("Applied camera parameters from URL");
-    }
-}
-
-/**
- * Set up model loading functionality
- */
-function setupModelLoading(scene) {
-    const fileButton = document.getElementById("loadModelFileButton");
-    const urlButton = document.getElementById("loadModelUrlButton");
-    const spinner = document.getElementById("loadingSpinner");
-    
-    if (fileButton) {
-        fileButton.addEventListener("click", async () => {
-            const fileInput = document.getElementById("modelLoader");
-            if (fileInput && fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                
-                try {
-                    // Show loading spinner
-                    if (spinner) spinner.style.display = "flex";
-                    
-                    // Load model
-                    console.log(`Loading model from file: ${file.name}`);
-                    const result = await loadModel(scene, file, CONFIG.modelLoader.defaultFallbackModel);
-                    
-                    // Store model URL for sharing
-                    if (result && result.currentModel) {
-                        scene.currentModelUrl = URL.createObjectURL(file);
-                    }
-                    
-                    // Show success message
-                    showToast(`Model "${file.name}" loaded successfully`);
-                } catch (error) {
-                    console.error("Error loading model:", error);
-                    showToast(`Error loading model: ${error.message}`, 5000);
-                } finally {
-                    // Hide loading spinner
-                    if (spinner) spinner.style.display = "none";
-                    
-                    // Close panel
-                    const allContentSections = document.querySelectorAll(".content-section");
-                    allContentSections.forEach(section => section.style.display = "none");
-                    document.getElementById("controlPanelContent").style.display = "none";
-                }
-            } else {
-                showToast("Please select a file to load", 3000);
-            }
-        });
-    }
-    
-    if (urlButton) {
-        urlButton.addEventListener("click", async () => {
-            const urlInput = document.getElementById("modelUrlInput");
-            if (urlInput && urlInput.value) {
-                const url = urlInput.value.trim();
-                
-                try {
-                    // Show loading spinner
-                    if (spinner) spinner.style.display = "flex";
-                    
-                    // Load model
-                    console.log(`Loading model from URL: ${url}`);
-                    const result = await loadModel(scene, url, CONFIG.modelLoader.defaultFallbackModel);
-                    
-                    // Store model URL for sharing
-                    if (result && result.currentModel) {
-                        scene.currentModelUrl = url;
-                    }
-                    
-                    // Show success message
-                    showToast("Model loaded successfully");
-                } catch (error) {
-                    console.error("Error loading model:", error);
-                    showToast(`Error loading model: ${error.message}`, 5000);
-                } finally {
-                    // Hide loading spinner
-                    if (spinner) spinner.style.display = "none";
-                    
-                    // Close panel
-                    const allContentSections = document.querySelectorAll(".content-section");
-                    allContentSections.forEach(section => section.style.display = "none");
-                    document.getElementById("controlPanelContent").style.display = "none";
-                }
-            } else {
-                showToast("Please enter a URL to load", 3000);
-            }
-        });
     }
 }

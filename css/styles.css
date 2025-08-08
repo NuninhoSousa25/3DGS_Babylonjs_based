@@ -1,4 +1,10 @@
-/* CSS Custom Properties for theming */
+/* ========================================================================
+   3D VIEWER STYLES - ORGANIZED & CLEAN
+   ======================================================================== */
+
+/* ========================================================================
+   CSS CUSTOM PROPERTIES (VARIABLES)
+   ======================================================================== */
 :root {
   /* Colors */
   --color-bg-primary: rgba(30, 30, 30, 0.85);
@@ -56,7 +62,9 @@
   --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 
-/* Reset and Base Styles */
+/* ========================================================================
+   BASE STYLES
+   ======================================================================== */
 html, body {
   margin: 0;
   padding: 0;
@@ -73,12 +81,16 @@ html, body {
   outline: none;
 }
 
-/* Control Panel Container */
+/* ========================================================================
+   CONTROL PANEL - MAIN CONTAINER
+   ======================================================================== */
 .control-panel {
-  position: absolute;
-  top: var(--spacing-md);
-  right: var(--spacing-md);
-  width: auto; /* Let icon bar size naturally */
+  position: fixed !important;
+  top: var(--spacing-md) !important;
+  right: var(--spacing-md) !important;
+  bottom: auto !important;
+  left: auto !important;
+  width: auto;
   max-height: 90vh;
   color: var(--color-text-primary);
   z-index: var(--z-index-controls);
@@ -88,11 +100,14 @@ html, body {
   transition: width var(--transition-base), height var(--transition-base);
 }
 
-/* Icon Bar Styles */
+/* ========================================================================
+   ICON BAR
+   ======================================================================== */
 .icon-bar {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
+  gap: var(--spacing-xs);
   background-color: var(--color-bg-primary);
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-md);
@@ -101,11 +116,6 @@ html, body {
   -webkit-backdrop-filter: blur(10px);
   height: var(--icon-bar-height);
   box-sizing: border-box;
-}
-
-.icon-group {
-  display: flex;
-  align-items: center;
 }
 
 .icon-button {
@@ -119,15 +129,15 @@ html, body {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   transition: background-color var(--transition-fast), color var(--transition-fast);
   position: relative;
 }
 
 .icon-button svg {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   display: block;
 }
 
@@ -144,40 +154,23 @@ html, body {
   background-color: var(--color-accent-light);
 }
 
-/* Content Area Styles */
+/* ========================================================================
+   CONTENT PANEL
+   ======================================================================== */
 .control-panel-content {
   margin-top: var(--spacing-sm);
   background-color: var(--color-bg-primary);
   border-radius: var(--border-radius-lg);
   padding: var(--spacing-lg);
-  overflow-y: auto;
-  overflow-x: hidden;
-  width: var(--control-panel-width);
   box-shadow: var(--shadow-lg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-bg-secondary) transparent;
+  max-height: 70vh;
+  overflow-y: auto;
+  min-width: var(--control-panel-width);
   box-sizing: border-box;
-  position: relative;
-  max-height: calc(90vh - var(--icon-bar-height) - var(--spacing-sm));
 }
 
-/* Scrollbar styling */
-.control-panel-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.control-panel-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.control-panel-content::-webkit-scrollbar-thumb {
-  background: var(--color-bg-tertiary);
-  border-radius: var(--border-radius-md);
-}
-
-/* Content Section Styling */
 .content-section {
   margin-bottom: var(--spacing-lg);
 }
@@ -192,7 +185,34 @@ html, body {
   font-size: var(--font-size-lg);
 }
 
-/* Settings Categories */
+/* Close Button */
+.close-panel-button {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  background: var(--color-bg-tertiary);
+  border: none;
+  color: var(--color-text-primary);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--border-radius-circle);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+  font-weight: bold;
+  transition: background-color var(--transition-fast);
+  z-index: 10;
+}
+
+.close-panel-button:hover {
+  background-color: var(--color-error);
+}
+
+/* ========================================================================
+   SETTINGS SECTION
+   ======================================================================== */
 .settings-category {
   margin-bottom: var(--spacing-lg);
   padding: var(--spacing-md);
@@ -213,7 +233,6 @@ html, body {
   margin: var(--spacing-lg) 0;
 }
 
-/* Control Groups */
 .control-group {
   display: flex;
   justify-content: space-between;
@@ -226,18 +245,17 @@ html, body {
 }
 
 .control-group label {
-  flex: 1;
-  margin-right: var(--spacing-md);
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  cursor: pointer;
 }
 
-/* Toggle Switch */
+/* Toggle Switches */
 .switch {
   position: relative;
   display: inline-block;
-  width: 36px;
+  width: 44px;
   height: 20px;
-  flex-shrink: 0;
 }
 
 .switch input {
@@ -274,15 +292,64 @@ input:checked + .slider {
   background-color: var(--color-accent);
 }
 
-input:focus + .slider {
-  box-shadow: 0 0 2px var(--color-accent);
-}
-
 input:checked + .slider:before {
-  transform: translateX(16px);
+  transform: translateX(24px);
 }
 
-/* Info Section */
+/* Range Sliders */
+.slider-range {
+  width: 100%;
+  height: 5px;
+  border-radius: 5px;
+  background: var(--color-bg-tertiary);
+  outline: none;
+  opacity: 0.7;
+  transition: opacity var(--transition-fast);
+  cursor: pointer;
+}
+
+.slider-range:hover {
+  opacity: 1;
+}
+
+.slider-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  cursor: pointer;
+}
+
+.slider-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  cursor: pointer;
+  border: none;
+}
+
+/* Select Dropdowns */
+.settings-select {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text-primary);
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.settings-select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+/* ========================================================================
+   INFO SECTION
+   ======================================================================== */
 .info-group {
   margin-bottom: var(--spacing-lg);
   padding: var(--spacing-md);
@@ -312,7 +379,9 @@ input:checked + .slider:before {
   font-weight: 500;
 }
 
-/* Dev Section */
+/* ========================================================================
+   DEV SECTION
+   ======================================================================== */
 .dev-section {
   margin-bottom: var(--spacing-lg);
 }
@@ -325,8 +394,8 @@ input:checked + .slider:before {
 
 .scene-info {
   background-color: var(--color-bg-secondary);
-  border-radius: var(--border-radius-md);
   padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
 }
 
 .info-row {
@@ -348,7 +417,9 @@ input:checked + .slider:before {
   font-family: monospace;
 }
 
-/* Model Loader */
+/* ========================================================================
+   MODEL LOADER
+   ======================================================================== */
 .model-loader {
   margin-bottom: var(--spacing-md);
 }
@@ -397,12 +468,13 @@ input[type="file"] {
 }
 
 .url-input:focus {
-  outline: 2px solid var(--color-accent-light);
+  outline: none;
+  background-color: var(--color-bg-tertiary);
 }
 
 .action-button {
   width: 100%;
-  padding: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
   background-color: var(--color-accent);
   color: white;
   border: none;
@@ -420,21 +492,32 @@ input[type="file"] {
   background-color: var(--color-accent-hover);
 }
 
-.button-text {
-  margin-left: var(--spacing-sm);
+.action-button:disabled {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
 }
 
-/* Loading Spinner */
+/* ========================================================================
+   LOADING SPINNER
+   ======================================================================== */
 .loading-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: none;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: var(--spacing-lg);
+  z-index: var(--z-index-spinner);
+  background-color: var(--color-bg-primary);
+  padding: var(--spacing-xl);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
 }
 
 .spinner-animation {
-  border: 3px solid var(--color-bg-secondary);
+  border: 3px solid var(--color-bg-tertiary);
   border-top: 3px solid var(--color-accent);
   border-radius: 50%;
   width: 24px;
@@ -452,33 +535,9 @@ input[type="file"] {
   100% { transform: rotate(360deg); }
 }
 
-/* Close Button */
-.close-panel-button {
-  position: absolute;
-  top: var(--spacing-sm);
-  right: var(--spacing-sm);
-  background: var(--color-bg-tertiary);
-  border: none;
-  color: var(--color-text-secondary);
-  font-size: 20px;
-  line-height: 1;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 0;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
-}
-
-.close-panel-button:hover {
-  background-color: var(--color-error);
-  color: white;
-}
-
-/* Toast Message */
+/* ========================================================================
+   TOAST MESSAGES
+   ======================================================================== */
 .toast-message {
   position: fixed;
   bottom: 20px;
@@ -486,163 +545,63 @@ input[type="file"] {
   transform: translateX(-50%) translateY(100px);
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
-  padding: 12px 20px;
+  padding: var(--spacing-md) var(--spacing-xl);
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-lg);
   z-index: var(--z-index-toast);
-  opacity: 0;
-  transition: transform 0.3s ease, opacity 0.3s ease;
-  max-width: 80%;
+  font-size: var(--font-size-base);
+  max-width: 90vw;
   text-align: center;
+  opacity: 0;
+  transition: all var(--transition-base);
 }
 
 .toast-message.show {
-  transform: translateX(-50%) translateY(0);
   opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
-/* Select Element */
-.settings-select {
-  background-color: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-  border: none;
-  border-radius: var(--border-radius-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3e%3cpath d='M7 10l5 5 5-5H7z'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  background-size: 12px;
-  min-width: 120px;
-}
-
-/* Range Input */
-.slider-range {
-  -webkit-appearance: none;
-  width: 120px;
-  height: 6px;
-  background: var(--color-bg-tertiary);
-  border-radius: var(--border-radius-sm);
-  outline: none;
-}
-
-.slider-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-}
-
-.slider-range::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  border: none;
-}
-
-.slider-range::-webkit-slider-thumb:hover {
-  background: var(--color-accent-hover);
-}
-
-.slider-range::-moz-range-thumb:hover {
-  background: var(--color-accent-hover);
-}
-
-/* Mobile Specific Styles */
-.control-panel-mobile {
-  bottom: var(--spacing-md);
-  top: auto;
-}
-
-/* Floating Action Button for Mobile */
-.fab-container {
-  position: fixed;
-  right: var(--spacing-md);
-  bottom: var(--spacing-md);
-  z-index: var(--z-index-fab);
-  display: none;
-}
-
-.main-fab {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background-color: var(--color-accent);
-  color: white;
-  border: none;
-  box-shadow: var(--shadow-lg);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  transition: background-color var(--transition-fast), transform var(--transition-fast);
-}
-
-.main-fab svg {
-  width: 24px;
-  height: 24px;
-}
-
-.main-fab:hover, .main-fab.active {
-  background-color: var(--color-accent-hover);
-}
-
-.main-fab.active {
-  transform: rotate(45deg);
-}
-
-/* Control panel expanded state for mobile */
+/* ========================================================================
+   PANEL STATES
+   ======================================================================== */
 .control-panel.expanded {
-  width: 100%;
-  height: 100%;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  margin: 0;
+  position: fixed !important;
+  width: min(90vw, 400px);
+  max-height: 90vh;
   background-color: var(--color-backdrop);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-sm);
+  top: var(--spacing-md) !important;
+  right: var(--spacing-md) !important;
+  bottom: auto !important;
+  left: auto !important;
 }
 
 .control-panel.expanded .control-panel-content {
   width: 100%;
-  height: calc(100% - var(--icon-bar-height) - var(--spacing-sm));
   margin: var(--spacing-sm) 0 0 0;
-  max-height: none;
-  border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+  max-height: calc(90vh - var(--icon-bar-height) - var(--spacing-xl));
+  overflow-y: auto;
+  border-radius: var(--border-radius-md);
 }
 
-.control-panel.show-panel {
-  display: block;
-}
+/* ========================================================================
+   RESPONSIVE DESIGN
+   ======================================================================== */
 
-/* Media queries for responsive design */
+/* Medium screens and below */
 @media (max-width: 768px) {
   :root {
       --control-panel-width: 280px;
   }
   
-  .fab-container {
-      display: block;
-  }
-  
   .control-panel {
-      display: none;
-  }
-  
-  .control-panel.show-panel {
-      display: block;
+      position: fixed !important;
       width: auto;
-      top: auto;
-      right: var(--spacing-md);
-      bottom: calc(var(--spacing-md) + 64px);
+      top: var(--spacing-md) !important;
+      right: var(--spacing-md) !important;
+      bottom: auto !important;
+      left: auto !important;
   }
   
   .control-panel-content {
@@ -651,16 +610,15 @@ input[type="file"] {
   }
   
   .icon-button {
-      width: 40px;
-      height: 40px;
+      width: 48px;
+      height: 48px;
   }
   
   .icon-button svg {
-      width: 22px;
-      height: 22px;
+      width: 26px;
+      height: 26px;
   }
   
-  /* Larger touch targets */
   .control-group {
       margin-bottom: var(--spacing-lg);
   }
@@ -669,30 +627,36 @@ input[type="file"] {
       padding: var(--spacing-lg);
       font-size: var(--font-size-lg);
   }
-  
-  .file-label {
-      padding: var(--spacing-lg);
+}
+
+/* Touch devices */
+@media (pointer: coarse) {
+  .icon-button {
+      width: 48px !important;
+      height: 48px !important;
   }
   
-  .url-input {
-      padding: var(--spacing-lg);
-      font-size: var(--font-size-lg);
-  }
-  
-  .toast-message {
-      padding: 16px 24px;
-      font-size: var(--font-size-lg);
+  .icon-button svg {
+      width: 26px !important;
+      height: 26px !important;
   }
 }
 
-/* Portrait orientation specific adjustments */
+/* Small screens */
 @media (max-width: 480px) {
   .icon-bar {
-      padding: var(--spacing-xs) var(--spacing-xs);
+      padding: var(--spacing-xs);
   }
   
   .icon-button {
-      margin: 0 2px;
+      margin: 0 var(--spacing-xs);
+      width: 48px;
+      height: 48px;
+  }
+  
+  .icon-button svg {
+      width: 26px;
+      height: 26px;
   }
   
   .settings-select {
@@ -702,6 +666,20 @@ input[type="file"] {
   .control-panel.expanded .control-panel-content {
       padding-top: calc(var(--spacing-lg) + 10px);
   }
+  
+  /* Fullscreen expanded panels only on very small screens */
+  .control-panel.expanded {
+    position: fixed !important;
+    width: 100%;
+    height: 100%;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    margin: 0;
+    border-radius: 0;
+    padding: var(--spacing-md);
+  }
 }
 
 /* High contrast mode */
@@ -710,24 +688,9 @@ input[type="file"] {
       --color-bg-primary: rgba(0, 0, 0, 0.9);
       --color-bg-secondary: rgba(40, 40, 40, 0.95);
       --color-bg-tertiary: rgba(70, 70, 70, 0.95);
-      --color-text-primary: #ffffff;
-      --color-text-secondary: #f0f0f0;
-      --color-accent: #1e88e5;
-      --color-accent-hover: #0d47a1;
-      --color-accent-light: rgba(30, 136, 229, 0.3);
-      --color-border: rgba(255, 255, 255, 0.3);
-  }
-  
-  .control-group label {
-      color: var(--color-text-primary);
-  }
-  
-  .slider:before {
-      background-color: #ffffff;
-  }
-  
-  input:checked + .slider {
-      background-color: var(--color-accent);
+      --color-border: rgba(150, 150, 150, 0.6);
+      --color-accent: #64b5f6;
+      --color-accent-hover: #90caf9;
   }
 }
 
@@ -741,5 +704,29 @@ input[type="file"] {
   
   .toast-message {
       transition: none;
+  }
+}
+
+/* ========================================================================
+   POSITIONING OVERRIDES - ENSURE TOP-RIGHT ALWAYS
+   ======================================================================== */
+#controlPanel,
+.control-panel {
+  position: fixed !important;
+  top: var(--spacing-md) !important;
+  right: var(--spacing-md) !important;
+  bottom: auto !important;
+  left: auto !important;
+}
+
+/* Only allow fullscreen on very small expanded panels */
+@media (max-width: 480px) {
+  #controlPanel.expanded,
+  .control-panel.expanded {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
   }
 }
