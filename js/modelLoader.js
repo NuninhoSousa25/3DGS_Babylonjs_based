@@ -175,6 +175,49 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
                 
                 console.log("Successfully loaded GLTF/GLB model:", currentModel);
                 
+            } else if (extension === 'obj') {
+                console.log(`Loading as .${extension} using SceneLoader.ImportMeshAsync`);
+                
+                let result;
+                if (isFile) {
+                    // For File objects, pass the file directly
+                    // Note: For local OBJ files with MTL, both files should be in the same directory
+                    result = await BABYLON.SceneLoader.ImportMeshAsync(
+                        "", 
+                        "", 
+                        modelSource, 
+                        scene
+                    );
+                } else {
+                    // For URLs, load normally - OBJ loader will automatically look for MTL file
+                    // The MTL file should be in the same directory and have the same name as OBJ
+                    const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
+                    const filename = url.substring(url.lastIndexOf('/') + 1);
+                    result = await BABYLON.SceneLoader.ImportMeshAsync(
+                        "", 
+                        baseUrl, 
+                        filename, 
+                        scene
+                    );
+                }
+                
+                // Get the root mesh (OBJ can have multiple meshes)
+                currentModel = result.meshes.length > 0 ? result.meshes[0] : null;
+                currentModelType = 'mesh';
+                
+                // Make all meshes pickable
+                result.meshes.forEach(mesh => {
+                    mesh.isPickable = true;
+                });
+                
+                // Log materials info for debugging
+                if (result.materials && result.materials.length > 0) {
+                    console.log(`Successfully loaded OBJ model with ${result.materials.length} materials:`, currentModel);
+                    console.log("Materials found:", result.materials.map(m => m.name));
+                } else {
+                    console.log("Successfully loaded OBJ model (no materials - MTL file may be missing):", currentModel);
+                }
+                
             } else if (extension === 'splat' || extension === 'ply') {
                 console.log(`Loading as .${extension} using GaussianSplattingMesh`);
                 currentModel = await loadSplatModel(scene, url);

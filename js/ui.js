@@ -1269,7 +1269,7 @@ function triggerFileLoad(scene) {
     // Create a hidden file input element using utility
     const fileInput = createElement('input', {
         type: 'file',
-        accept: '.splat,.ply,.spz,.gltf,.glb'
+        accept: '.splat,.ply,.spz,.gltf,.glb,.obj'
     });
     fileInput.style.display = 'none';
     
