@@ -104,5 +104,66 @@ export const CONFIG = {
     pixelRatio: {
         mobile: 0.8,   // Pixel ratio for mobile devices
         pc: 1.2        // Pixel ratio for PC/Desktop
+    },
+
+    /**
+     * Camera Limits Configuration
+     */
+    
+    cameraLimits: {
+        enabled: true,                          // Enable camera limits by default
+        autoCalculateOnLoad: true,              // Auto-calculate limits when model loads
+        
+        // Default restriction settings - what to enable by default
+        defaultRestrictions: {
+            zoom: true,                         // Limit zoom by default
+            vertical: true,                     // Limit vertical rotation by default
+            horizontal: false,                  // Don't limit horizontal by default (full 360°)
+            panning: false                      // Don't limit panning by default
+        },
+        
+        // Default limit values (used when auto-calculation isn't available)
+        defaultLimits: {
+            // Zoom limits
+            zoom: {
+                min: 1.0,                       // Minimum zoom distance
+                max: 20.0                       // Maximum zoom distance
+            },
+            
+            // Vertical rotation limits (in degrees - easier to understand)
+            vertical: {
+                topLimit: 10,                   // How far up you can look (degrees from top)
+                bottomLimit: 170                // How far down you can look (degrees from top)
+            },
+            
+            // Horizontal rotation limits (in degrees)
+            horizontal: {
+                leftLimit: -180,                // Left rotation limit
+                rightLimit: 180                 // Right rotation limit
+            },
+            
+            // Panning limits 
+            panning: {
+                maxDistance: 10.0               // Maximum distance camera target can move from center
+            }
+        },
+        
+    
+        
+        // UI settings
+        ui: {
+            showDegreesInsteadOfRadians: true,  // Display angles in degrees for user friendliness
+            defaultHorizontalRestriction: false, // Don't restrict horizontal by default
+            defaultPanningRestriction: false,   // Don't restrict panning by default
+            visualFeedback: true,               // Show visual feedback when hitting limits
+            
+            // Range control settings
+            ranges: {
+                zoom: { min: 0.1, max: 50, step: 0.1 },
+                vertical: { min: 0, max: 180, step: 1 },
+                horizontal: { min: -360, max: 360, step: 5 },
+                panning: { min: 1, max: 50, step: 0.5 }
+            }
+        }
     }
 };

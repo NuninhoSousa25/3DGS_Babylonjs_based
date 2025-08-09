@@ -7,6 +7,7 @@ import { getPickResult } from './picking.js';
 import { CONFIG } from './config.js';  // Import the centralized configuration
 import { setupMobileControls } from './mobileControl.js';
 import { detectDevice } from './deviceDetection.js';
+import { CameraLimits } from './camera_limits.js';
 
 /**
  * Global Variables
@@ -14,6 +15,7 @@ import { detectDevice } from './deviceDetection.js';
 let engine, scene, camera;
 let pipeline = null; // For post-process reuse
 let gestureController = null; // For mobile gesture control
+let cameraLimits = null; // For camera movement limitations
 
 /**
  * Initialize Engine and Scene
@@ -126,6 +128,17 @@ function cleanup(scene, engine) {
         gestureController = null;
     }
 
+    // Dispose camera limits if it exists
+    if (cameraLimits) {
+        try {
+            cameraLimits.dispose();
+            console.log("Camera limits disposed.");
+        } catch (e) {
+            console.warn("Error disposing camera limits:", e);
+        }
+        cameraLimits = null;
+    }
+
 
     // Dispose post-processing pipeline
     if (pipeline) {
@@ -180,6 +193,19 @@ async function createScene() {
         // Setup camera
         camera = setupCamera(scene, canvas, CONFIG);
         
+        // Initialize camera limits system
+        cameraLimits = new CameraLimits(scene, camera);
+        scene.cameraLimits = cameraLimits; // Make it accessible from scene
+        
+        // TEST CODE - Verify camera limits integration
+        setTimeout(() => {
+            console.log("=== CAMERA LIMITS TEST ===");
+            console.log("Camera limits object:", scene.cameraLimits);
+            console.log("Is enabled:", scene.cameraLimits?.isEnabled);
+            console.log("Current limits:", scene.cameraLimits?.getCurrentLimits());
+            console.log("========================");
+        }, 2000);
+        
         // Configure camera auto-rotation
         configureAutoRotation(camera);
 
@@ -233,6 +259,12 @@ async function createScene() {
         } else {
             console.log("Loading default model:", CONFIG.defaultModelUrl);
             await loadModel(scene, CONFIG.defaultModelUrl, CONFIG.modelLoader.defaultFallbackModel);
+        }
+        
+        
+        // Apply camera limits from URL if present
+        if (cameraLimits && urlParams.toString()) {
+            cameraLimits.applyLimitsFromUrl(urlParams);
         }
 
         // Start render loop

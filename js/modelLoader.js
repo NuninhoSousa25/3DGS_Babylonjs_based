@@ -197,6 +197,8 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
             centerAndFitModel(currentModel, camera, scene);
         }
         
+        
+        
     } catch (err) {
         console.error("Failed to load model:", err);
         alert(`Failed to load model: ${err.message}\nCreating fallback box.`);

@@ -767,3 +767,285 @@ input[type="file"] {
     left: 0 !important;
   }
 }
+/* Add these styles to your styles.css file */
+
+/* ========================================================================
+   CAMERA LIMITS UI STYLES
+   ======================================================================== */
+
+/* Limit details sections - hidden by default */
+.limit-details {
+    margin-left: var(--spacing-lg);
+    padding: var(--spacing-sm) 0;
+    border-left: 2px solid var(--color-accent-light);
+    padding-left: var(--spacing-md);
+    margin-top: var(--spacing-sm);
+    background-color: rgba(33, 150, 243, 0.05);
+    border-radius: var(--border-radius-sm);
+}
+
+/* Range container for dual ranges */
+.range-container {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.range-container:last-child {
+    margin-bottom: 0;
+}
+
+/* Range labels */
+.range-label {
+    min-width: 70px;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+/* Range display values */
+.range-display {
+    min-width: 40px;
+    text-align: center;
+    font-family: monospace;
+    font-size: var(--font-size-sm);
+    color: var(--color-accent);
+    font-weight: bold;
+    background-color: var(--color-bg-tertiary);
+    padding: 2px 6px;
+    border-radius: var(--border-radius-sm);
+}
+
+/* Range separator */
+.range-separator {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin: 0 var(--spacing-xs);
+}
+
+/* Enhanced slider ranges for camera limits */
+.limit-details .slider-range {
+    flex: 1;
+    min-width: 100px;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, var(--color-bg-tertiary), var(--color-accent-light));
+    outline: none;
+    opacity: 0.8;
+    transition: opacity var(--transition-fast), background var(--transition-fast);
+    cursor: pointer;
+}
+
+.limit-details .slider-range:hover {
+    opacity: 1;
+    background: linear-gradient(to right, var(--color-bg-secondary), var(--color-accent));
+}
+
+.limit-details .slider-range::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all var(--transition-fast);
+}
+
+.limit-details .slider-range::-webkit-slider-thumb:hover {
+    background: var(--color-accent-hover);
+    transform: scale(1.1);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.limit-details .slider-range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all var(--transition-fast);
+}
+
+.limit-details .slider-range::-moz-range-thumb:hover {
+    background: var(--color-accent-hover);
+    transform: scale(1.1);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Action buttons styling */
+.settings-category .action-button {
+    margin-top: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    transition: all var(--transition-fast);
+    position: relative;
+    overflow: hidden;
+}
+
+.settings-category .action-button:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.settings-category .action-button:active {
+    transform: translateY(0);
+}
+
+/* Reset button specific styling */
+#resetLimitsButton {
+    background-color: var(--color-bg-tertiary) !important;
+    color: var(--color-text-secondary);
+}
+
+#resetLimitsButton:hover {
+    background-color: var(--color-warning) !important;
+    color: white;
+}
+
+/* Responsive adjustments for camera limits */
+@media (max-width: 768px) {
+    .range-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-xs);
+    }
+    
+    .range-label {
+        min-width: auto;
+        margin-bottom: var(--spacing-xs);
+    }
+    
+    .limit-details .slider-range {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .range-display {
+        align-self: center;
+        margin-top: var(--spacing-xs);
+    }
+    
+    .limit-details {
+        margin-left: var(--spacing-sm);
+        padding-left: var(--spacing-sm);
+    }
+}
+
+@media (max-width: 480px) {
+    .settings-category .action-button {
+        padding: var(--spacing-md);
+        font-size: var(--font-size-base);
+    }
+    
+    .range-container {
+        gap: var(--spacing-sm);
+    }
+}
+
+/* Visual feedback for active limits */
+.control-group input[type="checkbox"]:checked + .slider {
+    box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
+}
+
+/* Limit details animation */
+.limit-details {
+    animation: slideIn 0.3s ease-out;
+    transform-origin: top;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: scaleY(0);
+    }
+    to {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+}
+
+/* Enhanced control group for camera limits */
+.settings-category .control-group:has(.limit-details) {
+    margin-bottom: var(--spacing-lg);
+}
+
+/* Subtle hover effects for the entire camera limits section */
+.settings-category:has(#cameraLimitsToggle) {
+    transition: all var(--transition-base);
+    border: 1px solid transparent;
+    border-radius: var(--border-radius-md);
+}
+
+.settings-category:has(#cameraLimitsToggle):hover {
+    border-color: var(--color-accent-light);
+    background-color: rgba(33, 150, 243, 0.02);
+}
+
+/* Add these additional styles to your styles.css file for the adjusted controls */
+
+/* Range info text styling */
+.range-info {
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    background-color: rgba(33, 150, 243, 0.1);
+    border-radius: var(--border-radius-sm);
+    border-left: 3px solid var(--color-accent);
+}
+
+.range-info small {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    line-height: 1.4;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.range-info small:last-child {
+    margin-bottom: 0;
+}
+
+/* Enhanced styling for vertical range labels to clarify up/down */
+#verticalUpRange,
+#verticalDownRange {
+    background: linear-gradient(to right, 
+        rgba(255, 87, 34, 0.3), /* Orange for extreme angles */
+        rgba(76, 175, 80, 0.3), /* Green for normal angles */
+        rgba(255, 87, 34, 0.3)  /* Orange for extreme angles */
+    );
+}
+
+/* Color coding for horizontal angle range */
+#horizontalAngleRange {
+    background: linear-gradient(to right,
+        rgba(255, 193, 7, 0.3),  /* Yellow for restricted */
+        rgba(76, 175, 80, 0.3)   /* Green for full freedom */
+    );
+}
+
+/* Special styling for offset control */
+#horizontalOffsetRange {
+    background: linear-gradient(to right,
+        rgba(33, 150, 243, 0.2),
+        rgba(33, 150, 243, 0.4),
+        rgba(33, 150, 243, 0.2)
+    );
+}
+
+/* Responsive adjustments for the new controls */
+@media (max-width: 480px) {
+    .range-info {
+        padding: var(--spacing-xs);
+        margin-top: var(--spacing-xs);
+    }
+    
+    .range-info small {
+        font-size: 10px;
+    }
+}

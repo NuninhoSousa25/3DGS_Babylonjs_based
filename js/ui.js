@@ -168,63 +168,7 @@ function createContentArea(hasTouch) {
     return contentArea;
 }
 
-/**
- * Create settings section HTML
- */
-function createSettingsSection(hasTouch) {
-    return `
-        <div id="settingsContent" class="content-section" style="display: none;">
-            <h4>Settings</h4>
-            
-            <div class="settings-category">
-                <div class="settings-title">Visualization</div>
-                <div class="control-group">
-                    <label for="autoRotateToggle">Auto Rotation</label>
-                    <label class="switch">
-                        <input type="checkbox" id="autoRotateToggle" ${CONFIG.camera.useAutoRotationBehavior ? 'checked' : ''}>
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-                
-                <div class="control-group">
-                    <label for="qualitySelect">Quality</label>
-                    <select id="qualitySelect" class="settings-select">
-                        <option value="low">Low (Better Performance)</option>
-                        <option value="medium" selected>Medium</option>
-                        <option value="high">High (Better Quality)</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="settings-category">
-                <div class="settings-title">Post Processing</div>
-                <div class="control-group">
-                    <label for="sharpenToggle">Sharpening</label>
-                    <label class="switch">
-                        <input type="checkbox" id="sharpenToggle" ${CONFIG.postProcessing.sharpenEnabled ? 'checked' : ''}>
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-                <div class="control-group">
-                    <label for="fxaaToggle">Anti-Aliasing</label>
-                    <label class="switch">
-                        <input type="checkbox" id="fxaaToggle" ${CONFIG.postProcessing.fxaaEnabled ? 'checked' : ''}>
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-            </div>
-            
-            ${hasTouch ? `
-            <div class="settings-category">
-                <div class="settings-title">Touch Controls</div>
-                <div class="control-group">
-                    <label for="touchSensitivityRange">Touch Sensitivity</label>
-                    <input type="range" id="touchSensitivityRange" min="1" max="10" value="5" class="slider-range">
-                </div>
-            </div>` : ''}
-        </div>
-    `;
-}
+
 
 /**
  * Create info section HTML
@@ -470,7 +414,373 @@ function setupSettingsControls(camera, scene) {
             updateTouchSensitivity(sensitivity, camera);
         });
     }
+    
+    // NEW: Improved Camera Limits Controls
+    setupCameraLimitsControls(camera, scene);
 }
+
+/**
+ * Create settings section HTML with adjusted camera limits controls
+ */
+
+function createSettingsSection(hasTouch) {
+    return `
+        <div id="settingsContent" class="content-section" style="display: none;">
+            <h4>Settings</h4>
+            
+            <div class="settings-category">
+                <div class="settings-title">Visualization</div>
+                <div class="control-group">
+                    <label for="autoRotateToggle">Auto Rotation</label>
+                    <label class="switch">
+                        <input type="checkbox" id="autoRotateToggle" ${CONFIG.camera.useAutoRotationBehavior ? 'checked' : ''}>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                
+                <div class="control-group">
+                    <label for="qualitySelect">Quality</label>
+                    <select id="qualitySelect" class="settings-select">
+                        <option value="low">Low (Better Performance)</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High (Better Quality)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Camera Limits Section -->
+            <div class="settings-category">
+                <div class="settings-title">Camera Movement Limits</div>
+                
+                <!-- Master Enable/Disable -->
+                <div class="control-group">
+                    <label for="cameraLimitsToggle">Limit Camera Movement</label>
+                    <label class="switch">
+                        <input type="checkbox" id="cameraLimitsToggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                
+                <!-- Zoom Limits -->
+                <div class="control-group">
+                    <label for="limitZoomToggle">Limit Zoom</label>
+                    <label class="switch">
+                        <input type="checkbox" id="limitZoomToggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="control-group limit-details" id="zoomLimitDetails">
+                    <label for="zoomLimitRange">Zoom Range</label>
+                    <div class="range-container">
+                        <input type="range" id="zoomMinRange" min="0.1" max="50" value="2" step="0.1" class="slider-range">
+                        <span class="range-display" id="zoomMinDisplay">2.0</span>
+                        <span class="range-separator">to</span>
+                        <input type="range" id="zoomMaxRange" min="0.1" max="50" value="20" step="0.1" class="slider-range">
+                        <span class="range-display" id="zoomMaxDisplay">20.0</span>
+                    </div>
+                </div>
+                
+                <!-- Vertical Rotation Limits (Up/Down -90° to +90°) -->
+                <div class="control-group">
+                    <label for="limitVerticalToggle">Limit Vertical Rotation (Up/Down)</label>
+                    <label class="switch">
+                        <input type="checkbox" id="limitVerticalToggle" checked>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="control-group limit-details" id="verticalLimitDetails">
+                    <label>Vertical Angle Range</label>
+                    <div class="range-container">
+                        <label class="range-label">Up Limit:</label>
+                        <input type="range" id="verticalUpRange" min="-90" max="90" value="-80" step="1" class="slider-range">
+                        <span class="range-display" id="verticalUpDisplay">-80°</span>
+                    </div>
+                    <div class="range-container">
+                        <label class="range-label">Down Limit:</label>
+                        <input type="range" id="verticalDownRange" min="-90" max="90" value="80" step="1" class="slider-range">
+                        <span class="range-display" id="verticalDownDisplay">80°</span>
+                    </div>
+                </div>
+                
+                <!-- Horizontal Rotation Limits (Angle + Offset) -->
+                <div class="control-group">
+                    <label for="limitHorizontalToggle">Limit Horizontal Rotation (Around)</label>
+                    <label class="switch">
+                        <input type="checkbox" id="limitHorizontalToggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="control-group limit-details" id="horizontalLimitDetails" style="display: none;">
+                    <label>Horizontal Freedom</label>
+                    <div class="range-container">
+                        <label class="range-label">Total Angle:</label>
+                        <input type="range" id="horizontalAngleRange" min="30" max="360" value="360" step="15" class="slider-range">
+                        <span class="range-display" id="horizontalAngleDisplay">360°</span>
+                    </div>
+                    <div class="range-container">
+                        <label class="range-label">Offset:</label>
+                        <input type="range" id="horizontalOffsetRange" min="-180" max="180" value="0" step="15" class="slider-range">
+                        <span class="range-display" id="horizontalOffsetDisplay">0°</span>
+                    </div>
+                    <div class="range-info">
+                        <small>Total Angle: How much you can rotate around (360° = full circle)</small><br>
+                        <small>Offset: Rotates the allowed area (0° = front, 90° = right side)</small>
+                    </div>
+                </div>
+                
+                <!-- Panning Limits (Simple Toggle) -->
+                <div class="control-group">
+                    <label for="limitPanToggle">Limit Panning</label>
+                    <label class="switch">
+                        <input type="checkbox" id="limitPanToggle">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                
+                <!-- REMOVED: Auto-Calculate and Reset Buttons -->
+                <div class="control-group">
+                    <button id="resetLimitsButton" class="action-button" style="width: 100%; margin-top: 8px; background-color: var(--color-bg-tertiary);">
+                        Reset to Defaults
+                    </button>
+                </div>
+            </div>
+            
+            <div class="settings-category">
+                <div class="settings-title">Post Processing</div>
+                <div class="control-group">
+                    <label for="sharpenToggle">Sharpening</label>
+                    <label class="switch">
+                        <input type="checkbox" id="sharpenToggle" ${CONFIG.postProcessing.sharpenEnabled ? 'checked' : ''}>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="control-group">
+                    <label for="fxaaToggle">Anti-Aliasing</label>
+                    <label class="switch">
+                        <input type="checkbox" id="fxaaToggle" ${CONFIG.postProcessing.fxaaEnabled ? 'checked' : ''}>
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+            
+            ${hasTouch ? `
+            <div class="settings-category">
+                <div class="settings-title">Touch Controls</div>
+                <div class="control-group">
+                    <label for="touchSensitivityRange">Touch Sensitivity</label>
+                    <input type="range" id="touchSensitivityRange" min="1" max="10" value="5" class="slider-range">
+                </div>
+            </div>` : ''}
+        </div>
+    `;
+}
+
+// UPDATED: setupCameraLimitsControls function with adjusted controls
+function setupCameraLimitsControls(camera, scene) {
+    const cameraLimits = scene.cameraLimits;
+    if (!cameraLimits) return;
+    
+    // Get all control elements
+    const masterToggle = document.getElementById('cameraLimitsToggle');
+    const limitZoomToggle = document.getElementById('limitZoomToggle');
+    const limitVerticalToggle = document.getElementById('limitVerticalToggle');
+    const limitHorizontalToggle = document.getElementById('limitHorizontalToggle');
+    const limitPanToggle = document.getElementById('limitPanToggle');
+    
+    // Range controls
+    const zoomMinRange = document.getElementById('zoomMinRange');
+    const zoomMaxRange = document.getElementById('zoomMaxRange');
+    const verticalUpRange = document.getElementById('verticalUpRange');
+    const verticalDownRange = document.getElementById('verticalDownRange');
+    const horizontalAngleRange = document.getElementById('horizontalAngleRange');
+    const horizontalOffsetRange = document.getElementById('horizontalOffsetRange');
+    
+    // Display elements
+    const zoomMinDisplay = document.getElementById('zoomMinDisplay');
+    const zoomMaxDisplay = document.getElementById('zoomMaxDisplay');
+    const verticalUpDisplay = document.getElementById('verticalUpDisplay');
+    const verticalDownDisplay = document.getElementById('verticalDownDisplay');
+    const horizontalAngleDisplay = document.getElementById('horizontalAngleDisplay');
+    const horizontalOffsetDisplay = document.getElementById('horizontalOffsetDisplay');
+    
+    // Detail sections
+    const zoomDetails = document.getElementById('zoomLimitDetails');
+    const verticalDetails = document.getElementById('verticalLimitDetails');
+    const horizontalDetails = document.getElementById('horizontalLimitDetails');
+    
+    // Action buttons (only reset button now)
+    const resetButton = document.getElementById('resetLimitsButton');
+    
+    // Helper function to convert beta angle to up/down degrees
+    function betaToUpDown(betaRadians) {
+        return (betaRadians - Math.PI/2) * 180 / Math.PI;
+    }
+    
+    // Initialize UI with current limits
+    function updateUIFromLimits() {
+        const limits = cameraLimits.getCurrentLimits();
+        
+        // Update toggles
+        masterToggle.checked = cameraLimits.isEnabled;
+        limitZoomToggle.checked = limits.restrictDistance;
+        limitVerticalToggle.checked = limits.restrictVertical;
+        limitHorizontalToggle.checked = limits.restrictHorizontal;
+        limitPanToggle.checked = limits.restrictPanning;
+        
+        // Update zoom ranges
+        zoomMinRange.value = limits.radiusMin;
+        zoomMaxRange.value = limits.radiusMax;
+        zoomMinDisplay.textContent = limits.radiusMin.toFixed(1);
+        zoomMaxDisplay.textContent = limits.radiusMax.toFixed(1);
+        
+        // Update vertical ranges (convert beta to up/down)
+        const upLimit = betaToUpDown(limits.betaMin);
+        const downLimit = betaToUpDown(limits.betaMax);
+        verticalUpRange.value = Math.round(upLimit);
+        verticalDownRange.value = Math.round(downLimit);
+        verticalUpDisplay.textContent = Math.round(upLimit) + '°';
+        verticalDownDisplay.textContent = Math.round(downLimit) + '°';
+        
+        // Update horizontal ranges (calculate angle and offset from min/max)
+        const alphaMinDeg = limits.alphaMin * 180 / Math.PI;
+        const alphaMaxDeg = limits.alphaMax * 180 / Math.PI;
+        const totalAngle = alphaMaxDeg - alphaMinDeg;
+        const centerOffset = (alphaMinDeg + alphaMaxDeg) / 2;
+        
+        horizontalAngleRange.value = Math.round(Math.min(360, Math.max(30, totalAngle)));
+        horizontalOffsetRange.value = Math.round(centerOffset);
+        horizontalAngleDisplay.textContent = Math.round(totalAngle) + '°';
+        horizontalOffsetDisplay.textContent = Math.round(centerOffset) + '°';
+        
+        // Show/hide detail sections
+        zoomDetails.style.display = limits.restrictDistance ? 'block' : 'none';
+        verticalDetails.style.display = limits.restrictVertical ? 'block' : 'none';
+        horizontalDetails.style.display = limits.restrictHorizontal ? 'block' : 'none';
+    }
+    
+    // Master toggle
+    if (masterToggle) {
+        masterToggle.addEventListener('change', (e) => {
+            cameraLimits.setEnabled(e.target.checked);
+            console.log('Camera limits enabled:', e.target.checked);
+        });
+    }
+    
+    // Individual limit toggles
+    if (limitZoomToggle) {
+        limitZoomToggle.addEventListener('change', (e) => {
+            const limits = cameraLimits.getCurrentLimits();
+            cameraLimits.setDistanceLimits(e.target.checked, limits.radiusMin, limits.radiusMax);
+            zoomDetails.style.display = e.target.checked ? 'block' : 'none';
+            console.log('Zoom limits enabled:', e.target.checked);
+        });
+    }
+    
+    if (limitVerticalToggle) {
+        limitVerticalToggle.addEventListener('change', (e) => {
+            const upValue = parseFloat(verticalUpRange.value);
+            const downValue = parseFloat(verticalDownRange.value);
+            cameraLimits.setVerticalLimitsUpDown(e.target.checked, upValue, downValue);
+            verticalDetails.style.display = e.target.checked ? 'block' : 'none';
+            console.log('Vertical limits enabled:', e.target.checked);
+        });
+    }
+    
+    if (limitHorizontalToggle) {
+        limitHorizontalToggle.addEventListener('change', (e) => {
+            const totalAngle = parseFloat(horizontalAngleRange.value);
+            const offset = parseFloat(horizontalOffsetRange.value);
+            cameraLimits.setHorizontalLimitsAngleOffset(e.target.checked, totalAngle, offset);
+            horizontalDetails.style.display = e.target.checked ? 'block' : 'none';
+            console.log('Horizontal limits enabled:', e.target.checked);
+        });
+    }
+    
+    if (limitPanToggle) {
+        limitPanToggle.addEventListener('change', (e) => {
+            cameraLimits.setPanningLimitsSimple(e.target.checked);
+            console.log('Pan limits enabled:', e.target.checked);
+        });
+    }
+    
+    // Range control event handlers
+    function setupRangeControl(rangeElement, displayElement, updateCallback) {
+        if (rangeElement && displayElement) {
+            rangeElement.addEventListener('input', (e) => {
+                const value = parseFloat(e.target.value);
+                updateCallback(value);
+            });
+        }
+    }
+    
+    // Zoom ranges
+    setupRangeControl(zoomMinRange, zoomMinDisplay, (value) => {
+        const limits = cameraLimits.getCurrentLimits();
+        cameraLimits.setDistanceLimits(limits.restrictDistance, value, limits.radiusMax);
+        zoomMinDisplay.textContent = value.toFixed(1);
+        console.log('Min zoom set to:', value);
+    });
+    
+    setupRangeControl(zoomMaxRange, zoomMaxDisplay, (value) => {
+        const limits = cameraLimits.getCurrentLimits();
+        cameraLimits.setDistanceLimits(limits.restrictDistance, limits.radiusMin, value);
+        zoomMaxDisplay.textContent = value.toFixed(1);
+        console.log('Max zoom set to:', value);
+    });
+    
+    // Vertical ranges (up/down with new system)
+    setupRangeControl(verticalUpRange, verticalUpDisplay, (value) => {
+        const downValue = parseFloat(verticalDownRange.value);
+        cameraLimits.setVerticalLimitsUpDown(true, value, downValue);
+        verticalUpDisplay.textContent = value + '°';
+        console.log('Up limit set to:', value + '° (looking up)');
+    });
+    
+    setupRangeControl(verticalDownRange, verticalDownDisplay, (value) => {
+        const upValue = parseFloat(verticalUpRange.value);
+        cameraLimits.setVerticalLimitsUpDown(true, upValue, value);
+        verticalDownDisplay.textContent = value + '°';
+        console.log('Down limit set to:', value + '° (looking down)');
+    });
+    
+    // Horizontal ranges (angle + offset system)
+    function updateHorizontalLimits() {
+        const totalAngle = parseFloat(horizontalAngleRange.value);
+        const offset = parseFloat(horizontalOffsetRange.value);
+        
+        cameraLimits.setHorizontalLimitsAngleOffset(true, totalAngle, offset);
+        
+        console.log(`Horizontal limits: ${totalAngle}° total, centered at ${offset}°`);
+    }
+    
+    setupRangeControl(horizontalAngleRange, horizontalAngleDisplay, (value) => {
+        horizontalAngleDisplay.textContent = value + '°';
+        updateHorizontalLimits();
+    });
+    
+    setupRangeControl(horizontalOffsetRange, horizontalOffsetDisplay, (value) => {
+        horizontalOffsetDisplay.textContent = value + '°';
+        updateHorizontalLimits();
+    });
+    
+    // REMOVED: recalculateButton event handler
+    
+    // Reset button (only remaining action button)
+    if (resetButton) {
+        resetButton.addEventListener('click', () => {
+            cameraLimits.resetToDefaults();
+            updateUIFromLimits(); // Refresh UI with default values
+            showToast('Camera limits reset to defaults');
+            console.log('Camera limits reset to defaults');
+        });
+    }
+    
+    // Initialize the UI
+    updateUIFromLimits();
+    
+    console.log('Camera limits controls initialized (auto-calculate removed)');
+}
+
 
 /* ========================================================================
    CAMERA AND VIEW FUNCTIONS
@@ -620,7 +930,7 @@ function shareCameraView(camera, scene) {
     // Get current model URL
     const currentModelUrl = scene.currentModelUrl || CONFIG.defaultModelUrl;
     
-    // Build shareable URL with camera parameters
+    // Build base parameters
     const params = new URLSearchParams({
         model: currentModelUrl,
         alpha: camera.alpha.toFixed(2),
@@ -631,11 +941,21 @@ function shareCameraView(camera, scene) {
         tz: camera.target.z.toFixed(2)
     });
     
+    // Add camera limits to shared URL
+    if (scene.cameraLimits) {
+        const limitsParams = scene.cameraLimits.getLimitsForUrl();
+        Object.entries(limitsParams).forEach(([key, value]) => {
+            if (value !== undefined && value !== '') {
+                params.set(key, value);
+            }
+        });
+    }
+    
     const shareUrl = `${window.location.href.split('?')[0]}?${params.toString()}`;
     
     // Copy to clipboard
     navigator.clipboard.writeText(shareUrl).then(() => {
-        showToast('URL copied to clipboard!');
+        showToast('URL with camera limits copied to clipboard!');
     }).catch(() => {
         // Fallback for older browsers
         const tempInput = document.createElement('input');
@@ -644,7 +964,7 @@ function shareCameraView(camera, scene) {
         tempInput.select();
         document.execCommand('copy');
         document.body.removeChild(tempInput);
-        showToast('URL copied to clipboard!');
+        showToast('URL with camera limits copied to clipboard!');
     });
 }
 
