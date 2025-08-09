@@ -65,6 +65,34 @@ export const CONFIG = {
     },
 
     /**
+     * Lighting Configuration
+     */
+    lighting: {
+        // HDR Environment Lighting (Primary)
+        hdr: {
+            environmentUrl: "https://playground.babylonjs.com/textures/environment.dds",
+            intensity: 1.0,                    // Environment lighting intensity
+            useFillLight: true,                // Add subtle fill light for dark areas
+            fillLightIntensity: 0.1,           // Intensity of fill light
+            fillLightColor: [1, 1, 1]          // Color of fill light
+        },
+        
+        // Fallback Basic Lighting (used if HDR fails to load)
+        hemisphere: {
+            intensity: 0.6,
+            diffuse: [1, 1, 1],
+            specular: [0.2, 0.2, 0.2],
+            groundColor: [0.2, 0.2, 0.3]
+        },
+        directional: {
+            intensity: 0.8,
+            direction: [-0.5, -1, -0.5],
+            diffuse: [1, 1, 1],
+            specular: [0.3, 0.3, 0.3]
+        }
+    },
+
+    /**
      * Engine Configuration
      */
     engine: {

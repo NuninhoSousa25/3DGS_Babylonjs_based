@@ -18,9 +18,80 @@ let gestureController = null; // For mobile gesture control
 let cameraLimits = null; // For camera movement limitations
 
 /**
+ * Setup lighting for GLB/GLTF models
+ * GLB models need proper lighting to be visible, unlike splat files which are self-illuminated
+ */
+async function setupLighting(scene) {
+    const lightConfig = CONFIG.lighting;
+    
+    try {
+        // Add HDR environment lighting as primary light source
+        const hdrTexture = new BABYLON.CubeTexture(
+            lightConfig.hdr.environmentUrl,
+            scene
+        );
+        
+        // Set the environment texture for IBL (Image-Based Lighting)
+        scene.environmentTexture = hdrTexture;
+        scene.environmentIntensity = lightConfig.hdr.intensity;
+        
+        // HDR provides lighting and reflections but no visible skybox
+        
+        console.log("HDR environment lighting setup complete");
+        
+        // Add minimal fill lighting for areas that might be too dark
+        if (lightConfig.hdr.useFillLight) {
+            const fillLight = new BABYLON.HemisphericLight(
+                "fillLight", 
+                new BABYLON.Vector3(0, 1, 0), 
+                scene
+            );
+            fillLight.intensity = lightConfig.hdr.fillLightIntensity;
+            fillLight.diffuse = new BABYLON.Color3(...lightConfig.hdr.fillLightColor);
+            
+            console.log("Added subtle fill light to complement HDR lighting");
+        }
+        
+    } catch (error) {
+        console.warn("Failed to load HDR environment, falling back to basic lighting:", error);
+        
+        // Fallback to basic lighting if HDR fails
+        setupBasicLighting(scene, lightConfig);
+    }
+}
+
+/**
+ * Fallback basic lighting system
+ */
+function setupBasicLighting(scene, lightConfig) {
+    // Create a hemisphere light for ambient lighting
+    const hemisphereLight = new BABYLON.HemisphericLight(
+        "hemisphereLight", 
+        new BABYLON.Vector3(0, 1, 0), 
+        scene
+    );
+    hemisphereLight.intensity = lightConfig.hemisphere.intensity;
+    hemisphereLight.diffuse = new BABYLON.Color3(...lightConfig.hemisphere.diffuse);
+    hemisphereLight.specular = new BABYLON.Color3(...lightConfig.hemisphere.specular);
+    hemisphereLight.groundColor = new BABYLON.Color3(...lightConfig.hemisphere.groundColor);
+
+    // Create a directional light for key lighting
+    const directionalLight = new BABYLON.DirectionalLight(
+        "directionalLight", 
+        new BABYLON.Vector3(...lightConfig.directional.direction), 
+        scene
+    );
+    directionalLight.intensity = lightConfig.directional.intensity;
+    directionalLight.diffuse = new BABYLON.Color3(...lightConfig.directional.diffuse);
+    directionalLight.specular = new BABYLON.Color3(...lightConfig.directional.specular);
+
+    console.log("Basic lighting setup complete - GLB models should be illuminated");
+}
+
+/**
  * Initialize Engine and Scene
  */
-function initializeEngineAndScene() {
+async function initializeEngineAndScene() {
     const canvas = document.getElementById("renderCanvas");
     // Using config to fine-tune engine
     engine = new BABYLON.Engine(canvas, true, {
@@ -31,6 +102,9 @@ function initializeEngineAndScene() {
     });
     scene = new BABYLON.Scene(engine);
     scene.clearColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+
+    // Setup lighting for GLB models (async for HDR loading)
+    await setupLighting(scene);
 
     // Initialize custom properties for tracking loaded model
     scene.currentModel = null;
@@ -174,7 +248,7 @@ function cleanup(scene, engine) {
 
 async function createScene() {
     try {
-        const { engine: eng, scene: scn, canvas } = initializeEngineAndScene();
+        const { engine: eng, scene: scn, canvas } = await initializeEngineAndScene();
         engine = eng;
         scene = scn;
 

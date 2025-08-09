@@ -32,11 +32,20 @@ function createElement(tag, options = {}) {
     if (options.className) element.className = options.className;
     if (options.innerHTML) element.innerHTML = options.innerHTML;
     if (options.id) element.id = options.id;
+    if (options.value !== undefined) element.value = options.value;
+    
+    // Handle common input properties
+    if (options.type) element.type = options.type;
+    if (options.accept) element.accept = options.accept;
+    if (options.placeholder) element.placeholder = options.placeholder;
+    
+    // Handle custom attributes
     if (options.attributes) {
         Object.entries(options.attributes).forEach(([key, value]) => {
             element.setAttribute(key, value);
         });
     }
+    
     return element;
 }
 
@@ -312,9 +321,10 @@ function createIconBar() {
  * Create the content area with all sections
  */
 function createContentArea(hasTouch) {
-    const contentArea = document.createElement("div");
-    contentArea.id = "controlPanelContent";
-    contentArea.className = "control-panel-content";
+    const contentArea = createElement("div", {
+        id: "controlPanelContent",
+        className: "control-panel-content"
+    });
     contentArea.style.display = "none";
     
     contentArea.innerHTML = `
@@ -580,157 +590,187 @@ function setupSettingsControls(camera, scene) {
 }
 
 /**
- * Create settings section HTML with adjusted camera limits controls
+ * Create visualization settings section HTML
  */
+function createVisualizationSection() {
+    return `
+        <div class="settings-category">
+            <div class="settings-title">Visualization</div>
+            <div class="control-group">
+                <label for="autoRotateToggle">Auto Rotation</label>
+                <label class="switch">
+                    <input type="checkbox" id="autoRotateToggle" ${CONFIG.camera.useAutoRotationBehavior ? 'checked' : ''}>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            
+            <div class="control-group">
+                <label for="qualitySelect">Quality</label>
+                <select id="qualitySelect" class="settings-select">
+                    <option value="low">Low (Better Performance)</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High (Better Quality)</option>
+                </select>
+            </div>
+        </div>
+    `;
+}
 
+/**
+ * Create camera limits settings section HTML
+ */
+function createCameraLimitsSection() {
+    return `
+        <div class="settings-category">
+            <div class="settings-title">Camera Movement Limits</div>
+            
+            <!-- Master Enable/Disable -->
+            <div class="control-group">
+                <label for="cameraLimitsToggle">Limit Camera Movement</label>
+                <label class="switch">
+                    <input type="checkbox" id="cameraLimitsToggle" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            
+            <!-- Zoom Limits -->
+            <div class="control-group">
+                <label for="limitZoomToggle">Limit Zoom</label>
+                <label class="switch">
+                    <input type="checkbox" id="limitZoomToggle" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            <div class="control-group limit-details" id="zoomLimitDetails">
+                <label for="zoomLimitRange">Zoom Range</label>
+                <div class="range-container">
+                    <input type="range" id="zoomMinRange" min="0.1" max="50" value="2" step="0.1" class="slider-range">
+                    <span class="range-display" id="zoomMinDisplay">2.0</span>
+                    <span class="range-separator">to</span>
+                    <input type="range" id="zoomMaxRange" min="0.1" max="50" value="20" step="0.1" class="slider-range">
+                    <span class="range-display" id="zoomMaxDisplay">20.0</span>
+                </div>
+            </div>
+            
+            <!-- Vertical Rotation Limits (Up/Down -90° to +90°) -->
+            <div class="control-group">
+                <label for="limitVerticalToggle">Limit Vertical Rotation (Up/Down)</label>
+                <label class="switch">
+                    <input type="checkbox" id="limitVerticalToggle" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            <div class="control-group limit-details" id="verticalLimitDetails">
+                <label>Vertical Angle Range</label>
+                <div class="range-container">
+                    <label class="range-label">Up Limit:</label>
+                    <input type="range" id="verticalUpRange" min="-90" max="90" value="-80" step="1" class="slider-range">
+                    <span class="range-display" id="verticalUpDisplay">-80°</span>
+                </div>
+                <div class="range-container">
+                    <label class="range-label">Down Limit:</label>
+                    <input type="range" id="verticalDownRange" min="-90" max="90" value="80" step="1" class="slider-range">
+                    <span class="range-display" id="verticalDownDisplay">80°</span>
+                </div>
+            </div>
+            
+            <!-- Horizontal Rotation Limits (Angle + Offset) -->
+            <div class="control-group">
+                <label for="limitHorizontalToggle">Limit Horizontal Rotation (Around)</label>
+                <label class="switch">
+                    <input type="checkbox" id="limitHorizontalToggle">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            <div class="control-group limit-details" id="horizontalLimitDetails" style="display: none;">
+                <label>Horizontal Freedom</label>
+                <div class="range-container">
+                    <label class="range-label">Total Angle:</label>
+                    <input type="range" id="horizontalAngleRange" min="30" max="360" value="360" step="15" class="slider-range">
+                    <span class="range-display" id="horizontalAngleDisplay">360°</span>
+                </div>
+                <div class="range-container">
+                    <label class="range-label">Offset:</label>
+                    <input type="range" id="horizontalOffsetRange" min="-180" max="180" value="0" step="15" class="slider-range">
+                    <span class="range-display" id="horizontalOffsetDisplay">0°</span>
+                </div>
+                <div class="range-info">
+                    <small>Total Angle: How much you can rotate around (360° = full circle)</small><br>
+                    <small>Offset: Rotates the allowed area (0° = front, 90° = right side)</small>
+                </div>
+            </div>
+            
+            <!-- Panning Enable/Disable Toggle -->
+            <div class="control-group">
+                <label for="limitPanToggle">Enable Panning</label>
+                <label class="switch">
+                    <input type="checkbox" id="limitPanToggle">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            
+            <!-- Reset Button -->
+            <div class="control-group">
+                <button id="resetLimitsButton" class="action-button" style="width: 100%; margin-top: 8px; background-color: var(--color-bg-tertiary);">
+                    Reset to Defaults
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Create post-processing settings section HTML
+ */
+function createPostProcessingSection() {
+    return `
+        <div class="settings-category">
+            <div class="settings-title">Post Processing</div>
+            <div class="control-group">
+                <label for="sharpenToggle">Sharpening</label>
+                <label class="switch">
+                    <input type="checkbox" id="sharpenToggle" ${CONFIG.postProcessing.sharpenEnabled ? 'checked' : ''}>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            <div class="control-group">
+                <label for="fxaaToggle">Anti-Aliasing</label>
+                <label class="switch">
+                    <input type="checkbox" id="fxaaToggle" ${CONFIG.postProcessing.fxaaEnabled ? 'checked' : ''}>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Create touch controls settings section HTML
+ */
+function createTouchControlsSection() {
+    return `
+        <div class="settings-category">
+            <div class="settings-title">Touch Controls</div>
+            <div class="control-group">
+                <label for="touchSensitivityRange">Touch Sensitivity</label>
+                <input type="range" id="touchSensitivityRange" min="1" max="10" value="5" class="slider-range">
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Create complete settings section HTML using smaller components
+ */
 function createSettingsSection(hasTouch) {
     return `
         <div id="settingsContent" class="content-section" style="display: none;">
             <h4>Settings</h4>
             
-            <div class="settings-category">
-                <div class="settings-title">Visualization</div>
-                <div class="control-group">
-                    <label for="autoRotateToggle">Auto Rotation</label>
-                    <label class="switch">
-                        <input type="checkbox" id="autoRotateToggle" ${CONFIG.camera.useAutoRotationBehavior ? 'checked' : ''}>
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-                
-                <div class="control-group">
-                    <label for="qualitySelect">Quality</label>
-                    <select id="qualitySelect" class="settings-select">
-                        <option value="low">Low (Better Performance)</option>
-                        <option value="medium" selected>Medium</option>
-                        <option value="high">High (Better Quality)</option>
-                    </select>
-                </div>
-            </div>
-            
-            <!-- Camera Limits Section -->
-            <div class="settings-category">
-                <div class="settings-title">Camera Movement Limits</div>
-                
-                <!-- Master Enable/Disable -->
-                <div class="control-group">
-                    <label for="cameraLimitsToggle">Limit Camera Movement</label>
-                    <label class="switch">
-                        <input type="checkbox" id="cameraLimitsToggle" checked>
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-                
-                <!-- Zoom Limits -->
-                <div class="control-group">
-                    <label for="limitZoomToggle">Limit Zoom</label>
-                    <label class="switch">
-                        <input type="checkbox" id="limitZoomToggle" checked>
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-                <div class="control-group limit-details" id="zoomLimitDetails">
-                    <label for="zoomLimitRange">Zoom Range</label>
-                    <div class="range-container">
-                        <input type="range" id="zoomMinRange" min="0.1" max="50" value="2" step="0.1" class="slider-range">
-                        <span class="range-display" id="zoomMinDisplay">2.0</span>
-                        <span class="range-separator">to</span>
-                        <input type="range" id="zoomMaxRange" min="0.1" max="50" value="20" step="0.1" class="slider-range">
-                        <span class="range-display" id="zoomMaxDisplay">20.0</span>
-                    </div>
-                </div>
-                
-                <!-- Vertical Rotation Limits (Up/Down -90° to +90°) -->
-                <div class="control-group">
-                    <label for="limitVerticalToggle">Limit Vertical Rotation (Up/Down)</label>
-                    <label class="switch">
-                        <input type="checkbox" id="limitVerticalToggle" checked>
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-                <div class="control-group limit-details" id="verticalLimitDetails">
-                    <label>Vertical Angle Range</label>
-                    <div class="range-container">
-                        <label class="range-label">Up Limit:</label>
-                        <input type="range" id="verticalUpRange" min="-90" max="90" value="-80" step="1" class="slider-range">
-                        <span class="range-display" id="verticalUpDisplay">-80°</span>
-                    </div>
-                    <div class="range-container">
-                        <label class="range-label">Down Limit:</label>
-                        <input type="range" id="verticalDownRange" min="-90" max="90" value="80" step="1" class="slider-range">
-                        <span class="range-display" id="verticalDownDisplay">80°</span>
-                    </div>
-                </div>
-                
-                <!-- Horizontal Rotation Limits (Angle + Offset) -->
-                <div class="control-group">
-                    <label for="limitHorizontalToggle">Limit Horizontal Rotation (Around)</label>
-                    <label class="switch">
-                        <input type="checkbox" id="limitHorizontalToggle">
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-                <div class="control-group limit-details" id="horizontalLimitDetails" style="display: none;">
-                    <label>Horizontal Freedom</label>
-                    <div class="range-container">
-                        <label class="range-label">Total Angle:</label>
-                        <input type="range" id="horizontalAngleRange" min="30" max="360" value="360" step="15" class="slider-range">
-                        <span class="range-display" id="horizontalAngleDisplay">360°</span>
-                    </div>
-                    <div class="range-container">
-                        <label class="range-label">Offset:</label>
-                        <input type="range" id="horizontalOffsetRange" min="-180" max="180" value="0" step="15" class="slider-range">
-                        <span class="range-display" id="horizontalOffsetDisplay">0°</span>
-                    </div>
-                    <div class="range-info">
-                        <small>Total Angle: How much you can rotate around (360° = full circle)</small><br>
-                        <small>Offset: Rotates the allowed area (0° = front, 90° = right side)</small>
-                    </div>
-                </div>
-                
-                <!-- Panning Enable/Disable Toggle -->
-                <div class="control-group">
-                    <label for="limitPanToggle">Enable Panning</label>
-                    <label class="switch">
-                        <input type="checkbox" id="limitPanToggle">
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-                
-                <!-- REMOVED: Auto-Calculate and Reset Buttons -->
-                <div class="control-group">
-                    <button id="resetLimitsButton" class="action-button" style="width: 100%; margin-top: 8px; background-color: var(--color-bg-tertiary);">
-                        Reset to Defaults
-                    </button>
-                </div>
-            </div>
-            
-            <div class="settings-category">
-                <div class="settings-title">Post Processing</div>
-                <div class="control-group">
-                    <label for="sharpenToggle">Sharpening</label>
-                    <label class="switch">
-                        <input type="checkbox" id="sharpenToggle" ${CONFIG.postProcessing.sharpenEnabled ? 'checked' : ''}>
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-                <div class="control-group">
-                    <label for="fxaaToggle">Anti-Aliasing</label>
-                    <label class="switch">
-                        <input type="checkbox" id="fxaaToggle" ${CONFIG.postProcessing.fxaaEnabled ? 'checked' : ''}>
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-            </div>
-            
-            ${hasTouch ? `
-            <div class="settings-category">
-                <div class="settings-title">Touch Controls</div>
-                <div class="control-group">
-                    <label for="touchSensitivityRange">Touch Sensitivity</label>
-                    <input type="range" id="touchSensitivityRange" min="1" max="10" value="5" class="slider-range">
-                </div>
-            </div>` : ''}
+            ${createVisualizationSection()}
+            ${createCameraLimitsSection()}
+            ${createPostProcessingSection()}
+            ${hasTouch ? createTouchControlsSection() : ''}
         </div>
     `;
 }
@@ -1066,8 +1106,10 @@ function shareCameraView(camera, scene) {
         showToast('URL with camera limits copied to clipboard!');
     }).catch(() => {
         // Fallback for older browsers
-        const tempInput = document.createElement('input');
-        tempInput.value = shareUrl;
+        const tempInput = createElement('input', { 
+            type: 'text',
+            value: shareUrl 
+        });
         document.body.appendChild(tempInput);
         tempInput.select();
         document.execCommand('copy');
@@ -1224,10 +1266,11 @@ async function loadModelWithSpinner(scene, source, spinner, type) {
 function triggerFileLoad(scene) {
     console.log("File open button clicked");
     
-    // Create a hidden file input element
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.splat,.ply,.spz,.gltf,.glb';
+    // Create a hidden file input element using utility
+    const fileInput = createElement('input', {
+        type: 'file',
+        accept: '.splat,.ply,.spz,.gltf,.glb'
+    });
     fileInput.style.display = 'none';
     
     // Handle file selection
@@ -1278,7 +1321,9 @@ function triggerFileLoad(scene) {
     
     // Trigger the file dialog
     document.body.appendChild(fileInput);
+    console.log("File input created and added to DOM, triggering click...");
     fileInput.click();
+    console.log("File dialog should now be open");
 }
 
 /* ========================================================================
@@ -1360,10 +1405,11 @@ function showToast(message, duration = 3000) {
         document.body.removeChild(existingToast);
     }
     
-    // Create new toast
-    const toast = document.createElement('div');
-    toast.id = 'toast-message';
-    toast.className = 'toast-message';
+    // Create new toast using utility
+    const toast = createElement('div', {
+        id: 'toast-message',
+        className: 'toast-message'
+    });
     toast.textContent = message;
     
     // Add to document and show
