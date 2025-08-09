@@ -17,8 +17,8 @@ export const CONFIG = {
         alpha: -Math.PI / 4,            // Horizontal angle
         beta: Math.PI / 3,              // Vertical angle
         radius: 4,                      // Distance from target
-        upperRadiusLimit: 7.0,          // Fixed maximum zoom out distance
-        lowerRadiusLimit: 2.0,          // Fixed minimum zoom in distance
+        upperRadiusLimit: 15.0,         // Fixed maximum zoom out distance (now handled by CameraLimits)
+        lowerRadiusLimit: 2.5,          // Fixed minimum zoom in distance (now handled by CameraLimits)
         minZ: 0.1,                      // Minimum Z clipping plane
         maxZ: 1000,                     // Maximum Z clipping plane
         angularSensibilityX: 2500,      // Mouse sensitivity for horizontal rotation
@@ -119,21 +119,21 @@ export const CONFIG = {
             zoom: true,                         // Limit zoom by default
             vertical: true,                     // Limit vertical rotation by default
             horizontal: false,                  // Don't limit horizontal by default (full 360°)
-            panning: false                      // Don't limit panning by default
+            panning: true                       // Enable panning by default
         },
         
         // Default limit values (used when auto-calculation isn't available)
         defaultLimits: {
             // Zoom limits
             zoom: {
-                min: 1.0,                       // Minimum zoom distance
-                max: 20.0                       // Maximum zoom distance
+                min: 2.5,                       // Minimum zoom distance
+                max: 15.0                       // Maximum zoom distance
             },
             
             // Vertical rotation limits (in degrees - easier to understand)
             vertical: {
-                topLimit: 10,                   // How far up you can look (degrees from top)
-                bottomLimit: 170                // How far down you can look (degrees from top)
+                upLimit: -80,                   // How far up you can look (-90° = straight up, 0° = forward)
+                downLimit: 5                    // How far down you can look (90° = straight down, 0° = forward)
             },
             
             // Horizontal rotation limits (in degrees)
@@ -154,7 +154,7 @@ export const CONFIG = {
         ui: {
             showDegreesInsteadOfRadians: true,  // Display angles in degrees for user friendliness
             defaultHorizontalRestriction: false, // Don't restrict horizontal by default
-            defaultPanningRestriction: false,   // Don't restrict panning by default
+            defaultPanningRestriction: true,    // Enable panning by default
             visualFeedback: true,               // Show visual feedback when hitting limits
             
             // Range control settings

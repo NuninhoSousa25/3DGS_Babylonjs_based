@@ -528,9 +528,9 @@ function createSettingsSection(hasTouch) {
                     </div>
                 </div>
                 
-                <!-- Panning Limits (Simple Toggle) -->
+                <!-- Panning Enable/Disable Toggle -->
                 <div class="control-group">
-                    <label for="limitPanToggle">Limit Panning</label>
+                    <label for="limitPanToggle">Enable Panning</label>
                     <label class="switch">
                         <input type="checkbox" id="limitPanToggle">
                         <span class="slider round"></span>
@@ -625,7 +625,7 @@ function setupCameraLimitsControls(camera, scene) {
         limitZoomToggle.checked = limits.restrictDistance;
         limitVerticalToggle.checked = limits.restrictVertical;
         limitHorizontalToggle.checked = limits.restrictHorizontal;
-        limitPanToggle.checked = limits.restrictPanning;
+        limitPanToggle.checked = limits.enablePanning;
         
         // Update zoom ranges
         zoomMinRange.value = limits.radiusMin;
@@ -698,8 +698,8 @@ function setupCameraLimitsControls(camera, scene) {
     
     if (limitPanToggle) {
         limitPanToggle.addEventListener('change', (e) => {
-            cameraLimits.setPanningLimitsSimple(e.target.checked);
-            console.log('Pan limits enabled:', e.target.checked);
+            cameraLimits.setPanningEnabled(e.target.checked);
+            console.log('Panning enabled:', e.target.checked);
         });
     }
     

@@ -29,9 +29,7 @@ export function setupCamera(scene, canvas, config) {
     cam.panningInertia = config.camera.panningInertia;
     cam.useAutoRotationBehavior = config.camera.useAutoRotationBehavior;
 
-    // Set fixed upper and lower radius limits directly
-    cam.upperRadiusLimit = config.camera.upperRadiusLimit;
-    cam.lowerRadiusLimit = config.camera.lowerRadiusLimit;
+    // Camera limits are now set by the CameraLimits system based on UI settings
 
     if (cam.useAutoRotationBehavior) {
         const autoRotationBehavior = cam.autoRotationBehavior;
@@ -40,15 +38,7 @@ export function setupCamera(scene, canvas, config) {
         autoRotationBehavior.idleRotationSpinUpTime = 3000;
     }
 
-    // Constraints on each frame
-    scene.onBeforeRenderObservable.add(() => {
-        // limit vertical angle
-        cam.beta = Math.max(Math.min(cam.beta, 1.75), 0.2);
-        // enforce min radius
-        cam.radius = Math.max(cam.radius, config.camera.lowerRadiusLimit);
-        // enforce upper radius
-        cam.radius = Math.min(cam.radius, config.camera.upperRadiusLimit);
-    });
+    // Camera constraints are now handled by the CameraLimits system
 
     // Set initial camera position after scene is ready
     scene.executeWhenReady(() => {
@@ -71,8 +61,7 @@ export function setupCamera(scene, canvas, config) {
  * @returns {BABYLON.AnimationGroup}
  */
 export function animateCamera(camera, newTarget, newRadius, duration = 30, onAnimationEnd) {
-    // Ensure radius stays within configured limits
-    newRadius = Math.max(Math.min(newRadius, CONFIG.camera.upperRadiusLimit), CONFIG.camera.lowerRadiusLimit);
+    // Camera limits will be enforced by the CameraLimits system
     
     const animationGroup = new BABYLON.AnimationGroup("cameraCenterAnimation");
 
