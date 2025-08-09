@@ -7,7 +7,8 @@ A modern, responsive 3D model viewer built with Babylon.js, featuring a unified 
 - mobilie icons -- icon bar on mobile should be Hamburger based currently hamburger menu only apears in fullscreen mode
 - better ui for mobile
 - performance
-- code quality 
+- code quality
+- double click to focus has a big time window
 
 ## ✅ Recent Updates & Fixes
 
