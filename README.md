@@ -9,6 +9,8 @@ A modern, responsive 3D model viewer built with Babylon.js, featuring a unified 
 - performance
 - code quality
 - double click to focus has a big time window
+- MSAA (Multi-Sample Anti-Aliasing) - for pc
+- TAA (Temporal Anti-Aliasing) - experiment
 
 ## ✅ Recent Updates & Fixes
 
