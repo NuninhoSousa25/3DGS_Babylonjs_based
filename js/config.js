@@ -42,7 +42,7 @@ export const CONFIG = {
         pinchPrecision: 30,            // Reduced sensitivity to improve stability (was 20)
         angularSensibilityX: 3000,     // Reduced sensitivity to prevent jittery rotation (was 1800)
         angularSensibilityY: 3000,     // Reduced sensitivity to prevent jittery rotation (was 1800)
-        panningSensibility: 500,       // Increased for smoother panning (was 400)
+        panningSensibility: 700,       // Increased for more responsive panning (was 500)
         wheelPrecision: 80,            // Adjusted wheel precision for mobile (was 60)
         minimumPinchDistance: 15,      // Increased threshold to prevent accidental pinch (was 10)
         minimumPanDistance: 8,         // Increased threshold to prevent accidental pan (was 5)
@@ -58,7 +58,7 @@ export const CONFIG = {
         doubleTapThreshold: 500,      // Reduced for quicker response (was 700 ms)
         doubleClickThreshold: 500,    // Reduced for quicker response (was 700 ms)
         pinchDebounceThreshold: 80,   // Increased to prevent gesture conflicts (was 50 ms)
-        pinchSensitivity: 0.00015,    // Decreased sensitivity for smoother zoom (was 0.0002)
+        pinchSensitivity: 0.0003,     // Increased sensitivity for more responsive mobile pinch zoom
         tapMaxDistance: 10,           // Maximum distance a "tap" can move
         gestureChangeTimeout: 350,    // Timeout between different gestures (ms)
         enableGestureExclusivity: true, // Only allow one gesture type at a time
@@ -100,12 +100,6 @@ export const CONFIG = {
         defaultModelScale: 1.0,         // Default fixed scale for all models
     },
 
-    performance: {
-    enableOcclusion: true,
-    enableFrustumClipping: true,
-    enableLOD: true,
-    maxMeshesPerFrame: 100
-    },
 
     pixelRatio: {
         mobile: 0.8,   // Pixel ratio for mobile devices

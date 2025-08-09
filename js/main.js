@@ -8,7 +8,6 @@ import { CONFIG } from './config.js';  // Import the centralized configuration
 import { setupMobileControls } from './mobileControl.js';
 import { detectDevice } from './deviceDetection.js';
 
-
 /**
  * Global Variables
  */
@@ -87,7 +86,7 @@ function handleDoubleTap(scene, camera, isAnimating, setAnimating) {
         const distanceToPoint = BABYLON.Vector3.Distance(camera.target, pickResult.pickedPoint);
         // Use fixed camera limits from config
         const targetRadius = Math.max(
-            Math.min(distanceToPoint * 2, CONFIG.camera.upperRadiusLimit),
+            Math.min(distanceToPoint * 3.5, CONFIG.camera.upperRadiusLimit),
             CONFIG.camera.lowerRadiusLimit
         );
 
@@ -157,16 +156,19 @@ function cleanup(scene, engine) {
 /**
  * Create the Scene
  */
+
+
+
 async function createScene() {
     try {
         const { engine: eng, scene: scn, canvas } = initializeEngineAndScene();
         engine = eng;
         scene = scn;
-        setupLighting(scene);
 
         // Detect device using consolidated detection system
         const device = detectDevice();
-        const isMobile = device.isMobile;
+        const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0); // ADD THIS LINE
+        const isMobile = device.isMobile; // Keep existing
 
         // Determine initial pixel ratio based on device type
         const initialPixelRatio = isMobile ? CONFIG.pixelRatio.mobile : CONFIG.pixelRatio.pc;
@@ -184,23 +186,27 @@ async function createScene() {
         // Setup drag & drop functionality
         setupDragAndDrop(canvas, scene);
 
-        // Double-click to center - keep this for all devices
-        setupDoubleClickPan(scene, camera);
-        console.log("Double-click pan setup.");
+        // Double-click to center - only for desktop devices (conflicts with mobile touch)
+        if (!device.hasTouch && !device.isTouchDevice) {
+            setupDoubleClickPan(scene, camera);
+            console.log("Double-click pan setup for desktop.");
+        }
 
-        // Setup mobile-specific controls if on mobile device
+        // Setup touch-optimized controls if device has touch capability
         // This is additional to the default controls
-        if (isMobile) {
+        if (device.hasTouch || device.isTouchDevice) {
             try {
-                console.log("Setting up mobile-specific controls");
-                // Setup mobile controls - this doesn't replace default controls
+                console.log("Setting up touch-optimized controls");
+                // Setup touch controls - this doesn't replace default controls
                 // but adds better touch handling
-                setupMobileControls(camera, scene);
+                gestureController = setupMobileControls(camera, scene);
             } catch (e) {
-                console.warn("Error setting up mobile controls:", e);
+                console.warn("Error setting up touch controls:", e);
                 // The default controls will still work even if this fails
             }
         }
+
+        // Device debug info is now available in the developer tools panel
 
 
         // Post-processing
@@ -303,33 +309,6 @@ function isValidModelFile(file) {
     
     const extension = file.name.split('.').pop().toLowerCase();
     return CONFIG.modelLoader.supportedFormats.includes(extension);
-}
-
-// Add to main.js
-function setupLighting(scene) {
-    // Add HDR environment
-    const hdrTexture = new BABYLON.CubeTexture(
-        "https://playground.babylonjs.com/textures/environment.dds",
-        scene
-    );
-    scene.environmentTexture = hdrTexture;
-    
-    // Add IBL
-    scene.createDefaultEnvironment({
-        createSkybox: false,
-        createGround: false,
-        enableGroundMirror: false
-    });
-    
-    // Add hemisphere light for better visibility
-    const light = new BABYLON.HemisphericLight(
-        "light",
-        new BABYLON.Vector3(0, 1, 0),
-        scene
-    );
-    light.intensity = 0.7;
-
-    
 }
 
 // Start the application

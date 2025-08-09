@@ -11,14 +11,14 @@ import { detectDevice } from './deviceDetection.js';
  * @returns {GestureControl|null} - Returns the gesture controller if on mobile
  */
 export function setupMobileControls(camera, scene) {
-    // Check if this is a mobile device
+    // Check if this device has touch capabilities
     const device = detectDevice();
-    if (!device.isMobile) {
-        console.log("Desktop device detected. Using standard controls.");
+    if (!device.hasTouch && !device.isTouchDevice) {
+        console.log("No touch capability detected. Using standard controls.");
         return null;
     }
 
-    console.log("Mobile device detected. Setting up mobile-optimized controls.");
+    console.log("Touch capability detected. Setting up touch-optimized controls.");
     
     // Apply mobile-specific camera settings
     optimizeCameraForMobile(camera);
@@ -101,4 +101,31 @@ function setupOrientationHandler(camera, scene) {
             }
         }, 300);
     });
+
+function addTouchDebugIndicator() {
+    const indicator = document.createElement('div');
+    indicator.id = 'touch-debug-indicator';
+    indicator.style.cssText = `
+        position: fixed;
+        bottom: 10px;
+        left: 10px;
+        background: rgba(0, 255, 0, 0.7);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 12px;
+        z-index: 10000;
+        pointer-events: none;
+    `;
+    indicator.textContent = 'Touch Controls Active';
+    document.body.appendChild(indicator);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        if (indicator.parentNode) {
+            indicator.parentNode.removeChild(indicator);
+        }
+    }, 3000);
+}
+
 }

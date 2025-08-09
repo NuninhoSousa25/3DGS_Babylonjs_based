@@ -708,6 +708,43 @@ input[type="file"] {
 }
 
 /* ========================================================================
+   DEBUG BOX
+   ======================================================================== */
+.device-debug-info {
+  position: fixed;
+  top: 80px;
+  left: 16px;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  z-index: var(--z-index-controls);
+  min-width: 200px;
+  border: 1px solid var(--color-border);
+}
+
+.debug-line {
+  margin-bottom: var(--spacing-xs);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.debug-line:last-child {
+  margin-bottom: 0;
+}
+
+.debug-line strong {
+  color: var(--color-accent);
+  margin-right: var(--spacing-md);
+}
+
+/* ========================================================================
    POSITIONING OVERRIDES - ENSURE TOP-RIGHT ALWAYS
    ======================================================================== */
 #controlPanel,

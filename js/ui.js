@@ -16,7 +16,8 @@ const ICONS = {
     fullscreen: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>`,
     fullscreen_exit: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>`,
     reset_view: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>`,
-    share: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92zM18 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM6 13c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm12 7.02c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>`
+    share: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92zM18 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM6 13c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm12 7.02c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>`,
+    file_open: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M20 6h-2.18l.45-1.35c.1-.31.04-.65-.14-.92C18.03 3.47 17.74 3.35 17.44 3.35H6.56c-.3 0-.59.12-.69.38-.18.27-.24.61-.14.92L6.18 6H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM6.5 5h11l-.5 1.5h-10L6.5 5zM20 18H4V8h16v10z"/></svg>`
 };
 
 /* ========================================================================
@@ -52,7 +53,11 @@ export function setupUI(camera, scene, engine, initialPixelRatio) {
     // Setup event handlers
     setupIconButtonHandlers(camera, scene);
     setupSettingsControls(camera, scene);
-    setupModelLoading(scene);
+    
+    // Delay model loading setup to ensure DOM is ready
+    setTimeout(() => {
+        setupModelLoading(scene);
+    }, 100);
     
     // Setup responsive features
     if (hasTouch) {
@@ -290,10 +295,40 @@ function createDevSection() {
             <div class="settings-separator"></div>
             
             <div class="dev-section">
+                <div class="dev-title">Device Detection</div>
+                <div class="scene-info">
+                    <div class="info-row">
+                        <span class="info-label">Touch Support:</span>
+                        <span id="deviceTouch" class="info-value">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Mobile UA:</span>
+                        <span id="deviceMobile" class="info-value">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Touch Device:</span>
+                        <span id="deviceTouchDevice" class="info-value">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Device Type:</span>
+                        <span id="deviceType" class="info-value">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Max Touch Points:</span>
+                        <span id="deviceMaxTouch" class="info-value">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Screen Size:</span>
+                        <span id="deviceScreenSize" class="info-value">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-separator"></div>
+            
+            <div class="dev-section">
                 <div class="dev-title">Load Model</div>
                 <div class="model-loader file-loader">
-                    <label for="modelLoader" class="file-label">Select File</label>
-                    <input type="file" id="modelLoader" accept="${CONFIG.modelLoader.supportedFormats.map(ext => `.${ext}`).join(', ')}">
                     <button id="loadModelFileButton" class="action-button">
                         <span class="button-text">Load from File</span>
                     </button>
@@ -443,86 +478,37 @@ function setupSettingsControls(camera, scene) {
 /**
  * Reset camera to initial view with smooth animation
  */
-/**
- * Reset camera to initial view with smooth animation
- */
 function resetCameraView(camera, scene) {
     if (!camera) return;
     
-    // Ensure we're within camera limits
-    const targetAlpha = CONFIG.camera.alpha;
-    const targetBeta = Math.max(
-        Math.min(CONFIG.camera.beta, 1.75), // Upper limit from cameraControl.js
-        0.2 // Lower limit from cameraControl.js
-    );
-    const targetRadius = Math.max(
-        Math.min(CONFIG.camera.radius, CONFIG.camera.upperRadiusLimit),
-        CONFIG.camera.lowerRadiusLimit
-    );
-    
-    // Create animation group
     const animationGroup = new BABYLON.AnimationGroup("resetViewAnimation");
     
     // Create animations for each camera property
     const animations = [
-        { 
-            property: "target", 
-            startValue: camera.target.clone(), 
-            endValue: BABYLON.Vector3.Zero(),
-            type: BABYLON.Animation.ANIMATIONTYPE_VECTOR3
-        },
-        { 
-            property: "alpha", 
-            startValue: camera.alpha, 
-            endValue: targetAlpha,
-            type: BABYLON.Animation.ANIMATIONTYPE_FLOAT
-        },
-        { 
-            property: "beta", 
-            startValue: camera.beta, 
-            endValue: targetBeta,
-            type: BABYLON.Animation.ANIMATIONTYPE_FLOAT
-        },
-        { 
-            property: "radius", 
-            startValue: camera.radius, 
-            endValue: targetRadius,
-            type: BABYLON.Animation.ANIMATIONTYPE_FLOAT
-        }
+        { property: "target", startValue: camera.target.clone(), endValue: new BABYLON.Vector3(0, 0, 0) },
+        { property: "alpha", startValue: camera.alpha, endValue: CONFIG.camera.alpha },
+        { property: "beta", startValue: camera.beta, endValue: CONFIG.camera.beta },
+        { property: "radius", startValue: camera.radius, endValue: CONFIG.camera.radius }
     ];
     
-    animations.forEach(({ property, startValue, endValue, type }) => {
+    animations.forEach(({ property, startValue, endValue }) => {
         const animation = new BABYLON.Animation(
             `reset${property.charAt(0).toUpperCase() + property.slice(1)}`,
             property,
-            60, // Higher framerate for smoother animation
-            type,
+            30,
+            property === "target" ? BABYLON.Animation.ANIMATIONTYPE_VECTOR3 : BABYLON.Animation.ANIMATIONTYPE_FLOAT,
             BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
         );
         
-        // Use easing function for smoother animation
-        const easingFunction = new BABYLON.CircleEase();
-        easingFunction.setEasingMode(BABYLON.EasingFunction.EASINGMODE_EASEINOUT);
-        animation.setEasingFunction(easingFunction);
-        
         animation.setKeys([
             { frame: 0, value: startValue },
-            { frame: 60, value: endValue }
+            { frame: 30, value: endValue }
         ]);
         
         animationGroup.addTargetedAnimation(animation, camera);
     });
     
-    // Play the animation
-    animationGroup.play();
-    
-    // Ensure camera limits are enforced after animation
-    scene.onBeforeRenderObservable.addOnce(() => {
-        camera.alpha = targetAlpha;
-        camera.beta = targetBeta;
-        camera.radius = targetRadius;
-        camera.target = BABYLON.Vector3.Zero();
-    });
+    animationGroup.play(true);
 }
 
 /**
@@ -655,19 +641,26 @@ function updateTouchSensitivity(sensitivity, camera) {
  * Setup model loading functionality
  */
 function setupModelLoading(scene) {
+    console.log("setupModelLoading called");
     const fileButton = document.getElementById("loadModelFileButton");
     const urlButton = document.getElementById("loadModelUrlButton");
     const spinner = document.getElementById("loadingSpinner");
     
+    console.log("Elements found:");
+    console.log("- fileButton:", fileButton);
+    console.log("- urlButton:", urlButton);
+    console.log("- spinner:", spinner);
+    
     // File loading handler
-  // Add this to setupModelLoading function
-    const fileInput = document.getElementById("modelLoader");
-    if (fileInput) {
-        fileInput.addEventListener("change", async (e) => {
-            if (e.target.files.length > 0) {
-                await loadModelWithSpinner(scene, e.target.files[0], spinner, "file");
-            }
+    if (fileButton) {
+        console.log("Setting up file loading button");
+        fileButton.addEventListener("click", () => {
+            console.log("File loading button clicked");
+            triggerFileLoad(scene);
         });
+        console.log("File loading button event listener attached");
+    } else {
+        console.error("File loading button not found!");
     }
     
     // URL loading handler
@@ -693,7 +686,18 @@ async function loadModelWithSpinner(scene, source, spinner, type) {
         if (spinner) spinner.style.display = "flex";
         
         console.log(`Loading model from ${type}: ${type === 'file' ? source.name : source}`);
+        console.log("Source object:", source);
+        
+        if (type === 'file') {
+            console.log("File details - Name:", source.name, "Size:", source.size, "Type:", source.type);
+            const extension = source.name.split('.').pop().toLowerCase();
+            console.log("File extension:", extension);
+            console.log("Supported formats:", CONFIG.modelLoader.supportedFormats);
+            console.log("Extension supported:", CONFIG.modelLoader.supportedFormats.includes(extension));
+        }
+        
         const result = await loadModel(scene, source, CONFIG.modelLoader.defaultFallbackModel);
+        console.log("Load model result:", result);
         
         // Store model URL for sharing
         if (result && result.currentModel) {
@@ -714,6 +718,72 @@ async function loadModelWithSpinner(scene, source, spinner, type) {
         // Hide loading spinner
         if (spinner) spinner.style.display = "none";
     }
+}
+
+/* ========================================================================
+   FILE LOADING FUNCTIONS
+   ======================================================================== */
+/**
+ * Trigger file loading dialog and handle file selection
+ */
+function triggerFileLoad(scene) {
+    console.log("File open button clicked");
+    
+    // Create a hidden file input element
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.splat,.ply,.spz,.gltf,.glb';
+    fileInput.style.display = 'none';
+    
+    // Handle file selection
+    fileInput.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) {
+            console.log("No file selected");
+            return;
+        }
+        
+        console.log("File selected:", file.name, "Size:", file.size);
+        
+        // Validate file extension
+        const extension = file.name.split('.').pop().toLowerCase();
+        if (!CONFIG.modelLoader.supportedFormats.includes(extension)) {
+            showToast(`Unsupported file format: .${extension}. Supported formats: ${CONFIG.modelLoader.supportedFormats.join(', ')}`, 5000);
+            return;
+        }
+        
+        // Load the model
+        try {
+            const spinner = document.getElementById("loadingSpinner");
+            if (spinner) spinner.style.display = "flex";
+            
+            console.log("Starting model loading...");
+            const result = await loadModel(scene, file, CONFIG.modelLoader.defaultFallbackModel);
+            console.log("Model loaded successfully:", result);
+            
+            // Store model URL for sharing
+            if (result && result.currentModel) {
+                scene.currentModelUrl = URL.createObjectURL(file);
+            }
+            
+            showToast(`Model "${file.name}" loaded successfully`);
+            
+        } catch (error) {
+            console.error("Error loading model:", error);
+            showToast(`Error loading model: ${error.message}`, 5000);
+        } finally {
+            // Hide loading spinner
+            const spinner = document.getElementById("loadingSpinner");
+            if (spinner) spinner.style.display = "none";
+        }
+        
+        // Clean up the input element
+        document.body.removeChild(fileInput);
+    });
+    
+    // Trigger the file dialog
+    document.body.appendChild(fileInput);
+    fileInput.click();
 }
 
 /* ========================================================================

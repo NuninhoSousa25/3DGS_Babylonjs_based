@@ -1,5 +1,7 @@
 // js/helpers.js
 
+import { detectDevice } from './deviceDetection.js';
+
 /**
  * Sets all child meshes of a given mesh to be pickable.
  * @param {BABYLON.Mesh} mesh 
@@ -34,6 +36,17 @@ export function setupUIUpdates(scene, engine) {
     const resolutionCounter = document.getElementById("controlPanelResolution");
     const verticesCounter   = document.getElementById("controlPanelVertices");
     const controlPanelContent = document.getElementById("controlPanelContent");
+    
+    // Device detection elements
+    const deviceTouch       = document.getElementById("deviceTouch");
+    const deviceMobile      = document.getElementById("deviceMobile");
+    const deviceTouchDevice = document.getElementById("deviceTouchDevice");
+    const deviceType        = document.getElementById("deviceType");
+    const deviceMaxTouch    = document.getElementById("deviceMaxTouch");
+    const deviceScreenSize  = document.getElementById("deviceScreenSize");
+    
+    // Cache device detection result - only run once!
+    const cachedDevice = detectDevice();
 
     if (!fpsCounter || !resolutionCounter || !verticesCounter || !controlPanelContent) {
         console.warn("One or more UI elements are missing. UI updates will not work correctly.");
@@ -55,8 +68,16 @@ export function setupUIUpdates(scene, engine) {
             fpsCounter.textContent = fps.toFixed(2);
             resolutionCounter.textContent = `${width} x ${height}`;
             verticesCounter.textContent = totalVertices;
+            
+            // Update device detection info (using cached result)
+            if (deviceTouch && deviceMobile && deviceTouchDevice && deviceType && deviceMaxTouch && deviceScreenSize) {
+                deviceTouch.textContent = cachedDevice.hasTouch ? 'YES' : 'NO';
+                deviceMobile.textContent = cachedDevice.isMobile ? 'YES' : 'NO';
+                deviceTouchDevice.textContent = cachedDevice.isTouchDevice ? 'YES' : 'NO';
+                deviceType.textContent = cachedDevice.type;
+                deviceMaxTouch.textContent = navigator.maxTouchPoints || 0;
+                deviceScreenSize.textContent = `${cachedDevice.screenWidth}×${cachedDevice.screenHeight}`;
+            }
         }
     });
-
-       
 }
