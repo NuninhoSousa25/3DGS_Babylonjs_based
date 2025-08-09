@@ -17,8 +17,7 @@ export const CONFIG = {
         alpha: -Math.PI / 4,            // Horizontal angle
         beta: Math.PI / 3,              // Vertical angle
         radius: 4,                      // Distance from target
-        upperRadiusLimit: 15.0,         // Fixed maximum zoom out distance (now handled by CameraLimits)
-        lowerRadiusLimit: 2.5,          // Fixed minimum zoom in distance (now handled by CameraLimits)
+        // Camera radius limits are now centralized in cameraLimits.defaultLimits.zoom
         minZ: 0.1,                      // Minimum Z clipping plane
         maxZ: 1000,                     // Maximum Z clipping plane
         angularSensibilityX: 2500,      // Mouse sensitivity for horizontal rotation
@@ -136,19 +135,13 @@ export const CONFIG = {
                 downLimit: 5                    // How far down you can look (90° = straight down, 0° = forward)
             },
             
-            // Horizontal rotation limits (in degrees)
-            horizontal: {
-                leftLimit: -180,                // Left rotation limit
-                rightLimit: 180                 // Right rotation limit
-            },
+            // Horizontal rotation limits (now use angle+offset system in camera limits)
             
             // Panning limits 
             panning: {
                 maxDistance: 10.0               // Maximum distance camera target can move from center
             }
         },
-        
-    
         
         // UI settings
         ui: {
@@ -157,12 +150,12 @@ export const CONFIG = {
             defaultPanningRestriction: true,    // Enable panning by default
             visualFeedback: true,               // Show visual feedback when hitting limits
             
-            // Range control settings
+            // Range control settings for UI sliders
             ranges: {
-                zoom: { min: 0.1, max: 50, step: 0.1 },
-                vertical: { min: 0, max: 180, step: 1 },
-                horizontal: { min: -360, max: 360, step: 5 },
-                panning: { min: 1, max: 50, step: 0.5 }
+                zoom: { min: 0.5, max: 30, step: 0.1 },    // Wider range than defaults for flexibility
+                vertical: { min: 0, max: 180, step: 1 },   // Full vertical range in degrees
+                horizontal: { min: -360, max: 360, step: 5 }, // Full horizontal range
+                panning: { min: 1, max: 50, step: 0.5 }    // Panning distance range
             }
         }
     }

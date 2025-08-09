@@ -21,6 +21,168 @@ const ICONS = {
 };
 
 /* ========================================================================
+   DOM UTILITY FUNCTIONS
+   ======================================================================== */
+
+/**
+ * Creates a DOM element with optional class, innerHTML, and attributes
+ */
+function createElement(tag, options = {}) {
+    const element = document.createElement(tag);
+    if (options.className) element.className = options.className;
+    if (options.innerHTML) element.innerHTML = options.innerHTML;
+    if (options.id) element.id = options.id;
+    if (options.attributes) {
+        Object.entries(options.attributes).forEach(([key, value]) => {
+            element.setAttribute(key, value);
+        });
+    }
+    return element;
+}
+
+/**
+ * Adds a toggle event listener with standardized behavior
+ */
+function addToggleListener(element, callback) {
+    element.addEventListener('change', (e) => {
+        callback(e.target.checked, e);
+    });
+}
+
+/**
+ * Adds a range input event listener with standardized behavior
+ */
+function addRangeListener(element, callback, displayElement = null) {
+    element.addEventListener('input', (e) => {
+        const value = parseFloat(e.target.value);
+        if (displayElement) displayElement.textContent = value;
+        callback(value, e);
+    });
+}
+
+/**
+ * Creates a standardized toggle switch HTML
+ */
+function createToggleSwitch(id, label, checked = false) {
+    return `
+        <div class="control-group">
+            <label for="${id}">${label}</label>
+            <label class="switch">
+                <input type="checkbox" id="${id}"${checked ? ' checked' : ''}>
+                <span class="slider round"></span>
+            </label>
+        </div>
+    `;
+}
+
+/**
+ * Creates a standardized range control HTML
+ */
+function createRangeControl(id, label, min, max, value, step = 1, unit = '') {
+    return `
+        <div class="control-group">
+            <label for="${id}">${label}</label>
+            <div class="range-container">
+                <input type="range" id="${id}" min="${min}" max="${max}" value="${value}" step="${step}">
+                <span id="${id}Display" class="range-value">${value}${unit}</span>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Gets all camera limits control elements
+ */
+function getCameraLimitsElements() {
+    return {
+        // Toggle controls
+        masterToggle: document.getElementById('cameraLimitsToggle'),
+        limitZoomToggle: document.getElementById('limitZoomToggle'),
+        limitVerticalToggle: document.getElementById('limitVerticalToggle'),
+        limitHorizontalToggle: document.getElementById('limitHorizontalToggle'),
+        limitPanToggle: document.getElementById('limitPanToggle'),
+        
+        // Range controls
+        zoomMinRange: document.getElementById('zoomMinRange'),
+        zoomMaxRange: document.getElementById('zoomMaxRange'),
+        verticalUpRange: document.getElementById('verticalUpRange'),
+        verticalDownRange: document.getElementById('verticalDownRange'),
+        horizontalAngleRange: document.getElementById('horizontalAngleRange'),
+        horizontalOffsetRange: document.getElementById('horizontalOffsetRange'),
+        
+        // Display elements
+        zoomMinDisplay: document.getElementById('zoomMinDisplay'),
+        zoomMaxDisplay: document.getElementById('zoomMaxDisplay'),
+        verticalUpDisplay: document.getElementById('verticalUpDisplay'),
+        verticalDownDisplay: document.getElementById('verticalDownDisplay'),
+        horizontalAngleDisplay: document.getElementById('horizontalAngleDisplay'),
+        horizontalOffsetDisplay: document.getElementById('horizontalOffsetDisplay'),
+        
+        // Detail sections
+        zoomDetails: document.getElementById('zoomLimitDetails'),
+        verticalDetails: document.getElementById('verticalLimitDetails'),
+        horizontalDetails: document.getElementById('horizontalLimitDetails'),
+        
+        // Action buttons
+        resetButton: document.getElementById('resetLimitsButton')
+    };
+}
+
+/**
+ * Sets up camera limits toggle event handlers
+ */
+function setupCameraLimitsToggles(elements, cameraLimits) {
+    const { masterToggle, limitZoomToggle, limitVerticalToggle, limitHorizontalToggle, limitPanToggle,
+            zoomDetails, verticalDetails, horizontalDetails, 
+            verticalUpRange, verticalDownRange, horizontalAngleRange, horizontalOffsetRange } = elements;
+    
+    // Master toggle
+    if (masterToggle) {
+        addToggleListener(masterToggle, (checked) => {
+            cameraLimits.setEnabled(checked);
+            console.log('Camera limits enabled:', checked);
+        });
+    }
+    
+    // Individual limit toggles
+    if (limitZoomToggle) {
+        addToggleListener(limitZoomToggle, (checked) => {
+            const limits = cameraLimits.getCurrentLimits();
+            cameraLimits.setDistanceLimits(checked, limits.radiusMin, limits.radiusMax);
+            zoomDetails.style.display = checked ? 'block' : 'none';
+            console.log('Zoom limits enabled:', checked);
+        });
+    }
+    
+    if (limitVerticalToggle) {
+        addToggleListener(limitVerticalToggle, (checked) => {
+            const upValue = parseFloat(verticalUpRange.value);
+            const downValue = parseFloat(verticalDownRange.value);
+            cameraLimits.setVerticalLimitsUpDown(checked, upValue, downValue);
+            verticalDetails.style.display = checked ? 'block' : 'none';
+            console.log('Vertical limits enabled:', checked);
+        });
+    }
+    
+    if (limitHorizontalToggle) {
+        addToggleListener(limitHorizontalToggle, (checked) => {
+            const totalAngle = parseFloat(horizontalAngleRange.value);
+            const offset = parseFloat(horizontalOffsetRange.value);
+            cameraLimits.setHorizontalLimitsAngleOffset(checked, totalAngle, offset);
+            horizontalDetails.style.display = checked ? 'block' : 'none';
+            console.log('Horizontal limits enabled:', checked);
+        });
+    }
+    
+    if (limitPanToggle) {
+        addToggleListener(limitPanToggle, (checked) => {
+            cameraLimits.setPanningEnabled(checked);
+            console.log('Panning enabled:', checked);
+        });
+    }
+}
+
+/* ========================================================================
    MAIN UI SETUP FUNCTION
    ======================================================================== */
 /**
@@ -122,30 +284,28 @@ function removeExistingUI() {
  * Create the main control panel container
  */
 function createControlPanel() {
-    const controlPanel = document.createElement("div");
-    controlPanel.id = "controlPanel";
-    controlPanel.className = "control-panel";
-    return controlPanel;
+    return createElement("div", {
+        id: "controlPanel",
+        className: "control-panel"
+    });
 }
 
 /**
  * Create the unified 6-icon bar
  */
 function createIconBar() {
-    const iconBar = document.createElement("div");
-    iconBar.id = "iconBar";
-    iconBar.className = "icon-bar";
-    
-    iconBar.innerHTML = `
-        <button id="settingsButton" class="icon-button" title="Settings">${ICONS.settings}</button>
-        <button id="infoButton" class="icon-button" title="Controls Info">${ICONS.info}</button>
-        <button id="resetViewButton" class="icon-button" title="Reset View">${ICONS.reset_view}</button>
-        <button id="fullscreenButton" class="icon-button" title="Toggle Fullscreen">${ICONS.fullscreen}</button>
-        <button id="devButton" class="icon-button" title="Developer Tools">${ICONS.dev}</button>
-        <button id="shareButton" class="icon-button" title="Share View">${ICONS.share}</button>
-    `;
-    
-    return iconBar;
+    return createElement("div", {
+        id: "iconBar",
+        className: "icon-bar",
+        innerHTML: `
+            <button id="settingsButton" class="icon-button" title="Settings">${ICONS.settings}</button>
+            <button id="infoButton" class="icon-button" title="Controls Info">${ICONS.info}</button>
+            <button id="resetViewButton" class="icon-button" title="Reset View">${ICONS.reset_view}</button>
+            <button id="fullscreenButton" class="icon-button" title="Toggle Fullscreen">${ICONS.fullscreen}</button>
+            <button id="devButton" class="icon-button" title="Developer Tools">${ICONS.dev}</button>
+            <button id="shareButton" class="icon-button" title="Share View">${ICONS.share}</button>
+        `
+    });
 }
 
 /**
@@ -385,16 +545,16 @@ function setupSettingsControls(camera, scene) {
     // Sharpening toggle
     const sharpenToggle = document.getElementById('sharpenToggle');
     if (sharpenToggle && scene.pipeline) {
-        sharpenToggle.addEventListener('change', (e) => {
-            scene.pipeline.sharpenEnabled = e.target.checked;
+        addToggleListener(sharpenToggle, (checked) => {
+            scene.pipeline.sharpenEnabled = checked;
         });
     }
 
     // Anti-aliasing toggle
     const fxaaToggle = document.getElementById('fxaaToggle');
     if (fxaaToggle && scene.pipeline) {
-        fxaaToggle.addEventListener('change', (e) => {
-            scene.pipeline.fxaaEnabled = e.target.checked;
+        addToggleListener(fxaaToggle, (checked) => {
+            scene.pipeline.fxaaEnabled = checked;
         });
     }
     
@@ -409,8 +569,8 @@ function setupSettingsControls(camera, scene) {
     // Touch sensitivity (if available)
     const touchSensitivityRange = document.getElementById('touchSensitivityRange');
     if (touchSensitivityRange) {
-        touchSensitivityRange.addEventListener('input', (e) => {
-            const sensitivity = parseFloat(e.target.value) / 5.0;
+        addRangeListener(touchSensitivityRange, (value) => {
+            const sensitivity = value / 5.0;
             updateTouchSensitivity(sensitivity, camera);
         });
     }
@@ -575,208 +735,156 @@ function createSettingsSection(hasTouch) {
     `;
 }
 
-// UPDATED: setupCameraLimitsControls function with adjusted controls
-function setupCameraLimitsControls(camera, scene) {
-    const cameraLimits = scene.cameraLimits;
-    if (!cameraLimits) return;
+/**
+ * Helper to convert beta angle to up/down degrees
+ */
+function betaToUpDown(betaRadians) {
+    return (betaRadians - Math.PI/2) * 180 / Math.PI;
+}
+
+/**
+ * Update UI elements with current camera limits
+ */
+function updateUIFromLimits(elements, cameraLimits) {
+    const limits = cameraLimits.getCurrentLimits();
     
-    // Get all control elements
-    const masterToggle = document.getElementById('cameraLimitsToggle');
-    const limitZoomToggle = document.getElementById('limitZoomToggle');
-    const limitVerticalToggle = document.getElementById('limitVerticalToggle');
-    const limitHorizontalToggle = document.getElementById('limitHorizontalToggle');
-    const limitPanToggle = document.getElementById('limitPanToggle');
+    // Update toggles
+    elements.masterToggle.checked = cameraLimits.isEnabled;
+    elements.limitZoomToggle.checked = limits.restrictDistance;
+    elements.limitVerticalToggle.checked = limits.restrictVertical;
+    elements.limitHorizontalToggle.checked = limits.restrictHorizontal;
+    elements.limitPanToggle.checked = limits.enablePanning;
     
-    // Range controls
-    const zoomMinRange = document.getElementById('zoomMinRange');
-    const zoomMaxRange = document.getElementById('zoomMaxRange');
-    const verticalUpRange = document.getElementById('verticalUpRange');
-    const verticalDownRange = document.getElementById('verticalDownRange');
-    const horizontalAngleRange = document.getElementById('horizontalAngleRange');
-    const horizontalOffsetRange = document.getElementById('horizontalOffsetRange');
+    // Update zoom ranges
+    elements.zoomMinRange.value = limits.radiusMin;
+    elements.zoomMaxRange.value = limits.radiusMax;
+    elements.zoomMinDisplay.textContent = limits.radiusMin.toFixed(1);
+    elements.zoomMaxDisplay.textContent = limits.radiusMax.toFixed(1);
     
-    // Display elements
-    const zoomMinDisplay = document.getElementById('zoomMinDisplay');
-    const zoomMaxDisplay = document.getElementById('zoomMaxDisplay');
-    const verticalUpDisplay = document.getElementById('verticalUpDisplay');
-    const verticalDownDisplay = document.getElementById('verticalDownDisplay');
-    const horizontalAngleDisplay = document.getElementById('horizontalAngleDisplay');
-    const horizontalOffsetDisplay = document.getElementById('horizontalOffsetDisplay');
+    // Update vertical ranges (convert beta to up/down)
+    const upLimit = betaToUpDown(limits.betaMin);
+    const downLimit = betaToUpDown(limits.betaMax);
+    elements.verticalUpRange.value = Math.round(upLimit);
+    elements.verticalDownRange.value = Math.round(downLimit);
+    elements.verticalUpDisplay.textContent = Math.round(upLimit) + '°';
+    elements.verticalDownDisplay.textContent = Math.round(downLimit) + '°';
     
-    // Detail sections
-    const zoomDetails = document.getElementById('zoomLimitDetails');
-    const verticalDetails = document.getElementById('verticalLimitDetails');
-    const horizontalDetails = document.getElementById('horizontalLimitDetails');
+    // Update horizontal ranges (calculate angle and offset from min/max)
+    const alphaMinDeg = limits.alphaMin * 180 / Math.PI;
+    const alphaMaxDeg = limits.alphaMax * 180 / Math.PI;
+    const totalAngle = alphaMaxDeg - alphaMinDeg;
+    const centerOffset = (alphaMinDeg + alphaMaxDeg) / 2;
     
-    // Action buttons (only reset button now)
-    const resetButton = document.getElementById('resetLimitsButton');
+    elements.horizontalAngleRange.value = Math.round(Math.min(360, Math.max(30, totalAngle)));
+    elements.horizontalOffsetRange.value = Math.round(centerOffset);
+    elements.horizontalAngleDisplay.textContent = Math.round(totalAngle) + '°';
+    elements.horizontalOffsetDisplay.textContent = Math.round(centerOffset) + '°';
     
-    // Helper function to convert beta angle to up/down degrees
-    function betaToUpDown(betaRadians) {
-        return (betaRadians - Math.PI/2) * 180 / Math.PI;
-    }
-    
-    // Initialize UI with current limits
-    function updateUIFromLimits() {
-        const limits = cameraLimits.getCurrentLimits();
-        
-        // Update toggles
-        masterToggle.checked = cameraLimits.isEnabled;
-        limitZoomToggle.checked = limits.restrictDistance;
-        limitVerticalToggle.checked = limits.restrictVertical;
-        limitHorizontalToggle.checked = limits.restrictHorizontal;
-        limitPanToggle.checked = limits.enablePanning;
-        
-        // Update zoom ranges
-        zoomMinRange.value = limits.radiusMin;
-        zoomMaxRange.value = limits.radiusMax;
-        zoomMinDisplay.textContent = limits.radiusMin.toFixed(1);
-        zoomMaxDisplay.textContent = limits.radiusMax.toFixed(1);
-        
-        // Update vertical ranges (convert beta to up/down)
-        const upLimit = betaToUpDown(limits.betaMin);
-        const downLimit = betaToUpDown(limits.betaMax);
-        verticalUpRange.value = Math.round(upLimit);
-        verticalDownRange.value = Math.round(downLimit);
-        verticalUpDisplay.textContent = Math.round(upLimit) + '°';
-        verticalDownDisplay.textContent = Math.round(downLimit) + '°';
-        
-        // Update horizontal ranges (calculate angle and offset from min/max)
-        const alphaMinDeg = limits.alphaMin * 180 / Math.PI;
-        const alphaMaxDeg = limits.alphaMax * 180 / Math.PI;
-        const totalAngle = alphaMaxDeg - alphaMinDeg;
-        const centerOffset = (alphaMinDeg + alphaMaxDeg) / 2;
-        
-        horizontalAngleRange.value = Math.round(Math.min(360, Math.max(30, totalAngle)));
-        horizontalOffsetRange.value = Math.round(centerOffset);
-        horizontalAngleDisplay.textContent = Math.round(totalAngle) + '°';
-        horizontalOffsetDisplay.textContent = Math.round(centerOffset) + '°';
-        
-        // Show/hide detail sections
-        zoomDetails.style.display = limits.restrictDistance ? 'block' : 'none';
-        verticalDetails.style.display = limits.restrictVertical ? 'block' : 'none';
-        horizontalDetails.style.display = limits.restrictHorizontal ? 'block' : 'none';
-    }
-    
-    // Master toggle
-    if (masterToggle) {
-        masterToggle.addEventListener('change', (e) => {
-            cameraLimits.setEnabled(e.target.checked);
-            console.log('Camera limits enabled:', e.target.checked);
-        });
-    }
-    
-    // Individual limit toggles
-    if (limitZoomToggle) {
-        limitZoomToggle.addEventListener('change', (e) => {
-            const limits = cameraLimits.getCurrentLimits();
-            cameraLimits.setDistanceLimits(e.target.checked, limits.radiusMin, limits.radiusMax);
-            zoomDetails.style.display = e.target.checked ? 'block' : 'none';
-            console.log('Zoom limits enabled:', e.target.checked);
-        });
-    }
-    
-    if (limitVerticalToggle) {
-        limitVerticalToggle.addEventListener('change', (e) => {
-            const upValue = parseFloat(verticalUpRange.value);
-            const downValue = parseFloat(verticalDownRange.value);
-            cameraLimits.setVerticalLimitsUpDown(e.target.checked, upValue, downValue);
-            verticalDetails.style.display = e.target.checked ? 'block' : 'none';
-            console.log('Vertical limits enabled:', e.target.checked);
-        });
-    }
-    
-    if (limitHorizontalToggle) {
-        limitHorizontalToggle.addEventListener('change', (e) => {
-            const totalAngle = parseFloat(horizontalAngleRange.value);
-            const offset = parseFloat(horizontalOffsetRange.value);
-            cameraLimits.setHorizontalLimitsAngleOffset(e.target.checked, totalAngle, offset);
-            horizontalDetails.style.display = e.target.checked ? 'block' : 'none';
-            console.log('Horizontal limits enabled:', e.target.checked);
-        });
-    }
-    
-    if (limitPanToggle) {
-        limitPanToggle.addEventListener('change', (e) => {
-            cameraLimits.setPanningEnabled(e.target.checked);
-            console.log('Panning enabled:', e.target.checked);
-        });
-    }
-    
-    // Range control event handlers
-    function setupRangeControl(rangeElement, displayElement, updateCallback) {
-        if (rangeElement && displayElement) {
-            rangeElement.addEventListener('input', (e) => {
-                const value = parseFloat(e.target.value);
-                updateCallback(value);
-            });
-        }
-    }
-    
+    // Show/hide detail sections
+    elements.zoomDetails.style.display = limits.restrictDistance ? 'block' : 'none';
+    elements.verticalDetails.style.display = limits.restrictVertical ? 'block' : 'none';
+    elements.horizontalDetails.style.display = limits.restrictHorizontal ? 'block' : 'none';
+}
+
+/**
+ * Setup all range control event handlers for camera limits
+ */
+function setupCameraLimitsRanges(elements, cameraLimits) {
     // Zoom ranges
-    setupRangeControl(zoomMinRange, zoomMinDisplay, (value) => {
-        const limits = cameraLimits.getCurrentLimits();
-        cameraLimits.setDistanceLimits(limits.restrictDistance, value, limits.radiusMax);
-        zoomMinDisplay.textContent = value.toFixed(1);
-        console.log('Min zoom set to:', value);
-    });
+    if (elements.zoomMinRange && elements.zoomMinDisplay) {
+        addRangeListener(elements.zoomMinRange, (value) => {
+            const limits = cameraLimits.getCurrentLimits();
+            cameraLimits.setDistanceLimits(limits.restrictDistance, value, limits.radiusMax);
+            elements.zoomMinDisplay.textContent = value.toFixed(1);
+            console.log('Min zoom set to:', value);
+        });
+    }
     
-    setupRangeControl(zoomMaxRange, zoomMaxDisplay, (value) => {
-        const limits = cameraLimits.getCurrentLimits();
-        cameraLimits.setDistanceLimits(limits.restrictDistance, limits.radiusMin, value);
-        zoomMaxDisplay.textContent = value.toFixed(1);
-        console.log('Max zoom set to:', value);
-    });
+    if (elements.zoomMaxRange && elements.zoomMaxDisplay) {
+        addRangeListener(elements.zoomMaxRange, (value) => {
+            const limits = cameraLimits.getCurrentLimits();
+            cameraLimits.setDistanceLimits(limits.restrictDistance, limits.radiusMin, value);
+            elements.zoomMaxDisplay.textContent = value.toFixed(1);
+            console.log('Max zoom set to:', value);
+        });
+    }
     
     // Vertical ranges (up/down with new system)
-    setupRangeControl(verticalUpRange, verticalUpDisplay, (value) => {
-        const downValue = parseFloat(verticalDownRange.value);
-        cameraLimits.setVerticalLimitsUpDown(true, value, downValue);
-        verticalUpDisplay.textContent = value + '°';
-        console.log('Up limit set to:', value + '° (looking up)');
-    });
+    if (elements.verticalUpRange && elements.verticalUpDisplay) {
+        addRangeListener(elements.verticalUpRange, (value) => {
+            const downValue = parseFloat(elements.verticalDownRange.value);
+            cameraLimits.setVerticalLimitsUpDown(true, value, downValue);
+            elements.verticalUpDisplay.textContent = value + '°';
+            console.log('Up limit set to:', value + '° (looking up)');
+        });
+    }
     
-    setupRangeControl(verticalDownRange, verticalDownDisplay, (value) => {
-        const upValue = parseFloat(verticalUpRange.value);
-        cameraLimits.setVerticalLimitsUpDown(true, upValue, value);
-        verticalDownDisplay.textContent = value + '°';
-        console.log('Down limit set to:', value + '° (looking down)');
-    });
+    if (elements.verticalDownRange && elements.verticalDownDisplay) {
+        addRangeListener(elements.verticalDownRange, (value) => {
+            const upValue = parseFloat(elements.verticalUpRange.value);
+            cameraLimits.setVerticalLimitsUpDown(true, upValue, value);
+            elements.verticalDownDisplay.textContent = value + '°';
+            console.log('Down limit set to:', value + '° (looking down)');
+        });
+    }
     
     // Horizontal ranges (angle + offset system)
     function updateHorizontalLimits() {
-        const totalAngle = parseFloat(horizontalAngleRange.value);
-        const offset = parseFloat(horizontalOffsetRange.value);
+        const totalAngle = parseFloat(elements.horizontalAngleRange.value);
+        const offset = parseFloat(elements.horizontalOffsetRange.value);
         
         cameraLimits.setHorizontalLimitsAngleOffset(true, totalAngle, offset);
         
         console.log(`Horizontal limits: ${totalAngle}° total, centered at ${offset}°`);
     }
     
-    setupRangeControl(horizontalAngleRange, horizontalAngleDisplay, (value) => {
-        horizontalAngleDisplay.textContent = value + '°';
-        updateHorizontalLimits();
-    });
+    if (elements.horizontalAngleRange && elements.horizontalAngleDisplay) {
+        addRangeListener(elements.horizontalAngleRange, (value) => {
+            elements.horizontalAngleDisplay.textContent = value + '°';
+            updateHorizontalLimits();
+        });
+    }
     
-    setupRangeControl(horizontalOffsetRange, horizontalOffsetDisplay, (value) => {
-        horizontalOffsetDisplay.textContent = value + '°';
-        updateHorizontalLimits();
-    });
-    
-    // REMOVED: recalculateButton event handler
-    
-    // Reset button (only remaining action button)
-    if (resetButton) {
-        resetButton.addEventListener('click', () => {
+    if (elements.horizontalOffsetRange && elements.horizontalOffsetDisplay) {
+        addRangeListener(elements.horizontalOffsetRange, (value) => {
+            elements.horizontalOffsetDisplay.textContent = value + '°';
+            updateHorizontalLimits();
+        });
+    }
+}
+
+/**
+ * Setup reset functionality for camera limits
+ */
+function setupCameraLimitsReset(elements, cameraLimits, updateUICallback) {
+    if (elements.resetButton) {
+        elements.resetButton.addEventListener('click', () => {
             cameraLimits.resetToDefaults();
-            updateUIFromLimits(); // Refresh UI with default values
+            updateUICallback(); // Refresh UI with default values
             showToast('Camera limits reset to defaults');
             console.log('Camera limits reset to defaults');
         });
     }
+}
+
+// UPDATED: setupCameraLimitsControls function - now much smaller and focused
+function setupCameraLimitsControls(camera, scene) {
+    const cameraLimits = scene.cameraLimits;
+    if (!cameraLimits) return;
+    
+    // Get all control elements
+    const elements = getCameraLimitsElements();
+    
+    // Create local update function that can be passed to reset handler
+    const updateUI = () => updateUIFromLimits(elements, cameraLimits);
+    
+    // Setup all control handlers using new helpers
+    setupCameraLimitsToggles(elements, cameraLimits);
+    setupCameraLimitsRanges(elements, cameraLimits);
+    setupCameraLimitsReset(elements, cameraLimits, updateUI);
     
     // Initialize the UI
-    updateUIFromLimits();
+    updateUI();
     
     console.log('Camera limits controls initialized (auto-calculate removed)');
 }
@@ -804,8 +912,8 @@ function resetCameraView(camera, scene) {
     
     // Respect camera radius limits when resetting
     const targetRadius = Math.max(
-        Math.min(CONFIG.camera.radius, CONFIG.camera.upperRadiusLimit),
-        CONFIG.camera.lowerRadiusLimit
+        Math.min(CONFIG.camera.radius, CONFIG.cameraLimits.defaultLimits.zoom.max),
+        CONFIG.cameraLimits.defaultLimits.zoom.min
     );
     
     console.log(`Resetting to: alpha=${CONFIG.camera.alpha}, beta=${CONFIG.camera.beta}, radius=${targetRadius}`);
@@ -869,8 +977,8 @@ function resetCameraView(camera, scene) {
         
         // Ensure camera constraints are properly applied after animation
         camera.radius = Math.max(
-            Math.min(camera.radius, CONFIG.camera.upperRadiusLimit),
-            CONFIG.camera.lowerRadiusLimit
+            Math.min(camera.radius, CONFIG.cameraLimits.defaultLimits.zoom.max),
+            CONFIG.cameraLimits.defaultLimits.zoom.min
         );
         
         // Re-enable auto-rotation if it was previously active

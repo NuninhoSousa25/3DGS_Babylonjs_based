@@ -86,10 +86,10 @@ function handleDoubleTap(scene, camera, isAnimating, setAnimating) {
     const pickResult = getPickResult(scene, camera, scene.pointerX, scene.pointerY);
     if (pickResult && pickResult.hit && pickResult.pickedPoint) {
         const distanceToPoint = BABYLON.Vector3.Distance(camera.target, pickResult.pickedPoint);
-        // Use fixed camera limits from config
+        // Use centralized camera limits from config
         const targetRadius = Math.max(
-            Math.min(distanceToPoint * 3.5, CONFIG.camera.upperRadiusLimit),
-            CONFIG.camera.lowerRadiusLimit
+            Math.min(distanceToPoint * 3.5, CONFIG.cameraLimits.defaultLimits.zoom.max),
+            CONFIG.cameraLimits.defaultLimits.zoom.min
         );
 
         setAnimating(true);

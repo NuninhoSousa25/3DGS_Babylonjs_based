@@ -22,20 +22,15 @@ export class CameraLimits {
             betaMin: 0.1,             // Prevent camera from going below ground
             betaMax: Math.PI - 0.1,   // Prevent camera from going above
             
-            // Distance limits (radius)
-            radiusMin: CONFIG.camera.lowerRadiusLimit,
-            radiusMax: CONFIG.camera.upperRadiusLimit,
+            // Distance limits (radius) - use centralized config values
+            radiusMin: CONFIG.cameraLimits.defaultLimits.zoom.min,
+            radiusMax: CONFIG.cameraLimits.defaultLimits.zoom.max,
             
             // Restriction types
             restrictHorizontal: false,  // Limit alpha rotation
             restrictVertical: true,     // Limit beta rotation 
             restrictDistance: true,     // Limit zoom
             enablePanning: true,        // Enable/disable panning functionality
-            
-            // Model-specific settings (not used without auto-calc)
-            modelCenter: { x: 0, y: 0, z: 0 },
-            modelSize: { x: 2, y: 2, z: 2 },
-            autoCalculated: false // Always false now
         };
         
         this.isEnabled = true;
@@ -45,13 +40,6 @@ export class CameraLimits {
         
         this.setupConstraints();
     }
-
- 
-
-    /**
-     * Get bounding information from various model types
-     */
-
 
     /**
      * Setup camera constraint observers
@@ -257,11 +245,11 @@ export class CameraLimits {
             defaultLimits.vertical.downLimit || 80
         );
         
-        // Set horizontal limits using angle/offset system
+        // Set horizontal limits using angle/offset system (defaults since horizontal is disabled by default)
         this.setHorizontalLimitsAngleOffset(
             defaultRestrictions.horizontal,
-            defaultLimits.horizontal.totalAngle || 360,
-            defaultLimits.horizontal.offset || 0
+            360,  // Full 360° freedom by default
+            0     // No offset by default
         );
         
         // Set panning enabled/disabled
@@ -271,11 +259,6 @@ export class CameraLimits {
         this.limits.restrictDistance = defaultRestrictions.zoom;
         this.limits.restrictVertical = defaultRestrictions.vertical;
         this.limits.restrictHorizontal = defaultRestrictions.horizontal;
-        
-        // Model info (not used without auto-calc)
-        this.limits.modelCenter = { x: 0, y: 0, z: 0 };
-        this.limits.modelSize = { x: 2, y: 2, z: 2 };
-        this.limits.autoCalculated = false; // Always false now
         
         this.updateCameraConstraints();
         
@@ -294,37 +277,6 @@ export class CameraLimits {
 setUIUpdateCallback(callback) {
     this.onLimitsChanged = callback;
 }
-
-/**
- * Get limits in UI-friendly format (degrees instead of radians)
- */
-    getLimitsForUI() {
-        return {
-            // Restrictions
-            enabled: this.isEnabled,
-            restrictDistance: this.limits.restrictDistance,
-            restrictVertical: this.limits.restrictVertical,
-            restrictHorizontal: this.limits.restrictHorizontal,
-            enablePanning: this.limits.enablePanning,
-            
-            // Values in user-friendly units
-            zoom: {
-                min: this.limits.radiusMin,
-                max: this.limits.radiusMax
-            },
-            vertical: {
-                min: Math.round(this.limits.betaMin * 180 / Math.PI),
-                max: Math.round(this.limits.betaMax * 180 / Math.PI)
-            },
-            horizontal: {
-                min: Math.round(this.limits.alphaMin * 180 / Math.PI),
-                max: Math.round(this.limits.alphaMax * 180 / Math.PI)
-            },
-            panning: {
-                enabled: this.limits.enablePanning
-            }
-        }
-    };
 
     /**
      * Cleanup
@@ -436,28 +388,6 @@ setUIUpdateCallback(callback) {
         };
     }
 
-        
-    /**
-     * Enhanced distance limits with validation
-     * @param {boolean} enabled - Enable distance limits
-     * @param {number} minDistance - Minimum distance
-     * @param {number} maxDistance - Maximum distance
-     */
-    setDistanceLimits(enabled, minDistance = 1, maxDistance = 20) {
-        this.limits.restrictDistance = enabled;
-        
-        // Ensure min is less than max and positive
-        minDistance = Math.max(0.1, minDistance);
-        maxDistance = Math.max(minDistance + 0.1, maxDistance);
-        
-        this.limits.radiusMin = minDistance;
-        this.limits.radiusMax = maxDistance;
-        this.updateCameraConstraints();
-        
-        console.log(`Distance limits ${enabled ? 'enabled' : 'disabled'}:`, 
-            `${minDistance.toFixed(1)} to ${maxDistance.toFixed(1)}`);
-    }
-
     /**
      * URL serialization for sharing
      */
@@ -489,29 +419,4 @@ setUIUpdateCallback(callback) {
         };
     }
 
-    /**
-     * Apply limits from URL parameters
-     */
-    applyLimitsFromUrl(urlParams) {
-        const restrictions = urlParams.get('restrictions') || '';
-        
-        // Apply restriction flags
-        this.limits.restrictHorizontal = restrictions.includes('h');
-        this.limits.restrictVertical = restrictions.includes('v');
-        this.limits.restrictDistance = restrictions.includes('d');
-        this.limits.enablePanning = restrictions.includes('p');
-        
-        // Apply limit values
-        if (urlParams.has('alphaMin')) this.limits.alphaMin = parseFloat(urlParams.get('alphaMin'));
-        if (urlParams.has('alphaMax')) this.limits.alphaMax = parseFloat(urlParams.get('alphaMax'));
-        if (urlParams.has('betaMin')) this.limits.betaMin = parseFloat(urlParams.get('betaMin'));
-        if (urlParams.has('betaMax')) this.limits.betaMax = parseFloat(urlParams.get('betaMax'));
-        if (urlParams.has('radiusMin')) this.limits.radiusMin = parseFloat(urlParams.get('radiusMin'));
-        if (urlParams.has('radiusMax')) this.limits.radiusMax = parseFloat(urlParams.get('radiusMax'));
-        
-        // Panning is now just enabled/disabled via the 'p' restriction flag
-        
-        this.updateCameraConstraints();
-        console.log("Applied camera limits from URL:", this.limits);
-    }
 }

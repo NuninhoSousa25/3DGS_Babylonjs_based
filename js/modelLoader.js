@@ -68,7 +68,7 @@ export function centerAndFitModel(model, camera, scene) {
         const targetRadius = maxDimension * 2;
         
         // Set camera to fit model
-        camera.radius = Math.min(targetRadius, CONFIG.camera.upperRadiusLimit);
+        camera.radius = Math.min(targetRadius, CONFIG.cameraLimits.defaultLimits.zoom.max);
         camera.target = BABYLON.Vector3.Zero();
         
         console.log("Model centered and fitted to view");

@@ -52,9 +52,7 @@ function optimizeCameraForMobile(camera) {
     camera.panningInertia = 0.5; // Reduced from desktop default
     camera.angularInertia = 0.4; // Reduced for more immediate feedback
     
-    // Fix upper and lower radius limits to prevent extreme zooming
-    camera.upperRadiusLimit = CONFIG.camera.upperRadiusLimit;
-    camera.lowerRadiusLimit = CONFIG.camera.lowerRadiusLimit;
+    // Camera radius limits are now handled by the CameraLimits system
     
     // Disable the default rotation behavior if using custom gesture controller
     if (camera.inputs.attached.pointers) {
@@ -94,7 +92,7 @@ function setupOrientationHandler(camera, scene) {
             // Optionally adjust camera parameters based on orientation
             if (window.matchMedia("(orientation: portrait)").matches) {
                 // Portrait specific adjustments if needed
-                camera.radius = Math.min(camera.radius, CONFIG.camera.upperRadiusLimit * 0.9);
+                camera.radius = Math.min(camera.radius, CONFIG.cameraLimits.defaultLimits.zoom.max * 0.9);
             } else {
                 // Landscape specific adjustments if needed
                 camera.beta = Math.min(camera.beta, Math.PI / 2.5);
