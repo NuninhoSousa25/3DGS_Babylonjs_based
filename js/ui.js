@@ -481,34 +481,101 @@ function setupSettingsControls(camera, scene) {
 function resetCameraView(camera, scene) {
     if (!camera) return;
     
-    const animationGroup = new BABYLON.AnimationGroup("resetViewAnimation");
+    console.log("Resetting camera view to default position");
+    
+    // Stop any existing auto-rotation temporarily
+    let wasAutoRotating = false;
+    if (camera.autoRotationBehavior) {
+        wasAutoRotating = camera.autoRotationBehavior.idleRotationSpeed > 0;
+        if (wasAutoRotating) {
+            camera.autoRotationBehavior.idleRotationSpeed = 0;
+        }
+    }
+    
+    // Respect camera radius limits when resetting
+    const targetRadius = Math.max(
+        Math.min(CONFIG.camera.radius, CONFIG.camera.upperRadiusLimit),
+        CONFIG.camera.lowerRadiusLimit
+    );
+    
+    console.log(`Resetting to: alpha=${CONFIG.camera.alpha}, beta=${CONFIG.camera.beta}, radius=${targetRadius}`);
+    
+    // Create animation group
+    const animationGroup = new BABYLON.AnimationGroup("resetViewAnimation", scene);
     
     // Create animations for each camera property
     const animations = [
-        { property: "target", startValue: camera.target.clone(), endValue: new BABYLON.Vector3(0, 0, 0) },
-        { property: "alpha", startValue: camera.alpha, endValue: CONFIG.camera.alpha },
-        { property: "beta", startValue: camera.beta, endValue: CONFIG.camera.beta },
-        { property: "radius", startValue: camera.radius, endValue: CONFIG.camera.radius }
+        { 
+            property: "target", 
+            startValue: camera.target.clone(), 
+            endValue: new BABYLON.Vector3(0, 0, 0),
+            type: BABYLON.Animation.ANIMATIONTYPE_VECTOR3
+        },
+        { 
+            property: "alpha", 
+            startValue: camera.alpha, 
+            endValue: CONFIG.camera.alpha,
+            type: BABYLON.Animation.ANIMATIONTYPE_FLOAT
+        },
+        { 
+            property: "beta", 
+            startValue: camera.beta, 
+            endValue: CONFIG.camera.beta,
+            type: BABYLON.Animation.ANIMATIONTYPE_FLOAT
+        },
+        { 
+            property: "radius", 
+            startValue: camera.radius, 
+            endValue: targetRadius,
+            type: BABYLON.Animation.ANIMATIONTYPE_FLOAT
+        }
     ];
     
-    animations.forEach(({ property, startValue, endValue }) => {
+    // Add animations to the group
+    animations.forEach(({ property, startValue, endValue, type }) => {
         const animation = new BABYLON.Animation(
             `reset${property.charAt(0).toUpperCase() + property.slice(1)}`,
             property,
-            30,
-            property === "target" ? BABYLON.Animation.ANIMATIONTYPE_VECTOR3 : BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+            60, // 60 FPS for smoother animation
+            type,
             BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
         );
         
         animation.setKeys([
             { frame: 0, value: startValue },
-            { frame: 30, value: endValue }
+            { frame: 60, value: endValue } // 1 second animation
         ]);
+        
+        // Add easing for smoother animation
+        animation.setEasingFunction(new BABYLON.CubicEase());
+        animation.getEasingFunction().setEasingMode(BABYLON.EasingFunction.EASINGMODE_EASEINOUT);
         
         animationGroup.addTargetedAnimation(animation, camera);
     });
     
-    animationGroup.play(true);
+    // Add completion callback
+    animationGroup.onAnimationGroupEndObservable.add(() => {
+        console.log("Reset animation completed");
+        
+        // Ensure camera constraints are properly applied after animation
+        camera.radius = Math.max(
+            Math.min(camera.radius, CONFIG.camera.upperRadiusLimit),
+            CONFIG.camera.lowerRadiusLimit
+        );
+        
+        // Re-enable auto-rotation if it was previously active
+        if (wasAutoRotating && camera.autoRotationBehavior && CONFIG.camera.autoRotation) {
+            camera.autoRotationBehavior.idleRotationSpeed = CONFIG.camera.autoRotation.idleRotationSpeed;
+        }
+        
+        // Clean up the animation group
+        animationGroup.dispose();
+    });
+    
+    // Start the animation
+    animationGroup.play(false); // false = don't loop
+    
+    console.log("Reset animation started");
 }
 
 /**
