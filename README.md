@@ -8,7 +8,8 @@ A modern, responsive 3D model viewer built with Babylon.js, featuring a unified 
 - better ui for mobile
 - performance
 - code quality
-
+- gltf light is broken
+- 
 
 ## ✅ Recent Updates & Fixes
 
