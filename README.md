@@ -8,7 +8,6 @@ A modern, responsive 3D model viewer built with Babylon.js, featuring a unified 
 - camera colision by object or by setting
 - mobilie icons -- icon bar on mobile should be Hamburger based currently hamburger menu only apears in fullscreen mode
 - consolidate sharing
-- fixing local loading
 - reset view not working properly currntly with an animation working but it flashes a frame before doing the animation
 
 
