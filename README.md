@@ -5,7 +5,6 @@ A modern, responsive 3D model viewer built with Babylon.js, featuring a unified 
 
 ## To implement / Fix
 - mobilie icons -- icon bar on mobile should be Hamburger based currently hamburger menu only apears in fullscreen mode
-- previus hard coded camera limits should be removed and use just the new ui based settings,
 - better ui for mobile
 - performance
 - code quality
