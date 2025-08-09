@@ -4,11 +4,12 @@ A modern, responsive 3D model viewer built with Babylon.js, featuring a unified 
 
 
 ## To implement / Fix
-- camera colision by object or by setting
 - mobilie icons -- icon bar on mobile should be Hamburger based currently hamburger menu only apears in fullscreen mode
-- consolidate sharing
 - previus hard coded camera limits should be removed and use just the new ui based settings,
 - toggle for pann limitation is not working
+- better ui for mobile
+- performance
+- code quality
 
 
 ## ✅ Recent Updates & Fixes
