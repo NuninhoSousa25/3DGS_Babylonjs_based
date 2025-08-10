@@ -1,7 +1,6 @@
 # 3D Model Viewer
 
-A modern, responsive 3D model viewer built with Babylon.js, featuring a unified interface that works seamlessly across all devices and platforms. This application has been completely reorganized and optimized for consistent behavior and maintainability.
-
+A 3D model viewer built with Babylon.js, specifically optimized for 3D Gaussian Splats. This viewer provides a consistent, high-performance experience across all devices, including desktop, mobile, and tablet.
 
 ## To implement / Fix
 - mobilie icons -- icon bar on mobile should be Hamburger based currently hamburger menu only apears in fullscreen mode
@@ -12,44 +11,26 @@ A modern, responsive 3D model viewer built with Babylon.js, featuring a unified 
 - MSAA (Multi-Sample Anti-Aliasing) - for pc
 - TAA (Temporal Anti-Aliasing) - experiment
 
-## ✅ Recent Updates & Fixes
-
-### **Completed Improvements**
-- ✅ **Unified UI System**: Consistent 6-icon top bar across all devices
-- ✅ **Fixed Positioning**: Icon bar always stays top-right regardless of orientation/fullscreen
-- ✅ **Mobile Icon Sizing**: Proper touch-friendly icon sizes on mobile devices  
-- ✅ **Touch Logic Separation**: Touch features don't interfere with PC functionality
-- ✅ **Code Organization**: Complete restructure with clear sections and documentation
-- ✅ **Removed Complex Device Detection**: Simplified to touch-only detection
-- ✅ **CSS Architecture**: Organized into logical sections with consistent naming
-
-### **Current Status**
-- 🎯 **Production Ready**: Clean, organized, and fully functional codebase
-- 📱 **Cross-Platform**: Works consistently on desktop, mobile, and tablet
-- 🎮 **Universal Controls**: Same interface and positioning on all devices
-- 🧹 **Clean Architecture**: Well-documented, maintainable code structure
 
 ## 🌟 Features
-
-### **🎯 Universal Interface**
-- **Unified 6-icon top bar** that works consistently on all devices
-- **Responsive design** that adapts to any screen size
-- **Touch-friendly controls** with proper sizing and gestures
-- **Always top-right positioning** regardless of device orientation or fullscreen mode
+Model Loading & Compatibility
+- Drag-and-Drop: Easily load a model by dragging a file directly into the viewer.
+- File Upload: Use the built-in interface to load a model from your device.
+- URL Loading: Load models from a remote URL.
+- Shareable URLs: Create and share URLs that save the model's current camera position, allowing others to see the exact view you're seeing.
+- Supported Formats: The viewer is compatible with gltf, splat, ply, and spz model formats, leveraging the power of Babylon.js loaders.
 
 ### **🔧 Core Functionality**
-- **Settings Panel**: Quality control, auto-rotation, post-processing options
-- **Info Panel**: Interactive controls guide for mouse and touch navigation
-- **Developer Tools**: Performance monitoring and model loading capabilities
-- **Camera Controls**: Reset view, fullscreen toggle, and view sharing
-- **Model Loading**: Support for file upload and URL loading
-- **URL Sharing**: Share specific camera views with others via URL parameters
+- Customization: Adjust quality settings, toggle auto-rotation, and manage post-processing options.
+- Intuitive Navigation: A clear info panel provides a guide for both mouse and touch controls.
+- Developer Tools: Monitor performance with real-time stats like FPS, resolution, and vertex counts.
+- Camera Controls: Easily reset the camera view and toggle fullscreen mode.
+- URL Sharing: Share specific camera views with others via URL parameters
 
 ### **📱 Cross-Platform Support**
-- **Desktop**: Full mouse and keyboard support
-- **Mobile**: Touch gestures, swipe controls, and optimized UI
-- **Tablet**: Hybrid touch and precision controls
-- **All Orientations**: Landscape and portrait support
+- Desktop: Full mouse and keyboard support.
+- Mobile & Tablet: Optimized for touch gestures, including one-finger orbit, two-finger pan, and pinch-to-zoom.
+- Responsive UI: A unified icon bar ensures a consistent user experience regardless of screen size or device orientation.
 
 ### **🎨 Advanced Features**
 - **Post-processing pipeline** with sharpening and anti-aliasing
@@ -181,21 +162,19 @@ export const CONFIG = {
 - **Pinch**: Zoom in/out
 - **Double Tap**: Focus camera on tapped point
 
-### Interface
-- **Settings**: Toggle auto-rotation, adjust quality, configure post-processing
-- **Info**: View control instructions and tips
-- **Developer Tools**: Monitor performance, load new models
-- **Reset View**: Return to initial camera position
-- **Fullscreen**: Enter/exit fullscreen mode
-- **Share**: Copy shareable URL with current camera position
 
 ## 🔧 Advanced Features
 
 ### URL Sharing
-The application supports sharing specific camera views through URL parameters:
-```
-https://yoursite.com/?model=https://example.com/model.splat&alpha=1.5&beta=1.0&radius=5.0&tx=0&ty=0&tz=0
-```
+The viewer supports sharing a specific camera view by adding parameters to the URL. This is particularly useful for quickly showing a model from a specific angle.
+
+Example URL:
+https://yoursite.com/?model=https://example.com/model.gltf&alpha=1.5&beta=1.0&radius=5.0
+
+Supported Parameters
+model: The URL of the 3D model to load.
+alpha, beta, radius: Camera position and zoom level.
+tx, ty, tz: Target camera position.
 
 ### Quality Settings
 - **Low**: Better performance, reduced visual fidelity
@@ -214,65 +193,10 @@ https://yoursite.com/?model=https://example.com/model.splat&alpha=1.5&beta=1.0&r
 - **FXAA**: Fast approximate anti-aliasing
 - **Hardware Scaling**: Dynamic resolution adjustment
 
-## 🌐 Browser Support
-
-- **Chrome/Edge**: Full support (recommended)
-- **Firefox**: Full support
-- **Safari**: Supported with some WebGL limitations
-- **Mobile Browsers**: Optimized support with touch controls
-
 ### WebGL Requirements
 - WebGL2 support required
 - Hardware-accelerated graphics recommended
 - Minimum 1GB available GPU memory for large models
-
-## 📱 Mobile Experience
-
-The application includes extensive mobile optimizations:
-
-- **Responsive Design**: Adapts to portrait and landscape orientations
-- **Touch Gestures**: Advanced multi-touch handling with smoothing
-- **Performance Optimization**: Lower default pixel ratios and quality settings
-- **Mobile UI**: Floating action button and streamlined interface
-- **Gesture Debouncing**: Prevents accidental inputs during complex gestures
-
-## 🔬 Developer Information
-
-### Performance Considerations
-- Models are loaded asynchronously with progress indication
-- Memory management includes automatic disposal of previous models
-- Configurable hardware scaling for performance tuning
-- Real-time performance monitoring available
-
-### Extending the Application
-1. **Adding New Model Formats**: Extend `modelLoader.js` and update supported formats in config
-2. **Custom Post Effects**: Modify `postProcessing.js` to add new visual effects
-3. **UI Customization**: Update `ui.js` and `styles.css` for interface changes
-4. **Camera Behaviors**: Extend `cameraControl.js` for new camera animations
-
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**Models won't load**:
-- Ensure you're running a local server (not opening HTML directly)
-- Check browser console for CORS errors
-- Verify model URL is accessible
-
-**Performance issues**:
-- Try lowering quality settings
-- Disable post-processing effects
-- Check if hardware acceleration is enabled
-
-**Touch controls not working**:
-- Ensure you're on a touch device
-- Check if JavaScript is enabled
-- Try refreshing the page
-
-**Fullscreen not working**:
-- Some browsers require user interaction before allowing fullscreen
-- Check if fullscreen is disabled in browser settings
 
 ## 📄 License
 
