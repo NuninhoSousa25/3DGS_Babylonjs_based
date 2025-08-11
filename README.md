@@ -7,11 +7,9 @@ A 3D model viewer built with Babylon.js, specifically optimized for 3D Gaussian 
 - better ui for mobile
 - performance
 - code quality
-- fov ajust settings - export to url
 - double click to focus has a big time window
 - MSAA (Multi-Sample Anti-Aliasing) - for pc
 - TAA (Temporal Anti-Aliasing) - experiment
-- move export to dev pannel
 
 
 ## 🌟 Features
