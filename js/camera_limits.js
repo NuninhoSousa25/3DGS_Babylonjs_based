@@ -34,6 +34,8 @@ export class CameraLimits {
         };
         
         this.isEnabled = true;
+        this.isDirty = false;  // Track when constraints need checking
+        this.constraintObserver = null;  // Store observer reference for cleanup
         
         // Apply defaults from config
         this.resetToDefaults();
@@ -42,51 +44,67 @@ export class CameraLimits {
     }
 
     /**
-     * Setup camera constraint observers
+     * Setup camera constraint observers - optimized to only check when camera moves
      */
     setupConstraints() {
-        // Apply constraints on every frame
-        this.scene.onBeforeRenderObservable.add(() => {
+        // Use onViewMatrixChangedObservable instead of every frame checking
+        // This only triggers when the camera actually moves/rotates/zooms
+        this.constraintObserver = this.camera.onViewMatrixChangedObservable.add(() => {
             if (!this.isEnabled) return;
             this.enforceConstraints();
         });
+        
+        console.log("Camera constraints setup - will only enforce when camera moves");
     }
 
     /**
-     * Enforce all camera constraints
+     * Enforce all camera constraints - optimized to only run when camera moves
      */
     enforceConstraints() {
+        if (!this.isEnabled) return;
+        
         let constraintApplied = false;
+        const originalValues = {
+            beta: this.camera.beta,
+            alpha: this.camera.alpha,
+            radius: this.camera.radius
+        };
 
         // Vertical constraints (beta)
         if (this.limits.restrictVertical) {
-            const originalBeta = this.camera.beta;
             this.camera.beta = Math.max(this.limits.betaMin, 
                 Math.min(this.limits.betaMax, this.camera.beta));
-            if (this.camera.beta !== originalBeta) constraintApplied = true;
+            if (this.camera.beta !== originalValues.beta) constraintApplied = true;
         }
 
         // Horizontal constraints (alpha) 
         if (this.limits.restrictHorizontal) {
-            const originalAlpha = this.camera.alpha;
             this.camera.alpha = Math.max(this.limits.alphaMin,
                 Math.min(this.limits.alphaMax, this.camera.alpha));
-            if (this.camera.alpha !== originalAlpha) constraintApplied = true;
+            if (this.camera.alpha !== originalValues.alpha) constraintApplied = true;
         }
 
         // Distance constraints (radius)
         if (this.limits.restrictDistance) {
-            const originalRadius = this.camera.radius;
             this.camera.radius = Math.max(this.limits.radiusMin,
                 Math.min(this.limits.radiusMax, this.camera.radius));
-            if (this.camera.radius !== originalRadius) constraintApplied = true;
+            if (this.camera.radius !== originalValues.radius) constraintApplied = true;
         }
 
-        // Panning control - handled by camera panningSensibility setting
+        // Panning control - handled by camera panningSensibility setting in updateCameraConstraints()
 
         // Optional: Provide visual feedback when constraints are hit
         if (constraintApplied && this.onConstraintHit) {
             this.onConstraintHit();
+        }
+        
+        // Debug logging only when constraints are actually applied
+        if (constraintApplied) {
+            console.log("Camera constraints applied:", {
+                beta: originalValues.beta !== this.camera.beta ? `${originalValues.beta.toFixed(3)} → ${this.camera.beta.toFixed(3)}` : 'no change',
+                alpha: originalValues.alpha !== this.camera.alpha ? `${originalValues.alpha.toFixed(3)} → ${this.camera.alpha.toFixed(3)}` : 'no change',
+                radius: originalValues.radius !== this.camera.radius ? `${originalValues.radius.toFixed(3)} → ${this.camera.radius.toFixed(3)}` : 'no change'
+            });
         }
     }
 
@@ -131,6 +149,9 @@ export class CameraLimits {
         this.limits.alphaMax = maxAngle;
         this.updateCameraConstraints();
         
+        // Immediately check constraints after changing settings
+        this.enforceConstraints();
+        
         console.log(`Horizontal limits ${enabled ? 'enabled' : 'disabled'}:`, 
             `${(minAngle * 180 / Math.PI).toFixed(0)}° to ${(maxAngle * 180 / Math.PI).toFixed(0)}°`);
     }
@@ -152,6 +173,9 @@ export class CameraLimits {
         this.limits.betaMax = maxAngle;
         this.updateCameraConstraints();
         
+        // Immediately check constraints after changing settings
+        this.enforceConstraints();
+        
         console.log(`Vertical limits ${enabled ? 'enabled' : 'disabled'}:`, 
             `${(minAngle * 180 / Math.PI).toFixed(0)}° to ${(maxAngle * 180 / Math.PI).toFixed(0)}°`);
     }
@@ -168,6 +192,9 @@ export class CameraLimits {
         this.limits.radiusMin = minDistance;
         this.limits.radiusMax = maxDistance;
         this.updateCameraConstraints();
+        
+        // Immediately check constraints after changing settings
+        this.enforceConstraints();
         
         console.log(`Distance limits ${enabled ? 'enabled' : 'disabled'}:`, 
             `${minDistance.toFixed(1)} to ${maxDistance.toFixed(1)}`);
@@ -216,6 +243,12 @@ export class CameraLimits {
      */
     setEnabled(enabled) {
         this.isEnabled = enabled;
+        
+        // Immediately check constraints when re-enabling
+        if (enabled) {
+            this.enforceConstraints();
+        }
+        
         console.log(`Camera limits ${enabled ? 'enabled' : 'disabled'}`);
     }
 
@@ -262,6 +295,9 @@ export class CameraLimits {
         
         this.updateCameraConstraints();
         
+        // Immediately check constraints after reset
+        this.enforceConstraints();
+        
         // Trigger UI update if callback exists
         if (this.onLimitsChanged) {
             this.onLimitsChanged();
@@ -282,7 +318,13 @@ setUIUpdateCallback(callback) {
      * Cleanup
      */
     dispose() {
-        // Remove observers if needed
+        // Remove constraint observer
+        if (this.constraintObserver && this.camera) {
+            this.camera.onViewMatrixChangedObservable.remove(this.constraintObserver);
+            this.constraintObserver = null;
+            console.log("Camera constraint observer removed");
+        }
+        
         this.scene = null;
         this.camera = null;
     }

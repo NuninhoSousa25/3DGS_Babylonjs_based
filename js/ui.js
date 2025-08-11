@@ -2,7 +2,7 @@
    3D VIEWER UI CONTROLLER - CLEAN & ORGANIZED
    ======================================================================== */
 
-import { setupUIUpdates } from './helpers.js';
+import { setupUIUpdates, startUIUpdates, stopUIUpdates } from './helpers.js';
 import { loadModel } from './modelLoader.js';
 import { CONFIG } from './config.js';
 
@@ -17,7 +17,8 @@ const ICONS = {
     fullscreen_exit: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>`,
     reset_view: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>`,
     share: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92zM18 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM6 13c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm12 7.02c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>`,
-    file_open: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M20 6h-2.18l.45-1.35c.1-.31.04-.65-.14-.92C18.03 3.47 17.74 3.35 17.44 3.35H6.56c-.3 0-.59.12-.69.38-.18.27-.24.61-.14.92L6.18 6H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM6.5 5h11l-.5 1.5h-10L6.5 5zM20 18H4V8h16v10z"/></svg>`
+    file_open: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M20 6h-2.18l.45-1.35c.1-.31.04-.65-.14-.92C18.03 3.47 17.74 3.35 17.44 3.35H6.56c-.3 0-.59.12-.69.38-.18.27-.24.61-.14.92L6.18 6H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM6.5 5h11l-.5 1.5h-10L6.5 5zM20 18H4V8h16v10z"/></svg>`,
+    export: `<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>`,
 };
 
 /* ========================================================================
@@ -222,7 +223,7 @@ export function setupUI(camera, scene, engine, initialPixelRatio) {
     document.body.appendChild(controlPanel);
     
     // Setup event handlers
-    setupIconButtonHandlers(camera, scene);
+    setupIconButtonHandlers(camera, scene, engine);
     setupSettingsControls(camera, scene);
     
     // Delay model loading setup to ensure DOM is ready
@@ -460,6 +461,16 @@ function createDevSection() {
                 <div class="spinner-animation"></div>
                 <div class="spinner-text">Loading Model...</div>
             </div>
+            
+            <div class="settings-separator"></div>
+            
+            <div class="dev-section">
+                <div class="dev-title">Export</div>
+                <button id="exportButton" class="action-button">
+                    ${ICONS.export}
+                    <span class="button-text">Export Viewer</span>
+                </button>
+            </div>
         </div>
     `;
 }
@@ -470,7 +481,7 @@ function createDevSection() {
 /**
  * Setup all icon button event handlers
  */
-function setupIconButtonHandlers(camera, scene) {
+function setupIconButtonHandlers(camera, scene, engine) {
     // Get button references
     const settingsButton = document.getElementById("settingsButton");
     const infoButton = document.getElementById("infoButton");
@@ -479,7 +490,7 @@ function setupIconButtonHandlers(camera, scene) {
     const fullscreenButton = document.getElementById("fullscreenButton");
     const shareButton = document.getElementById("shareButton");
     const closePanelButton = document.getElementById("closePanelButton");
-    
+
     // Get content sections
     const settingsContent = document.getElementById("settingsContent");
     const infoContent = document.getElementById("infoContent");
@@ -489,8 +500,9 @@ function setupIconButtonHandlers(camera, scene) {
     let currentlyOpenSection = null;
     
     // Content section toggle function
-    function toggleContentSection(sectionToShow) {
+   function toggleContentSection(sectionToShow) {
         const isAlreadyOpen = currentlyOpenSection === sectionToShow;
+        const wasDevSectionOpen = currentlyOpenSection === devContent;
         
         // Close all sections first
         allContentSections.forEach(section => section.style.display = "none");
@@ -513,21 +525,49 @@ function setupIconButtonHandlers(camera, scene) {
             // Show close button and expand panel
             closePanelButton.style.display = 'block';
             document.getElementById("controlPanel").classList.add("expanded");
+            
+            // Start UI updates only for developer tools section
+            if (sectionToShow === devContent) {
+                startUIUpdates();
+            }
         } else {
             currentlyOpenSection = null;
+            closePanelButton.style.display = 'none';
             document.getElementById("controlPanel").classList.remove("expanded");
+        }
+        
+        // Stop UI updates if we're closing developer tools or switching away from it
+        if (wasDevSectionOpen && sectionToShow !== devContent) {
+            stopUIUpdates();
         }
     }
     
-    // Setup button event listeners
-    settingsButton.addEventListener("click", () => toggleContentSection(settingsContent));
-    infoButton.addEventListener("click", () => toggleContentSection(infoContent));
-    devButton.addEventListener("click", () => toggleContentSection(devContent));
-    resetViewButton.addEventListener("click", () => resetCameraView(camera, scene));
-    fullscreenButton.addEventListener("click", () => toggleFullscreen(fullscreenButton));
-    shareButton.addEventListener("click", () => shareCameraView(camera, scene));
-    closePanelButton.addEventListener("click", () => toggleContentSection(null));
+   // Setup button event listeners
+    if (settingsButton) {
+        settingsButton.addEventListener("click", () => toggleContentSection(settingsContent));
+    }
+    if (infoButton) {
+        infoButton.addEventListener("click", () => toggleContentSection(infoContent));
+    }
+    if (devButton) {
+        devButton.addEventListener("click", () => toggleContentSection(devContent));
+    }
+    if (resetViewButton) {
+        resetViewButton.addEventListener("click", () => resetCameraView(camera, scene));
+    }
+    if (fullscreenButton) {
+        fullscreenButton.addEventListener("click", () => toggleFullscreen(fullscreenButton));
+    }
+    if (shareButton) {
+        shareButton.addEventListener("click", () => shareCameraView(camera, scene));
+    }
+    if (closePanelButton) {
+        closePanelButton.addEventListener("click", () => toggleContentSection(null));
+    }
     
+    // Export button handler will be set up in setupSettingsControls
+
+
     // Update fullscreen icon on ESC key
     document.addEventListener('fullscreenchange', () => {
         updateFullscreenButton(fullscreenButton);
@@ -576,6 +616,23 @@ function setupSettingsControls(camera, scene) {
         });
     }
     
+    // FOV range control
+    const fovRange = document.getElementById('fovRange');
+    const fovDisplay = document.getElementById('fovDisplay');
+    if (fovRange && fovDisplay) {
+        // Initialize display with current FOV
+        const currentFovDegrees = Math.round(camera.fov * 180 / Math.PI);
+        fovDisplay.textContent = currentFovDegrees + '°';
+        fovRange.value = camera.fov;
+        
+        addRangeListener(fovRange, (value) => {
+            camera.fov = value;
+            const degrees = Math.round(value * 180 / Math.PI);
+            fovDisplay.textContent = degrees + '°';
+            console.log('FOV updated to:', degrees + '° (' + value.toFixed(2) + ' radians)');
+        }, fovDisplay);
+    }
+    
     // Touch sensitivity (if available)
     const touchSensitivityRange = document.getElementById('touchSensitivityRange');
     if (touchSensitivityRange) {
@@ -587,6 +644,12 @@ function setupSettingsControls(camera, scene) {
     
     // NEW: Improved Camera Limits Controls
     setupCameraLimitsControls(camera, scene);
+    
+    // Export button handler
+    const exportButton = document.getElementById('exportButton');
+    if (exportButton) {
+        exportButton.addEventListener("click", () => handleExport(camera, scene, scene.getEngine()));
+    }
 }
 
 /**
@@ -611,6 +674,14 @@ function createVisualizationSection() {
                     <option value="medium" selected>Medium</option>
                     <option value="high">High (Better Quality)</option>
                 </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="fovRange">Field of View</label>
+                <div class="range-container">
+                    <input type="range" id="fovRange" min="0.4" max="2.0" value="0.8" step="0.05" class="slider-range">
+                    <span id="fovDisplay" class="range-value">46°</span>
+                </div>
             </div>
         </div>
     `;
@@ -893,6 +964,15 @@ function setupCameraLimitsRanges(elements, cameraLimits) {
     }
 }
 
+
+// Add this new function at the end of ui.js:
+async function handleExport(camera, scene, engine) {
+    // Lazy load the exporter
+    const { ViewerExporter, showExportDialog } = await import('./export/ViewerExporter.js');
+    const exporter = new ViewerExporter(scene, camera, engine);
+    showExportDialog(exporter);
+}
+
 /**
  * Setup reset functionality for camera limits
  */
@@ -1084,6 +1164,7 @@ function shareCameraView(camera, scene) {
         alpha: camera.alpha.toFixed(2),
         beta: camera.beta.toFixed(2),
         radius: camera.radius.toFixed(2),
+        fov: camera.fov.toFixed(2),
         tx: camera.target.x.toFixed(2),
         ty: camera.target.y.toFixed(2),
         tz: camera.target.z.toFixed(2)
@@ -1237,8 +1318,32 @@ async function loadModelWithSpinner(scene, source, spinner, type) {
         console.log("Load model result:", result);
         
         // Store model URL for sharing
+        // Store model URL for sharing
+        // In ui.js, inside the loadModelWithSpinner function
+
+        // Find this existing line:
         if (result && result.currentModel) {
-            scene.currentModelUrl = type === 'file' ? URL.createObjectURL(source) : source;
+            // And replace the contents of the 'if' block with the following:
+
+            // 1. Set the model URL for the exporter and sharing feature
+            scene.currentModelUrl = (type === 'file') ? URL.createObjectURL(source) : source;
+
+            // 2. Determine and set the model type for the exporter
+            const fileName = (type === 'file') ? source.name : source;
+            const extension = fileName.split('?')[0].split('.').pop().toLowerCase();
+
+            if (['splat', 'ply'].includes(extension)) {
+                scene.currentModelType = 'splat';
+            } else if (['gltf', 'glb', 'obj'].includes(extension)) {
+                scene.currentModelType = 'mesh';
+            } else {
+                scene.currentModelType = 'unknown'; // Handle other cases
+            }
+
+            // This property is also used by the exporter
+            scene.currentModel = result.currentModel;
+
+            console.log(`Model info set on scene: type='${scene.currentModelType}', url='${scene.currentModelUrl}'`);
         }
         
         // Show success message
@@ -1393,6 +1498,9 @@ function closeAllPanels() {
     if (controlPanelContent) controlPanelContent.style.display = "none";
     if (controlPanel) controlPanel.classList.remove("expanded");
     buttons.forEach(btn => btn.classList.remove('active'));
+    
+    // Stop UI updates when closing all panels
+    stopUIUpdates();
 }
 
 /**
@@ -1443,6 +1551,14 @@ export function applyCameraParametersFromUrl(camera) {
             camera.alpha = alpha;
             camera.beta = beta;
             camera.radius = radius;
+        }
+        
+        // Apply FOV if available
+        if (urlParams.has('fov')) {
+            const fov = parseFloat(urlParams.get('fov'));
+            if (!isNaN(fov)) {
+                camera.fov = fov;
+            }
         }
         
         // Apply target position if available

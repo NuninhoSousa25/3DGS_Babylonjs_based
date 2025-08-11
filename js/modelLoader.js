@@ -267,6 +267,7 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
     // Update scene properties
     scene.currentModel = currentModel;
     scene.currentModelType = currentModelType;
+    scene.currentModelUrl = url; // <-- ADD THIS
 
     return { currentModel, currentModelType };
 }

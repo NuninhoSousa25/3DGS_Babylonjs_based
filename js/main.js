@@ -1,7 +1,7 @@
 // js/main.js
 import { setupCamera, animateCamera } from './cameraControl.js';
 import { loadModel, disposeCurrentModel } from './modelLoader.js';
-import { setupUI } from './ui.js';
+import { setupUI, applyCameraParametersFromUrl } from './ui.js';
 import { addPostEffects } from './postProcessing.js';
 import { getPickResult } from './picking.js';
 import { CONFIG } from './config.js';  // Import the centralized configuration
@@ -266,6 +266,9 @@ async function createScene() {
 
         // Setup camera
         camera = setupCamera(scene, canvas, CONFIG);
+        
+        // Apply camera parameters from URL (position, FOV, etc.)
+        applyCameraParametersFromUrl(camera);
         
         // Initialize camera limits system
         cameraLimits = new CameraLimits(scene, camera);
