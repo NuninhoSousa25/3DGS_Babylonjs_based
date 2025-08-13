@@ -7,9 +7,7 @@ A 3D model viewer built with Babylon.js, specifically optimized for 3D Gaussian 
 - better ui for mobile
 - performance
 - code quality
-- double click to focus has a big time window
-- corrigir ui de sliders
-
+- TAA is not working
 
 ## 🌟 Features
 Model Loading & Compatibility
