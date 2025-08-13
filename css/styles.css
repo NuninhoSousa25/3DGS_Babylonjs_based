@@ -999,10 +999,6 @@ position: fixed !important;
     border-radius: var(--border-radius-md);
 }
 
-.settings-category:has(#cameraLimitsToggle):hover {
-    border-color: var(--color-accent-light);
-    background-color: rgba(33, 150, 243, 0.02);
-}
 
 /* Add these additional styles to your styles.css file for the adjusted controls */
 

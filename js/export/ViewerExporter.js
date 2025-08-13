@@ -168,7 +168,11 @@ export class ViewerExporter {
         return {
             sharpenEnabled: this.scene.pipeline.sharpenEnabled,
             sharpenEdgeAmount: this.scene.pipeline.sharpen?.edgeAmount,
-            fxaaEnabled: this.scene.pipeline.fxaaEnabled
+            fxaaEnabled: this.scene.pipeline.fxaaEnabled, // Legacy compatibility
+            antiAliasing: {
+                type: CONFIG.postProcessing.antiAliasing.type,
+                taaSamples: CONFIG.postProcessing.antiAliasing.taaSamples
+            }
         };
     }
 
@@ -434,7 +438,23 @@ export class ViewerExporter {
             if (settings.sharpenEdgeAmount) {
                 pipeline.sharpen.edgeAmount = settings.sharpenEdgeAmount;
             }
-            pipeline.fxaaEnabled = settings.fxaaEnabled;
+            
+            // Apply anti-aliasing based on exported settings
+            if (settings.antiAliasing && settings.antiAliasing.type) {
+                const aaType = settings.antiAliasing.type;
+                if (aaType === 'fxaa') {
+                    pipeline.fxaaEnabled = true;
+                } else if (aaType === 'none') {
+                    pipeline.fxaaEnabled = false;
+                } else {
+                    pipeline.fxaaEnabled = false;
+                    // Note: TAA requires more complex setup in exported viewer
+                    console.log('Exported viewer using FXAA fallback for ' + aaType);
+                }
+            } else {
+                // Legacy compatibility
+                pipeline.fxaaEnabled = settings.fxaaEnabled || false;
+            }
         }
     </script>
 </body>

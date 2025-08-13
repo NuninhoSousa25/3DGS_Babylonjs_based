@@ -93,6 +93,8 @@ function setupBasicLighting(scene, lightConfig) {
  */
 async function initializeEngineAndScene() {
     const canvas = document.getElementById("renderCanvas");
+    
+    
     // Using config to fine-tune engine
     engine = new BABYLON.Engine(canvas, true, {
         preserveDrawingBuffer: CONFIG.engine.preserveDrawingBuffer,
@@ -315,6 +317,9 @@ async function createScene() {
         // Post-processing
         pipeline = addPostEffects(scene, camera);
         console.log("Post-processing pipeline added.");
+        
+        // Initial anti-aliasing will be applied through the post-processing pipeline
+        // TAA mode can be selected in the UI settings
 
         // UI
         setupUI(camera, scene, engine, initialPixelRatio);

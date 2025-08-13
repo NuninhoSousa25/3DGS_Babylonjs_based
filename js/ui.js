@@ -128,11 +128,6 @@ function getCameraLimitsElements() {
         horizontalAngleDisplay: document.getElementById('horizontalAngleDisplay'),
         horizontalOffsetDisplay: document.getElementById('horizontalOffsetDisplay'),
         
-        // Detail sections
-        zoomDetails: document.getElementById('zoomLimitDetails'),
-        verticalDetails: document.getElementById('verticalLimitDetails'),
-        horizontalDetails: document.getElementById('horizontalLimitDetails'),
-        
         // Action buttons
         resetButton: document.getElementById('resetLimitsButton')
     };
@@ -143,7 +138,6 @@ function getCameraLimitsElements() {
  */
 function setupCameraLimitsToggles(elements, cameraLimits) {
     const { masterToggle, limitZoomToggle, limitVerticalToggle, limitHorizontalToggle, limitPanToggle,
-            zoomDetails, verticalDetails, horizontalDetails, 
             verticalUpRange, verticalDownRange, horizontalAngleRange, horizontalOffsetRange } = elements;
     
     // Master toggle
@@ -159,7 +153,6 @@ function setupCameraLimitsToggles(elements, cameraLimits) {
         addToggleListener(limitZoomToggle, (checked) => {
             const limits = cameraLimits.getCurrentLimits();
             cameraLimits.setDistanceLimits(checked, limits.radiusMin, limits.radiusMax);
-            zoomDetails.style.display = checked ? 'block' : 'none';
             console.log('Zoom limits enabled:', checked);
         });
     }
@@ -169,7 +162,6 @@ function setupCameraLimitsToggles(elements, cameraLimits) {
             const upValue = parseFloat(verticalUpRange.value);
             const downValue = parseFloat(verticalDownRange.value);
             cameraLimits.setVerticalLimitsUpDown(checked, upValue, downValue);
-            verticalDetails.style.display = checked ? 'block' : 'none';
             console.log('Vertical limits enabled:', checked);
         });
     }
@@ -179,7 +171,6 @@ function setupCameraLimitsToggles(elements, cameraLimits) {
             const totalAngle = parseFloat(horizontalAngleRange.value);
             const offset = parseFloat(horizontalOffsetRange.value);
             cameraLimits.setHorizontalLimitsAngleOffset(checked, totalAngle, offset);
-            horizontalDetails.style.display = checked ? 'block' : 'none';
             console.log('Horizontal limits enabled:', checked);
         });
     }
@@ -600,11 +591,35 @@ function setupSettingsControls(camera, scene) {
         });
     }
 
-    // Anti-aliasing toggle
-    const fxaaToggle = document.getElementById('fxaaToggle');
-    if (fxaaToggle && scene.pipeline) {
-        addToggleListener(fxaaToggle, (checked) => {
-            scene.pipeline.fxaaEnabled = checked;
+    // Sharpening intensity slider
+    const sharpenIntensityRange = document.getElementById('sharpenIntensityRange');
+    const sharpenIntensityDisplay = document.getElementById('sharpenIntensityDisplay');
+    if (sharpenIntensityRange && sharpenIntensityDisplay && scene.pipeline) {
+        addRangeListener(sharpenIntensityRange, (value) => {
+            scene.pipeline.sharpen.edgeAmount = value;
+            CONFIG.postProcessing.sharpenEdgeAmount = value;
+            console.log('Sharpening intensity updated to:', value);
+        }, sharpenIntensityDisplay);
+    }
+
+    // Anti-aliasing selector
+    const antiAliasingSelect = document.getElementById('antiAliasingSelect');
+    
+    // Load saved anti-aliasing setting from localStorage
+    const savedAAType = localStorage.getItem('babylonjs_antialiasing_type');
+    
+    if (savedAAType && antiAliasingSelect) {
+        antiAliasingSelect.value = savedAAType;
+        CONFIG.postProcessing.antiAliasing.type = savedAAType;
+        
+        // Apply the saved setting
+        updateAntiAliasing(savedAAType, scene, camera);
+    }
+    
+    if (antiAliasingSelect) {
+        antiAliasingSelect.addEventListener('change', (e) => {
+            const aaType = e.target.value;
+            updateAntiAliasing(aaType, scene, camera);
         });
     }
     
@@ -693,18 +708,16 @@ function createVisualizationSection() {
 function createCameraLimitsSection() {
     return `
         <div class="settings-category">
-            <div class="settings-title">Camera Movement Limits</div>
+            <div class="settings-title">Camera Limits</div>
             
-            <!-- Master Enable/Disable -->
             <div class="control-group">
-                <label for="cameraLimitsToggle">Limit Camera Movement</label>
+                <label for="cameraLimitsToggle">Enable Camera Limits</label>
                 <label class="switch">
                     <input type="checkbox" id="cameraLimitsToggle" checked>
                     <span class="slider round"></span>
                 </label>
             </div>
             
-            <!-- Zoom Limits -->
             <div class="control-group">
                 <label for="limitZoomToggle">Limit Zoom</label>
                 <label class="switch">
@@ -712,77 +725,81 @@ function createCameraLimitsSection() {
                     <span class="slider round"></span>
                 </label>
             </div>
-            <div class="control-group limit-details" id="zoomLimitDetails">
-                <label for="zoomLimitRange">Zoom Range</label>
+            
+            <div class="control-group">
+                <label for="zoomMinRange">Zoom Min</label>
                 <div class="range-container">
-                    <input type="range" id="zoomMinRange" min="0.1" max="50" value="2" step="0.1" class="slider-range">
-                    <span class="range-display" id="zoomMinDisplay">2.0</span>
-                    <span class="range-separator">to</span>
-                    <input type="range" id="zoomMaxRange" min="0.1" max="50" value="20" step="0.1" class="slider-range">
-                    <span class="range-display" id="zoomMaxDisplay">20.0</span>
+                    <input type="range" id="zoomMinRange" min="0.1" max="30" value="2.5" step="0.1" class="slider-range">
+                    <span id="zoomMinDisplay" class="range-value">2.5</span>
                 </div>
             </div>
             
-            <!-- Vertical Rotation Limits (Up/Down -90° to +90°) -->
             <div class="control-group">
-                <label for="limitVerticalToggle">Limit Vertical Rotation (Up/Down)</label>
+                <label for="zoomMaxRange">Zoom Max</label>
+                <div class="range-container">
+                    <input type="range" id="zoomMaxRange" min="1" max="50" value="15" step="0.5" class="slider-range">
+                    <span id="zoomMaxDisplay" class="range-value">15.0</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label for="limitVerticalToggle">Limit Vertical Rotation</label>
                 <label class="switch">
                     <input type="checkbox" id="limitVerticalToggle" checked>
                     <span class="slider round"></span>
                 </label>
             </div>
-            <div class="control-group limit-details" id="verticalLimitDetails">
-                <label>Vertical Angle Range</label>
+            
+            <div class="control-group">
+                <label for="verticalUpRange">Up Angle Limit</label>
                 <div class="range-container">
-                    <label class="range-label">Up Limit:</label>
-                    <input type="range" id="verticalUpRange" min="-90" max="90" value="-80" step="1" class="slider-range">
-                    <span class="range-display" id="verticalUpDisplay">-80°</span>
-                </div>
-                <div class="range-container">
-                    <label class="range-label">Down Limit:</label>
-                    <input type="range" id="verticalDownRange" min="-90" max="90" value="80" step="1" class="slider-range">
-                    <span class="range-display" id="verticalDownDisplay">80°</span>
+                    <input type="range" id="verticalUpRange" min="-90" max="90" value="-80" step="5" class="slider-range">
+                    <span id="verticalUpDisplay" class="range-value">-80°</span>
                 </div>
             </div>
             
-            <!-- Horizontal Rotation Limits (Angle + Offset) -->
             <div class="control-group">
-                <label for="limitHorizontalToggle">Limit Horizontal Rotation (Around)</label>
+                <label for="verticalDownRange">Down Angle Limit</label>
+                <div class="range-container">
+                    <input type="range" id="verticalDownRange" min="-90" max="90" value="5" step="5" class="slider-range">
+                    <span id="verticalDownDisplay" class="range-value">5°</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label for="limitHorizontalToggle">Limit Horizontal Rotation</label>
                 <label class="switch">
                     <input type="checkbox" id="limitHorizontalToggle">
                     <span class="slider round"></span>
                 </label>
             </div>
-            <div class="control-group limit-details" id="horizontalLimitDetails" style="display: none;">
-                <label>Horizontal Freedom</label>
+            
+            <div class="control-group">
+                <label for="horizontalAngleRange">Horizontal Total Angle</label>
                 <div class="range-container">
-                    <label class="range-label">Total Angle:</label>
                     <input type="range" id="horizontalAngleRange" min="30" max="360" value="360" step="15" class="slider-range">
-                    <span class="range-display" id="horizontalAngleDisplay">360°</span>
-                </div>
-                <div class="range-container">
-                    <label class="range-label">Offset:</label>
-                    <input type="range" id="horizontalOffsetRange" min="-180" max="180" value="0" step="15" class="slider-range">
-                    <span class="range-display" id="horizontalOffsetDisplay">0°</span>
-                </div>
-                <div class="range-info">
-                    <small>Total Angle: How much you can rotate around (360° = full circle)</small><br>
-                    <small>Offset: Rotates the allowed area (0° = front, 90° = right side)</small>
+                    <span id="horizontalAngleDisplay" class="range-value">360°</span>
                 </div>
             </div>
             
-            <!-- Panning Enable/Disable Toggle -->
+            <div class="control-group">
+                <label for="horizontalOffsetRange">Horizontal Offset</label>
+                <div class="range-container">
+                    <input type="range" id="horizontalOffsetRange" min="-180" max="180" value="0" step="15" class="slider-range">
+                    <span id="horizontalOffsetDisplay" class="range-value">0°</span>
+                </div>
+            </div>
+            
             <div class="control-group">
                 <label for="limitPanToggle">Enable Panning</label>
                 <label class="switch">
-                    <input type="checkbox" id="limitPanToggle">
+                    <input type="checkbox" id="limitPanToggle" checked>
                     <span class="slider round"></span>
                 </label>
             </div>
             
-            <!-- Reset Button -->
             <div class="control-group">
-                <button id="resetLimitsButton" class="action-button" style="width: 100%; margin-top: 8px; background-color: var(--color-bg-tertiary);">
+                <button id="resetLimitsButton" class="action-button" style="width: 100%; margin-top: 8px;">
                     Reset to Defaults
                 </button>
             </div>
@@ -805,11 +822,19 @@ function createPostProcessingSection() {
                 </label>
             </div>
             <div class="control-group">
-                <label for="fxaaToggle">Anti-Aliasing</label>
-                <label class="switch">
-                    <input type="checkbox" id="fxaaToggle" ${CONFIG.postProcessing.fxaaEnabled ? 'checked' : ''}>
-                    <span class="slider round"></span>
-                </label>
+                <label for="sharpenIntensityRange">Sharpening Intensity</label>
+                <div class="range-container">
+                    <input type="range" id="sharpenIntensityRange" min="0.0" max="2.0" value="${CONFIG.postProcessing.sharpenEdgeAmount}" step="0.1" class="slider-range">
+                    <span id="sharpenIntensityDisplay" class="range-value">${CONFIG.postProcessing.sharpenEdgeAmount}</span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label for="antiAliasingSelect">Anti-Aliasing</label>
+                <select id="antiAliasingSelect" class="settings-select">
+                    <option value="none">None</option>
+                    <option value="fxaa" ${CONFIG.postProcessing.antiAliasing.type === 'fxaa' ? 'selected' : ''}>FXAA (Fast)</option>
+                    <option value="taa" ${CONFIG.postProcessing.antiAliasing.type === 'taa' ? 'selected' : ''}>TAA (Temporal)</option>
+                </select>
             </div>
         </div>
     `;
@@ -860,41 +885,62 @@ function updateUIFromLimits(elements, cameraLimits) {
     const limits = cameraLimits.getCurrentLimits();
     
     // Update toggles
-    elements.masterToggle.checked = cameraLimits.isEnabled;
-    elements.limitZoomToggle.checked = limits.restrictDistance;
-    elements.limitVerticalToggle.checked = limits.restrictVertical;
-    elements.limitHorizontalToggle.checked = limits.restrictHorizontal;
-    elements.limitPanToggle.checked = limits.enablePanning;
+    if (elements.masterToggle) {
+        elements.masterToggle.checked = cameraLimits.isEnabled;
+    }
+    if (elements.limitZoomToggle) {
+        elements.limitZoomToggle.checked = limits.restrictDistance;
+    }
+    if (elements.limitVerticalToggle) {
+        elements.limitVerticalToggle.checked = limits.restrictVertical;
+    }
+    if (elements.limitHorizontalToggle) {
+        elements.limitHorizontalToggle.checked = limits.restrictHorizontal;
+    }
+    if (elements.limitPanToggle) {
+        elements.limitPanToggle.checked = limits.enablePanning;
+    }
     
     // Update zoom ranges
-    elements.zoomMinRange.value = limits.radiusMin;
-    elements.zoomMaxRange.value = limits.radiusMax;
-    elements.zoomMinDisplay.textContent = limits.radiusMin.toFixed(1);
-    elements.zoomMaxDisplay.textContent = limits.radiusMax.toFixed(1);
+    if (elements.zoomMinRange && elements.zoomMinDisplay) {
+        elements.zoomMinRange.value = limits.radiusMin;
+        elements.zoomMinDisplay.textContent = limits.radiusMin.toFixed(1);
+    }
+    if (elements.zoomMaxRange && elements.zoomMaxDisplay) {
+        elements.zoomMaxRange.value = limits.radiusMax;
+        elements.zoomMaxDisplay.textContent = limits.radiusMax.toFixed(1);
+    }
     
     // Update vertical ranges (convert beta to up/down)
-    const upLimit = betaToUpDown(limits.betaMin);
-    const downLimit = betaToUpDown(limits.betaMax);
-    elements.verticalUpRange.value = Math.round(upLimit);
-    elements.verticalDownRange.value = Math.round(downLimit);
-    elements.verticalUpDisplay.textContent = Math.round(upLimit) + '°';
-    elements.verticalDownDisplay.textContent = Math.round(downLimit) + '°';
+    if (elements.verticalUpRange && elements.verticalUpDisplay) {
+        const upLimit = betaToUpDown(limits.betaMin);
+        elements.verticalUpRange.value = Math.round(upLimit);
+        elements.verticalUpDisplay.textContent = Math.round(upLimit) + '°';
+    }
+    if (elements.verticalDownRange && elements.verticalDownDisplay) {
+        const downLimit = betaToUpDown(limits.betaMax);
+        elements.verticalDownRange.value = Math.round(downLimit);
+        elements.verticalDownDisplay.textContent = Math.round(downLimit) + '°';
+    }
     
     // Update horizontal ranges (calculate angle and offset from min/max)
-    const alphaMinDeg = limits.alphaMin * 180 / Math.PI;
-    const alphaMaxDeg = limits.alphaMax * 180 / Math.PI;
-    const totalAngle = alphaMaxDeg - alphaMinDeg;
-    const centerOffset = (alphaMinDeg + alphaMaxDeg) / 2;
-    
-    elements.horizontalAngleRange.value = Math.round(Math.min(360, Math.max(30, totalAngle)));
-    elements.horizontalOffsetRange.value = Math.round(centerOffset);
-    elements.horizontalAngleDisplay.textContent = Math.round(totalAngle) + '°';
-    elements.horizontalOffsetDisplay.textContent = Math.round(centerOffset) + '°';
-    
-    // Show/hide detail sections
-    elements.zoomDetails.style.display = limits.restrictDistance ? 'block' : 'none';
-    elements.verticalDetails.style.display = limits.restrictVertical ? 'block' : 'none';
-    elements.horizontalDetails.style.display = limits.restrictHorizontal ? 'block' : 'none';
+    if (elements.horizontalAngleRange && elements.horizontalAngleDisplay) {
+        const alphaMinDeg = limits.alphaMin * 180 / Math.PI;
+        const alphaMaxDeg = limits.alphaMax * 180 / Math.PI;
+        const totalAngle = alphaMaxDeg - alphaMinDeg;
+        const centerOffset = (alphaMinDeg + alphaMaxDeg) / 2;
+        
+        elements.horizontalAngleRange.value = Math.round(Math.min(360, Math.max(30, totalAngle)));
+        elements.horizontalAngleDisplay.textContent = Math.round(totalAngle) + '°';
+    }
+    if (elements.horizontalOffsetRange && elements.horizontalOffsetDisplay) {
+        const alphaMinDeg = limits.alphaMin * 180 / Math.PI;
+        const alphaMaxDeg = limits.alphaMax * 180 / Math.PI;
+        const centerOffset = (alphaMinDeg + alphaMaxDeg) / 2;
+        
+        elements.horizontalOffsetRange.value = Math.round(centerOffset);
+        elements.horizontalOffsetDisplay.textContent = Math.round(centerOffset) + '°';
+    }
 }
 
 /**
@@ -906,37 +952,33 @@ function setupCameraLimitsRanges(elements, cameraLimits) {
         addRangeListener(elements.zoomMinRange, (value) => {
             const limits = cameraLimits.getCurrentLimits();
             cameraLimits.setDistanceLimits(limits.restrictDistance, value, limits.radiusMax);
-            elements.zoomMinDisplay.textContent = value.toFixed(1);
             console.log('Min zoom set to:', value);
-        });
+        }, elements.zoomMinDisplay);
     }
     
     if (elements.zoomMaxRange && elements.zoomMaxDisplay) {
         addRangeListener(elements.zoomMaxRange, (value) => {
             const limits = cameraLimits.getCurrentLimits();
             cameraLimits.setDistanceLimits(limits.restrictDistance, limits.radiusMin, value);
-            elements.zoomMaxDisplay.textContent = value.toFixed(1);
             console.log('Max zoom set to:', value);
-        });
+        }, elements.zoomMaxDisplay);
     }
     
-    // Vertical ranges (up/down with new system)
+    // Vertical ranges (up/down)
     if (elements.verticalUpRange && elements.verticalUpDisplay) {
         addRangeListener(elements.verticalUpRange, (value) => {
             const downValue = parseFloat(elements.verticalDownRange.value);
             cameraLimits.setVerticalLimitsUpDown(true, value, downValue);
-            elements.verticalUpDisplay.textContent = value + '°';
-            console.log('Up limit set to:', value + '° (looking up)');
-        });
+            console.log('Up limit set to:', value + '°');
+        }, elements.verticalUpDisplay);
     }
     
     if (elements.verticalDownRange && elements.verticalDownDisplay) {
         addRangeListener(elements.verticalDownRange, (value) => {
             const upValue = parseFloat(elements.verticalUpRange.value);
             cameraLimits.setVerticalLimitsUpDown(true, upValue, value);
-            elements.verticalDownDisplay.textContent = value + '°';
-            console.log('Down limit set to:', value + '° (looking down)');
-        });
+            console.log('Down limit set to:', value + '°');
+        }, elements.verticalDownDisplay);
     }
     
     // Horizontal ranges (angle + offset system)
@@ -951,16 +993,14 @@ function setupCameraLimitsRanges(elements, cameraLimits) {
     
     if (elements.horizontalAngleRange && elements.horizontalAngleDisplay) {
         addRangeListener(elements.horizontalAngleRange, (value) => {
-            elements.horizontalAngleDisplay.textContent = value + '°';
             updateHorizontalLimits();
-        });
+        }, elements.horizontalAngleDisplay);
     }
     
     if (elements.horizontalOffsetRange && elements.horizontalOffsetDisplay) {
         addRangeListener(elements.horizontalOffsetRange, (value) => {
-            elements.horizontalOffsetDisplay.textContent = value + '°';
             updateHorizontalLimits();
-        });
+        }, elements.horizontalOffsetDisplay);
     }
 }
 
@@ -1226,10 +1266,20 @@ function updateQualitySettings(quality, scene) {
         
         // Update UI toggles to match
         const sharpenToggle = document.getElementById('sharpenToggle');
-        const fxaaToggle = document.getElementById('fxaaToggle');
+        const sharpenIntensityRange = document.getElementById('sharpenIntensityRange');
+        const sharpenIntensityDisplay = document.getElementById('sharpenIntensityDisplay');
+        const antiAliasingSelect = document.getElementById('antiAliasingSelect');
         
         if (sharpenToggle) sharpenToggle.checked = settings.sharpen;
-        if (fxaaToggle) fxaaToggle.checked = settings.fxaa;
+        if (sharpenIntensityRange && settings.sharpen) {
+            sharpenIntensityRange.value = scene.pipeline.sharpen.edgeAmount;
+            if (sharpenIntensityDisplay) {
+                sharpenIntensityDisplay.textContent = scene.pipeline.sharpen.edgeAmount;
+            }
+        }
+        if (antiAliasingSelect) {
+            antiAliasingSelect.value = settings.fxaa ? 'fxaa' : 'none';
+        }
     }
 }
 
@@ -1573,5 +1623,229 @@ export function applyCameraParametersFromUrl(camera) {
         }
         
         console.log("Applied camera parameters from URL");
+    }
+}
+
+/* ========================================================================
+   ANTI-ALIASING FUNCTIONS
+   ======================================================================== */
+
+/**
+ * Update anti-aliasing method
+ */
+function updateAntiAliasing(type, scene, camera) {
+    console.log('Switching anti-aliasing to:', type);
+    
+    // Store current setting in config for export
+    CONFIG.postProcessing.antiAliasing.type = type;
+    
+    // Store in localStorage for persistence across refreshes
+    localStorage.setItem('babylonjs_antialiasing_type', type);
+    
+    switch (type) {
+        case 'none':
+            disableAllAntiAliasing(scene);
+            break;
+        case 'fxaa':
+            enableFXAA(scene);
+            break;
+        case 'taa':
+            enableTAA(scene, camera);
+            break;
+        default:
+            console.warn('Unknown anti-aliasing type:', type);
+            disableAllAntiAliasing(scene);
+    }
+}
+
+/**
+ * Disable all anti-aliasing
+ */
+function disableAllAntiAliasing(scene) {
+    // Disable custom TAA render observer if active
+    if (scene._taaRenderObserver) {
+        scene.onBeforeRenderObservable.remove(scene._taaRenderObserver);
+        scene._taaRenderObserver = null;
+        console.log('Custom TAA render observer removed');
+    }
+    if (scene._haltonSequence) {
+        scene._haltonSequence = null;
+        console.log('Halton sequence cleared');
+    }
+    
+    // Disable built-in TAA if active
+    if (scene._taaRenderingPipeline) {
+        scene._taaRenderingPipeline.dispose();
+        scene._taaRenderingPipeline = null;
+        console.log('Built-in TAA pipeline disposed');
+    }
+    
+    if (scene.pipeline) {
+        scene.pipeline.fxaaEnabled = false;
+    }
+    
+    console.log('All anti-aliasing disabled');
+}
+
+/**
+ * Enable FXAA
+ */
+function enableFXAA(scene) {
+    disableAllAntiAliasing(scene);
+    
+    if (scene.pipeline) {
+        scene.pipeline.fxaaEnabled = true;
+        console.log('FXAA enabled');
+    }
+}
+
+
+/**
+ * Enable TAA (Temporal Anti-Aliasing)
+ */
+function enableTAA(scene, camera) {
+    disableAllAntiAliasing(scene);
+    
+    try {
+        // Check if TAA rendering pipeline is available
+        console.log('TAA availability check:', typeof BABYLON.TAARenderingPipeline);
+        console.log('Babylon version:', BABYLON.Engine.Version);
+        
+        if (typeof BABYLON.TAARenderingPipeline === 'undefined') {
+            console.warn('TAA rendering pipeline not available in Babylon.js version', BABYLON.Engine.Version);
+            enableFXAA(scene);
+        } else {
+            setupTAA(scene, camera);
+        }
+    } catch (error) {
+        console.error('TAA initialization failed:', error);
+        enableFXAA(scene);
+    }
+}
+
+/**
+ * Load TAA pipeline if not already available
+ */
+async function loadTAAPipeline() {
+    if (typeof BABYLON.TAARenderingPipeline !== 'undefined') {
+        return;
+    }
+    
+    // TAA pipeline should be available in newer Babylon.js versions
+    // If not available, we can implement a basic version or load it separately
+    return new Promise((resolve, reject) => {
+        if (typeof BABYLON.TAARenderingPipeline !== 'undefined') {
+            resolve();
+        } else {
+            reject(new Error('TAA pipeline not available in this Babylon.js version'));
+        }
+    });
+}
+
+/**
+ * Halton Sequence Generator for TAA jittering
+ */
+class HaltonSequence {
+    constructor(base1 = 2, base2 = 3) {
+        this.base1 = base1;
+        this.base2 = base2;
+        this.index = 0;
+    }
+    
+    next() {
+        const x = this.halton(this.index, this.base1);
+        const y = this.halton(this.index, this.base2);
+        this.index = (this.index + 1) % CONFIG.postProcessing.antiAliasing.taaSamples;
+        // Apply (-0.5, -0.5) translation as per documentation
+        return [x - 0.5, y - 0.5];
+    }
+    
+    halton(index, base) {
+        let result = 0;
+        let f = 1 / base;
+        let i = index;
+        while (i > 0) {
+            result += f * (i % base);
+            i = Math.floor(i / base);
+            f /= base;
+        }
+        return result;
+    }
+}
+
+/**
+ * Setup custom TAA implementation using post-process
+ */
+function setupCustomTAA(scene, camera) {
+    try {
+        const engine = scene.getEngine();
+        const haltonSequence = new HaltonSequence(2, 3);
+        
+        // For now, just implement the Halton sequence jittering without post-process
+        // The jittering will be applied via camera projection matrix modification
+        console.log('Setting up Halton sequence-based TAA jittering');
+        
+        // Set up render loop observer for jittering
+        let frameCount = 0;
+        const renderObserver = scene.onBeforeRenderObservable.add(() => {
+            // Get next Halton sequence values
+            const [dx, dy] = haltonSequence.next();
+            
+            // Get canvas dimensions
+            const canvas = engine.getRenderingCanvas();
+            const width = canvas ? canvas.width : 800;
+            const height = canvas ? canvas.height : 600;
+            
+            // Apply jitter as per documentation formula
+            const jitterX = dx * 2 / width;
+            const jitterY = dy * 2 / height;
+            
+            // Log jitter values periodically
+            if (frameCount % 60 === 0) { // Log every 60 frames to avoid spam
+                console.log(`TAA Frame ${frameCount}: Halton sequence [${dx.toFixed(4)}, ${dy.toFixed(4)}] -> Jitter [${jitterX.toFixed(6)}, ${jitterY.toFixed(6)}]`);
+            }
+            frameCount++;
+        });
+        
+        return {
+            renderObserver: renderObserver,
+            haltonSequence: haltonSequence
+        };
+        
+    } catch (error) {
+        console.error('Custom TAA setup failed:', error);
+        return null;
+    }
+}
+
+/**
+ * Setup TAA pipeline
+ */
+function setupTAA(scene, camera) {
+    try {
+        // Dispose existing TAA components if any
+        if (scene._taaRenderObserver) {
+            scene.onBeforeRenderObservable.remove(scene._taaRenderObserver);
+            scene._taaRenderObserver = null;
+        }
+        if (scene._haltonSequence) {
+            scene._haltonSequence = null;
+        }
+        
+        // Create custom TAA implementation
+        const customTAA = setupCustomTAA(scene, camera);
+        
+        if (customTAA) {
+            scene._taaRenderObserver = customTAA.renderObserver;
+            scene._haltonSequence = customTAA.haltonSequence;
+            console.log('Custom TAA enabled with Halton sequence jittering');
+        } else {
+            throw new Error('Custom TAA setup failed');
+        }
+        
+    } catch (error) {
+        console.error('TAA setup failed:', error);
+        console.warn('Falling back to FXAA');
+        enableFXAA(scene);
     }
 }

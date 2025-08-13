@@ -54,8 +54,8 @@ export const CONFIG = {
      * Gesture Configuration
      */
     gesture: {
-        doubleTapThreshold: 500,      // Reduced for quicker response (was 700 ms)
-        doubleClickThreshold: 500,    // Reduced for quicker response (was 700 ms)
+        doubleTapThreshold: 300,      // Fast response for double-tap (was 500 ms)
+        doubleClickThreshold: 300,    // Fast response for double-click (was 500 ms)
         pinchDebounceThreshold: 80,   // Increased to prevent gesture conflicts (was 50 ms)
         pinchSensitivity: 0.0003,     // Increased sensitivity for more responsive mobile pinch zoom
         tapMaxDistance: 10,           // Maximum distance a "tap" can move
@@ -115,7 +115,12 @@ export const CONFIG = {
     postProcessing: {
         sharpenEnabled: true,          // Enable sharpening filter
         sharpenEdgeAmount: 0.62,       // Fixed edge amount for sharpening
-        fxaaEnabled: true,             // Enable FXAA anti-aliasing
+        fxaaEnabled: true,             // Enable FXAA anti-aliasing (legacy compatibility)
+        antiAliasing: {
+            type: 'fxaa',              // Default anti-aliasing type: 'none', 'fxaa', 'taa'
+            taaEnabled: false,         // TAA enable state
+            taaSamples: 64             // TAA sample count for jittering
+        }
     },
 
     /**

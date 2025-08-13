@@ -26,9 +26,20 @@ export function addPostEffects(scene, camera) {
     pipeline.sharpen.edgeAmount = CONFIG.postProcessing.sharpenEdgeAmount;
     console.log(`Sharpen enabled: ${pipeline.sharpenEnabled}, Edge amount: ${pipeline.sharpen.edgeAmount}`);
 
-    // Enable FXAA (Anti-Aliasing) from CONFIG
-    pipeline.fxaaEnabled = CONFIG.postProcessing.fxaaEnabled;
-    console.log(`FXAA enabled: ${pipeline.fxaaEnabled}`);
+    // Apply anti-aliasing settings from CONFIG
+    const aaType = CONFIG.postProcessing.antiAliasing.type;
+    
+    if (aaType === 'fxaa') {
+        pipeline.fxaaEnabled = true;
+        console.log(`FXAA enabled`);
+    } else if (aaType === 'none') {
+        pipeline.fxaaEnabled = false;
+        console.log(`Anti-aliasing disabled`);
+    } else {
+        // For TAA, disable FXAA here - it will be handled separately
+        pipeline.fxaaEnabled = false;
+        console.log(`FXAA disabled for ${aaType.toUpperCase()} mode`);
+    }
 
     // Store the pipeline in the scene for easy access
     scene.pipeline = pipeline;
