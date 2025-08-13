@@ -3,14 +3,13 @@
 A 3D model viewer built with Babylon.js, specifically optimized for 3D Gaussian Splats. This viewer provides a consistent, high-performance experience across all devices, including desktop, mobile, and tablet.
 
 ## To implement / Fix
-- mobilie icons -- icon bar on mobile should be Hamburger based currently hamburger menu only apears in fullscreen mode
 - better ui for mobile
 - performance
 - code quality
 - TAA is not working
 - fbx, stl compatibility,
 - maybe model bounding box adjustment
-- 
+  
 
 ## 🌟 Features
 Model Loading & Compatibility
