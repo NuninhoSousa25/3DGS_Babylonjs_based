@@ -8,6 +8,9 @@ A 3D model viewer built with Babylon.js, specifically optimized for 3D Gaussian 
 - performance
 - code quality
 - TAA is not working
+- fbx, stl compatibility,
+- maybe model bounding box adjustment
+- 
 
 ## 🌟 Features
 Model Loading & Compatibility
