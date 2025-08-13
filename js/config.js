@@ -1,83 +1,80 @@
 // js/config.js
 
-/**
- * Centralized Configuration Object
- */
+/* ========================================================================
+   3D VIEWER CONFIGURATION
+   Centralized configuration for all application settings
+   ======================================================================== */
+
 export const CONFIG = {
+
+    /* ====================================================================
+       APPLICATION SETTINGS
+       ==================================================================== */
+    
     /**
-     * Default URL to load the initial model.
+     * Default model to load on startup
      */
     defaultModelUrl: "https://raw.githubusercontent.com/CedricGuillemet/dump/master/Halo_Believe.splat",
-   // defaultModelUrl: "./splat.ply",
 
     /**
-     * Camera Configuration
+     * Model loader settings
      */
-    camera: {
-        alpha: -Math.PI / 4,            // Horizontal angle
-        beta: Math.PI / 3,              // Vertical angle
-        radius: 4,                      // Distance from target
-        // Camera radius limits are now centralized in cameraLimits.defaultLimits.zoom
-        minZ: 0.1,                      // Minimum Z clipping plane
-        maxZ: 1000,                     // Maximum Z clipping plane
-        angularSensibilityX: 2500,      // Mouse sensitivity for horizontal rotation
-        angularSensibilityY: 2500,      // Mouse sensitivity for vertical rotation
-        panningSensibility: 1000,       // Mouse sensitivity for panning
-        wheelPrecision: 100,            // Zoom speed
-        panningInertia: 0.6,            // Panning inertia
-        useAutoRotationBehavior: true,  // Auto-rotation is enabled by default
-        autoRotation: {
-            idleRotationWaitTime: 5000,   // Wait time before auto-rotation starts (ms)
-            idleRotationSpeed: 0.01,      // Auto-rotation speed
-            idleRotationSpinUpTime: 3000  // Spin-up time for auto-rotation (ms)
+    modelLoader: {
+        supportedFormats: ['splat', 'ply', 'spz', 'gltf', 'glb', 'obj'],
+        defaultFallbackModel: "https://raw.githubusercontent.com/CedricGuillemet/dump/master/Halo_Believe.splat",
+        defaultModelScale: 1.0
+    },
+
+    /* ====================================================================
+       RENDERING & ENGINE
+       ==================================================================== */
+
+    /**
+     * Babylon.js engine configuration
+     */
+    engine: {
+        preserveDrawingBuffer: true,
+        stencil: true,
+        disableWebGL2Support: false,
+        antialias: false                    // Use post-processing instead
+    },
+
+    /**
+     * Rendering quality settings
+     */
+    pixelRatio: {
+        mobile: 0.8,                        // Lower for mobile performance
+        pc: 1.2                             // Higher for desktop quality
+    },
+
+    /**
+     * Post-processing effects
+     */
+    postProcessing: {
+        sharpenEnabled: true,
+        sharpenEdgeAmount: 0.62,
+        fxaaEnabled: true,
+        antiAliasing: {
+            type: 'fxaa',                   // 'none', 'fxaa', 'taa'
+            taaEnabled: false,
+            taaSamples: 64
         }
     },
 
     /**
-     * Mobile-Specific Configuration
-     */
-    mobile: {
-        cameraInertia: 0.3,            // Increased inertia to reduce jitter (was 0.05)
-        pinchPrecision: 30,            // Reduced sensitivity to improve stability (was 20)
-        angularSensibilityX: 3000,     // Reduced sensitivity to prevent jittery rotation (was 1800)
-        angularSensibilityY: 3000,     // Reduced sensitivity to prevent jittery rotation (was 1800)
-        panningSensibility: 700,       // Increased for more responsive panning (was 500)
-        wheelPrecision: 80,            // Adjusted wheel precision for mobile (was 60)
-        minimumPinchDistance: 15,      // Increased threshold to prevent accidental pinch (was 10)
-        minimumPanDistance: 8,         // Increased threshold to prevent accidental pan (was 5)
-        touchActionDelay: 100,         // Delay before registering a touch action (ms)
-        gestureStabilityThreshold: 5,  // Minimum pixel movement to register gesture direction
-        inertiaTransitionTime: 150     // Time for inertia transition after gesture (ms)
-    },
-
-    /**
-     * Gesture Configuration
-     */
-    gesture: {
-        doubleTapThreshold: 300,      // Fast response for double-tap (was 500 ms)
-        doubleClickThreshold: 300,    // Fast response for double-click (was 500 ms)
-        pinchDebounceThreshold: 80,   // Increased to prevent gesture conflicts (was 50 ms)
-        pinchSensitivity: 0.0003,     // Increased sensitivity for more responsive mobile pinch zoom
-        tapMaxDistance: 10,           // Maximum distance a "tap" can move
-        gestureChangeTimeout: 350,    // Timeout between different gestures (ms)
-        enableGestureExclusivity: true, // Only allow one gesture type at a time
-        smoothingFactor: 0.2          // Smoothing factor for touch movements (0-1, higher = smoother)
-    },
-
-    /**
-     * Lighting Configuration
+     * Scene lighting configuration
      */
     lighting: {
-        // HDR Environment Lighting (Primary)
+        // Primary HDR environment lighting
         hdr: {
             environmentUrl: "https://playground.babylonjs.com/textures/environment.dds",
-            intensity: 1.0,                    // Environment lighting intensity
-            useFillLight: true,                // Add subtle fill light for dark areas
-            fillLightIntensity: 0.1,           // Intensity of fill light
-            fillLightColor: [1, 1, 1]          // Color of fill light
+            intensity: 1.0,
+            useFillLight: true,
+            fillLightIntensity: 0.1,
+            fillLightColor: [1, 1, 1]
         },
         
-        // Fallback Basic Lighting (used if HDR fails to load)
+        // Fallback lighting (if HDR fails)
         hemisphere: {
             intensity: 0.6,
             diffuse: [1, 1, 1],
@@ -92,104 +89,128 @@ export const CONFIG = {
         }
     },
 
+    /* ====================================================================
+       CAMERA CONTROLS
+       ==================================================================== */
+
     /**
-     * Engine Configuration
+     * Base camera settings
      */
-    engine: {
-        preserveDrawingBuffer: true,   // Preserve the drawing buffer
-        stencil: true,                 // Enable stencil buffer
-        disableWebGL2Support: false,   // Disable WebGL2 support if necessary
-        antialias: false,              // Disable default anti-aliasing (use FXAA instead)
+    camera: {
+        // Initial position
+        alpha: -Math.PI / 4,                // Horizontal angle
+        beta: Math.PI / 3,                  // Vertical angle  
+        radius: 4,                          // Distance from target
+        
+        // Clipping planes
+        minZ: 0.1,
+        maxZ: 1000,
+        
+        // Desktop sensitivity
+        angularSensibilityX: 2500,
+        angularSensibilityY: 2500,
+        panningSensibility: 1000,
+        wheelPrecision: 100,
+        panningInertia: 0.6,
+        
+        // Auto-rotation
+        useAutoRotationBehavior: true,
+        autoRotation: {
+            idleRotationWaitTime: 5000,     // Wait before starting (ms)
+            idleRotationSpeed: 0.01,        // Rotation speed
+            idleRotationSpinUpTime: 3000    // Spin-up time (ms)
+        }
     },
 
     /**
-     * UI Configuration
+     * Mobile camera overrides
+     */
+    mobile: {
+        cameraInertia: 0.3,
+        pinchPrecision: 30,
+        angularSensibilityX: 3000,
+        angularSensibilityY: 3000,
+        panningSensibility: 700,
+        wheelPrecision: 80,
+        minimumPinchDistance: 15,
+        minimumPanDistance: 8,
+        touchActionDelay: 100,
+        gestureStabilityThreshold: 5,
+        inertiaTransitionTime: 150
+    },
+
+    /**
+     * Camera movement limits
+     */
+    cameraLimits: {
+        enabled: true,
+        autoCalculateOnLoad: true,
+        
+        // What restrictions to enable by default
+        defaultRestrictions: {
+            zoom: true,
+            vertical: true,
+            horizontal: false,              // Full 360° by default
+            panning: true
+        },
+        
+        // Default limit values
+        defaultLimits: {
+            zoom: {
+                min: 2.5,
+                max: 15.0
+            },
+            vertical: {
+                upLimit: -80,               // Degrees (-90° = straight up)
+                downLimit: 5                // Degrees (90° = straight down)
+            },
+            panning: {
+                maxDistance: 10.0
+            }
+        },
+        
+        // UI configuration
+        ui: {
+            showDegreesInsteadOfRadians: true,
+            defaultHorizontalRestriction: false,
+            defaultPanningRestriction: true,
+            visualFeedback: true,
+            ranges: {
+                zoom: { min: 0.5, max: 30, step: 0.1 },
+                vertical: { min: 0, max: 180, step: 1 },
+                horizontal: { min: -360, max: 360, step: 5 },
+                panning: { min: 1, max: 50, step: 0.5 }
+            }
+        }
+    },
+
+    /* ====================================================================
+       INPUT & GESTURES
+       ==================================================================== */
+
+    /**
+     * Touch and gesture settings
+     */
+    gesture: {
+        doubleTapThreshold: 300,
+        doubleClickThreshold: 300,
+        pinchDebounceThreshold: 80,
+        pinchSensitivity: 0.0003,
+        tapMaxDistance: 10,
+        gestureChangeTimeout: 350,
+        enableGestureExclusivity: true,
+        smoothingFactor: 0.2
+    },
+
+    /* ====================================================================
+       USER INTERFACE
+       ==================================================================== */
+
+    /**
+     * UI update and refresh settings
      */
     ui: {
-        updateFrequency: 450,          // UI update frequency in milliseconds
-    },
-
-    /**
-     * Post-Processing Configuration
-     */
-    postProcessing: {
-        sharpenEnabled: true,          // Enable sharpening filter
-        sharpenEdgeAmount: 0.62,       // Fixed edge amount for sharpening
-        fxaaEnabled: true,             // Enable FXAA anti-aliasing (legacy compatibility)
-        antiAliasing: {
-            type: 'fxaa',              // Default anti-aliasing type: 'none', 'fxaa', 'taa'
-            taaEnabled: false,         // TAA enable state
-            taaSamples: 64             // TAA sample count for jittering
-        }
-    },
-
-    /**
-     * Model Loader Configuration
-     */
-    modelLoader: {
-        supportedFormats: ['splat', 'ply', 'spz', 'gltf', 'glb', 'obj'],  // Supported file formats
-        defaultFallbackModel: "https://raw.githubusercontent.com/CedricGuillemet/dump/master/Halo_Believe.splat", // Fallback model URL
-        defaultModelScale: 1.0,         // Default fixed scale for all models
-    },
-
-
-    pixelRatio: {
-        mobile: 0.8,   // Pixel ratio for mobile devices
-        pc: 1.2        // Pixel ratio for PC/Desktop
-    },
-
-    /**
-     * Camera Limits Configuration
-     */
-    
-    cameraLimits: {
-        enabled: true,                          // Enable camera limits by default
-        autoCalculateOnLoad: true,              // Auto-calculate limits when model loads
-        
-        // Default restriction settings - what to enable by default
-        defaultRestrictions: {
-            zoom: true,                         // Limit zoom by default
-            vertical: true,                     // Limit vertical rotation by default
-            horizontal: false,                  // Don't limit horizontal by default (full 360°)
-            panning: true                       // Enable panning by default
-        },
-        
-        // Default limit values (used when auto-calculation isn't available)
-        defaultLimits: {
-            // Zoom limits
-            zoom: {
-                min: 2.5,                       // Minimum zoom distance
-                max: 15.0                       // Maximum zoom distance
-            },
-            
-            // Vertical rotation limits (in degrees - easier to understand)
-            vertical: {
-                upLimit: -80,                   // How far up you can look (-90° = straight up, 0° = forward)
-                downLimit: 5                    // How far down you can look (90° = straight down, 0° = forward)
-            },
-            
-            // Horizontal rotation limits (now use angle+offset system in camera limits)
-            
-            // Panning limits 
-            panning: {
-                maxDistance: 10.0               // Maximum distance camera target can move from center
-            }
-        },
-        
-        // UI settings
-        ui: {
-            showDegreesInsteadOfRadians: true,  // Display angles in degrees for user friendliness
-            defaultHorizontalRestriction: false, // Don't restrict horizontal by default
-            defaultPanningRestriction: true,    // Enable panning by default
-            visualFeedback: true,               // Show visual feedback when hitting limits
-            
-            // Range control settings for UI sliders
-            ranges: {
-                zoom: { min: 0.5, max: 30, step: 0.1 },    // Wider range than defaults for flexibility
-                vertical: { min: 0, max: 180, step: 1 },   // Full vertical range in degrees
-                horizontal: { min: -360, max: 360, step: 5 }, // Full horizontal range
-                panning: { min: 1, max: 50, step: 0.5 }    // Panning distance range
-            }
-        }
+        updateFrequency: 450                // UI update frequency (ms)
     }
+
 };

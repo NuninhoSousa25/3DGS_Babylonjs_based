@@ -7,7 +7,7 @@ import { getPickResult } from './picking.js';
 import { CONFIG } from './config.js';  // Import the centralized configuration
 import { setupMobileControls } from './mobileControl.js';
 import { detectDevice } from './deviceDetection.js';
-import { CameraLimits } from './camera_limits.js';
+import { CameraLimits } from './cameraLimits.js';
 
 /**
  * Global Variables
