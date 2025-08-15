@@ -20,7 +20,8 @@ export const CONFIG = {
      * Model loader settings
      */
     modelLoader: {
-        supportedFormats: ['splat', 'ply', 'spz', 'gltf', 'glb', 'obj'],
+        supportedFormats: ['splat', 'ply', 'spz', 'gltf', 'glb', 'obj', 'stl', 'fbx'],
+        
         defaultFallbackModel: "https://raw.githubusercontent.com/CedricGuillemet/dump/master/Halo_Believe.splat",
         defaultModelScale: 1.0
     },
@@ -103,7 +104,7 @@ export const CONFIG = {
         radius: 4,                          // Distance from target
         
         // Clipping planes
-        minZ: 0.1,
+        minZ: 0.02,
         maxZ: 1000,
         
         // Desktop sensitivity

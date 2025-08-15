@@ -224,6 +224,78 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
                 currentModelType = 'splat';
                 console.log("Successfully loaded .splat/.ply model:", currentModel);
             }
+
+           else if (extension === 'stl') {
+                console.log(`Loading as .${extension} using SceneLoader.ImportMeshAsync`);
+                let result;
+                if (isFile) {
+                    result = await BABYLON.SceneLoader.ImportMeshAsync(
+                        "", 
+                        "", 
+                        modelSource, 
+                        scene
+                    );
+                } else {
+                    result = await BABYLON.SceneLoader.ImportMeshAsync(
+                        "", 
+                        url, 
+                        "", 
+                        scene
+                    );
+                }
+                
+                currentModel = result.meshes[0];
+                currentModelType = 'mesh';
+                
+                // Apply material to all meshes
+                result.meshes.forEach((mesh, index) => {
+                    mesh.isPickable = true;
+                    
+                    // In modelLoader.js, inside the 'stl' loading block:
+                    const pbrMaterial = new BABYLON.PBRMaterial(`stlPBRMaterial_${index}`, scene);
+                    pbrMaterial.albedoColor = new BABYLON.Color3(0.8, 0.8, 0.8); // Base color
+                    pbrMaterial.metallic = 0.2;  // Not very metallic
+                    pbrMaterial.roughness = 0.6; // A bit rough
+                    pbrMaterial.backFaceCulling = false;
+                    mesh.material = pbrMaterial;        
+                });
+                
+                console.log("Successfully loaded STL model with applied material");
+            }
+            else if (extension === 'fbx') {
+                console.log(`Loading as .${extension} using SceneLoader.ImportMeshAsync`);
+                let result;
+                if (isFile) {
+                    result = await BABYLON.SceneLoader.ImportMeshAsync(
+                        "", 
+                        "", 
+                        modelSource, 
+                        scene
+                    );
+                } else {
+                    // For URLs, load normally
+                    result = await BABYLON.SceneLoader.ImportMeshAsync(
+                        "", 
+                        url, 
+                        "", 
+                        scene
+                    );
+                }
+                
+                currentModel = result.meshes[0];
+                currentModelType = 'mesh';
+                result.meshes.forEach(mesh => {
+                    mesh.isPickable = true;
+                });
+                
+                // Log animations if present
+                if (result.animationGroups && result.animationGroups.length > 0) {
+                    console.log(`FBX model loaded with ${result.animationGroups.length} animation groups`);
+                }
+                console.log("Successfully loaded FBX model:", currentModel);
+            }
+            
+
         } else {
             throw new Error(`Unsupported file format: .${extension}`);
         }

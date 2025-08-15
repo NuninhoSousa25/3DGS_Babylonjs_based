@@ -1031,8 +1031,8 @@ input[type="file"] {
    6. RESPONSIVE DESIGN
    ======================================================================== */
 
-/* Base mobile styles - Apply to ALL touch devices regardless of fullscreen */
-@media (pointer: coarse), (max-width: 768px) {
+/* Mobile devices with touch input */
+@media (max-width: 768px) and (pointer: coarse) and (hover: none) {
   :root {
     --control-panel-width: 320px;
     --font-size-xs: 12px;
@@ -1048,145 +1048,104 @@ input[type="file"] {
     --icon-bar-height: 56px;
   }
   
-  /* Force icon button sizing for touch */
+  .control-panel-content {
+    max-height: 65vh;
+    padding: var(--spacing-lg);
+  }
+  
   .icon-button {
-    width: 52px !important;
-    height: 52px !important;
-    min-width: 52px !important;
-    min-height: 52px !important;
-    font-size: var(--font-size-lg) !important;
-    padding: var(--spacing-md) !important;
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    min-height: 52px;
+    font-size: var(--font-size-lg);
   }
   
-  .icon-button svg {
-    width: 28px !important;
-    height: 28px !important;
-  }
-  
-  /* Larger close button for easier touch */
   .close-panel-button {
-    width: 44px !important;
-    height: 44px !important;
-    font-size: 24px !important;
-    right: var(--spacing-md) !important;
-    top: var(--spacing-md) !important;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+    right: 12px;
+    top: 12px;
   }
   
-  /* Better touch targets for controls */
   .control-group {
-    padding: var(--spacing-lg) 0;
-    margin-bottom: var(--spacing-lg);
-    min-height: 48px; /* Minimum touch target size */
+    padding: var(--spacing-md) 0;
+    margin-bottom: var(--spacing-md);
   }
   
   .control-group label {
-    font-size: var(--font-size-base) !important;
+    font-size: var(--font-size-base);
     font-weight: 500;
-    line-height: 1.5;
-    padding: var(--spacing-sm) 0;
   }
   
-  /* Larger switches for touch */
   .switch {
-    width: 60px !important;
-    height: 34px !important;
+    width: 60px;
+    height: 34px;
   }
   
   .switch input {
-    width: 60px !important;
-    height: 34px !important;
+    width: 60px;
+    height: 34px;
   }
   
   .slider {
-    height: 34px !important;
-    border-radius: 34px !important;
+    height: 34px;
+    border-radius: 34px;
   }
   
   .slider:before {
-    height: 28px !important;
-    width: 28px !important;
-    left: 3px !important;
-    bottom: 3px !important;
+    height: 28px;
+    width: 28px;
+    left: 3px;
+    bottom: 3px;
+    border-radius: 50%;
   }
   
   input:checked + .slider:before {
-    transform: translateX(26px) !important;
+    transform: translateX(26px);
   }
   
-  /* Larger range sliders with touch padding */
   .slider-range {
-    height: 8px !important;
-    min-height: 44px !important;
-    padding: 18px 0 !important;
-    margin: var(--spacing-sm) 0 !important;
+    height: 8px;
+    min-height: 44px;
+    padding: 18px 0;
   }
   
-  .slider-range::-webkit-slider-thumb {
-    width: 32px !important;
-    height: 32px !important;
-    cursor: pointer !important;
-  }
-  
-  .slider-range::-moz-range-thumb {
-    width: 32px !important;
-    height: 32px !important;
-    cursor: pointer !important;
-  }
-  
-  /* Range value display */
   .range-value {
-    font-size: var(--font-size-base) !important;
+    font-size: var(--font-size-base);
     font-weight: 600;
-    min-width: 60px !important;
-    padding: var(--spacing-sm) !important;
+    min-width: 50px;
+    padding: var(--spacing-sm);
   }
   
-  /* Action buttons */
   .action-button {
-    padding: var(--spacing-lg) !important;
-    font-size: var(--font-size-base) !important;
-    min-height: 48px !important;
-    border-radius: var(--border-radius-md) !important;
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-base);
+    min-height: 48px;
   }
   
-  /* Settings sections */
   .settings-title {
-    font-size: var(--font-size-lg) !important;
+    font-size: var(--font-size-lg);
     font-weight: 600;
-    margin-bottom: var(--spacing-lg) !important;
+    margin-bottom: var(--spacing-lg);
   }
   
   .settings-select {
-    font-size: var(--font-size-base) !important;
-    padding: var(--spacing-md) !important;
-    min-height: 48px !important;
+    font-size: var(--font-size-base);
+    padding: var(--spacing-md);
+    min-height: 48px;
   }
-  
-  /* Content panel adjustments */
-  .control-panel-content {
-    max-height: 75vh !important;
-    padding: var(--spacing-lg) !important;
-    margin-top: var(--spacing-md) !important;
-  }
-  
-  /* Icon bar spacing */
-  .icon-bar {
-    padding: var(--spacing-sm) !important;
-    gap: var(--spacing-sm) !important;
-    height: var(--icon-bar-height) !important;
-  }
-  
-  /* Range container for camera limits */
+
   .range-container {
     flex-direction: column;
     align-items: stretch;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-xs);
   }
   
   .range-label {
     min-width: auto;
     margin-bottom: var(--spacing-xs);
-    font-size: var(--font-size-base);
   }
   
   .limit-details .slider-range {
@@ -1197,175 +1156,143 @@ input[type="file"] {
   .range-display {
     align-self: center;
     margin-top: var(--spacing-xs);
-    font-size: var(--font-size-base);
-    padding: var(--spacing-xs) var(--spacing-sm);
   }
   
-  /* Info sections */
-  .info-list {
-    font-size: var(--font-size-base) !important;
-    line-height: 1.8 !important;
-  }
-  
-  .info-list li {
-    margin-bottom: var(--spacing-md) !important;
+  .limit-details {
+    margin-left: var(--spacing-sm);
+    padding-left: var(--spacing-sm);
   }
 }
 
-/* Small mobile devices (phones in portrait) */
-@media (max-width: 480px), (pointer: coarse) and (max-width: 480px) {
+/* General small screens */
+@media (max-width: 768px) {
   :root {
-    --control-panel-width: 100vw !important;
+    --control-panel-width: 280px;
   }
   
-  /* Full-width expanded panel on small screens */
+  .control-panel {
+    position: fixed !important;
+    width: auto;
+    top: var(--spacing-md) !important;
+    right: var(--spacing-md) !important;
+    bottom: auto !important;
+    left: auto !important;
+  }
+  
+  .control-panel-content {
+    max-height: 60vh;
+    padding: var(--spacing-md);
+  }
+  
+  .icon-button {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .icon-button svg {
+    width: 26px;
+    height: 26px;
+  }
+  
+  .control-group {
+    margin-bottom: var(--spacing-lg);
+  }
+  
+  .action-button {
+    padding: var(--spacing-lg);
+    font-size: var(--font-size-lg);
+  }
+
+  .export-dialog-content {
+    max-width: 95%;
+    padding: var(--spacing-lg);
+  }
+  
+  .export-options {
+    grid-template-columns: 1fr;
+  }
+  
+  .export-option {
+    padding: var(--spacing-md);
+  }
+}
+
+/* Touch devices */
+@media (pointer: coarse) {
+  .icon-button {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  
+  .icon-button svg {
+    width: 26px !important;
+    height: 26px !important;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  .icon-bar {
+    padding: var(--spacing-xs);
+  }
+  
+  .icon-button {
+    margin: 0 var(--spacing-xs);
+    width: 48px;
+    height: 48px;
+  }
+  
+  .icon-button svg {
+    width: 26px;
+    height: 26px;
+  }
+  
+  .settings-select {
+    min-width: 100px;
+  }
+  
+  .control-panel.expanded .control-panel-content {
+    padding-top: calc(var(--spacing-lg) + 10px);
+  }
+  
   .control-panel.expanded {
     position: fixed !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-    height: 100vh !important;
+    width: 100%;
+    height: 100%;
     top: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
     left: 0 !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
+    margin: 0;
+    border-radius: 0;
+    padding: var(--spacing-md);
   }
-  
-  .control-panel.expanded .control-panel-content {
-    width: 100% !important;
-    max-width: 100% !important;
-    height: calc(100vh - var(--icon-bar-height) - var(--spacing-xl)) !important;
-    max-height: calc(100vh - var(--icon-bar-height) - var(--spacing-xl)) !important;
-    border-radius: 0 !important;
-    margin: 0 !important;
-    padding: var(--spacing-lg) !important;
+
+  #controlPanel.expanded,
+  .control-panel.expanded {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
   }
-  
-  .control-panel.expanded .icon-bar {
-    border-radius: 0 !important;
-    width: 100% !important;
-  }
-  
-  /* Settings for very small screens */
-  .settings-category {
-    padding: var(--spacing-md) !important;
-  }
-  
+
   .settings-category .action-button {
-    padding: var(--spacing-md) !important;
-    font-size: var(--font-size-base) !important;
+    padding: var(--spacing-md);
+    font-size: var(--font-size-base);
   }
   
+  .range-container {
+    gap: var(--spacing-sm);
+  }
+
   .range-info {
-    padding: var(--spacing-sm) !important;
-    margin-top: var(--spacing-sm) !important;
+    padding: var(--spacing-xs);
+    margin-top: var(--spacing-xs);
   }
   
   .range-info small {
-    font-size: 11px !important;
-  }
-}
-
-/* Tablet devices */
-@media (min-width: 481px) and (max-width: 1024px) and (pointer: coarse) {
-  .control-panel.expanded {
-    width: min(90vw, 500px) !important;
-    max-height: 85vh !important;
-  }
-  
-  .control-panel-content {
-    max-height: 70vh !important;
-  }
-}
-
-/* Landscape mobile adjustments */
-@media (pointer: coarse) and (orientation: landscape) and (max-height: 600px) {
-  :root {
-    --icon-bar-height: 48px !important;
-    --spacing-lg: 16px !important;
-    --spacing-xl: 20px !important;
-  }
-  
-  .control-panel-content {
-    max-height: 65vh !important;
-  }
-  
-  .icon-button {
-    width: 44px !important;
-    height: 44px !important;
-    min-width: 44px !important;
-    min-height: 44px !important;
-  }
-  
-  .icon-button svg {
-    width: 24px !important;
-    height: 24px !important;
-  }
-}
-
-/* High DPI mobile displays */
-@media (pointer: coarse) and (-webkit-min-device-pixel-ratio: 2),
-       (pointer: coarse) and (min-resolution: 192dpi) {
-  /* Ensure crisp rendering on retina displays */
-  .control-panel,
-  .control-panel-content {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  
-  /* Sharper borders and shadows */
-  .control-panel-content {
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  }
-}
-
-/* Force mobile styles for specific devices even if not detected */
-@supports (-webkit-touch-callout: none) {
-  /* iOS specific adjustments */
-  .control-panel {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-  }
-  
-  .icon-button,
-  .action-button,
-  .switch,
-  .slider-range {
-    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
-  }
-}
-
-/* Android specific adjustments */
-@media (pointer: coarse) and (hover: none) {
-  /* Ensure proper touch interaction */
-  .icon-button:active {
-    transform: scale(0.95);
-  }
-  
-  .action-button:active {
-    transform: scale(0.98);
-  }
-}
-
-/* Fix for devices that don't properly report pointer: coarse */
-@media (max-width: 768px) and (hover: none) {
-  /* Apply same styles as pointer: coarse */
-  .icon-button {
-    width: 52px !important;
-    height: 52px !important;
-    min-width: 52px !important;
-    min-height: 52px !important;
-  }
-  
-  .control-group {
-    min-height: 48px;
-  }
-  
-  .switch {
-    width: 60px !important;
-    height: 34px !important;
+    font-size: 10px;
   }
 }
 
@@ -1396,158 +1323,4 @@ input[type="file"] {
   .toast-message {
     transition: none;
   }
-}
-/* ========================================================================
-   Add this to the END of your css/styles.css file (after line ~1560)
-   ======================================================================== */
-
-/* ========================================================================
-   8. DEVICE-SPECIFIC CLASS OVERRIDES
-   Dynamic classes applied by JavaScript for better mobile detection
-   ======================================================================== */
-
-/* Device-specific class overrides */
-body.needs-mobile-ui .icon-button,
-body.device-mobile .icon-button,
-body.has-touch .icon-button {
-    width: 52px !important;
-    height: 52px !important;
-    min-width: 52px !important;
-    min-height: 52px !important;
-}
-
-body.needs-mobile-ui .icon-button svg,
-body.device-mobile .icon-button svg,
-body.has-touch .icon-button svg {
-    width: 28px !important;
-    height: 28px !important;
-}
-
-body.needs-mobile-ui .control-group,
-body.device-mobile .control-group,
-body.has-touch .control-group {
-    min-height: 48px !important;
-    padding: var(--spacing-lg) 0 !important;
-}
-
-body.needs-mobile-ui .switch,
-body.device-mobile .switch,
-body.has-touch .switch {
-    width: 60px !important;
-    height: 34px !important;
-}
-
-body.needs-mobile-ui .slider,
-body.device-mobile .slider,
-body.has-touch .slider {
-    height: 34px !important;
-}
-
-body.needs-mobile-ui .slider:before,
-body.device-mobile .slider:before,
-body.has-touch .slider:before {
-    height: 28px !important;
-    width: 28px !important;
-}
-
-body.needs-mobile-ui input:checked + .slider:before,
-body.device-mobile input:checked + .slider:before,
-body.has-touch input:checked + .slider:before {
-    transform: translateX(26px) !important;
-}
-
-/* Additional mobile UI overrides */
-body.needs-mobile-ui .control-panel-content,
-body.device-mobile .control-panel-content {
-    padding: var(--spacing-lg) !important;
-    max-height: 75vh !important;
-}
-
-body.needs-mobile-ui .action-button,
-body.device-mobile .action-button,
-body.has-touch .action-button {
-    min-height: 48px !important;
-    padding: var(--spacing-lg) !important;
-    font-size: var(--font-size-base) !important;
-}
-
-body.needs-mobile-ui .slider-range,
-body.device-mobile .slider-range,
-body.has-touch .slider-range {
-    height: 8px !important;
-    min-height: 44px !important;
-    padding: 18px 0 !important;
-}
-
-body.needs-mobile-ui .slider-range::-webkit-slider-thumb,
-body.device-mobile .slider-range::-webkit-slider-thumb,
-body.has-touch .slider-range::-webkit-slider-thumb {
-    width: 32px !important;
-    height: 32px !important;
-}
-
-body.needs-mobile-ui .slider-range::-moz-range-thumb,
-body.device-mobile .slider-range::-moz-range-thumb,
-body.has-touch .slider-range::-moz-range-thumb {
-    width: 32px !important;
-    height: 32px !important;
-}
-
-/* Force mobile UI class for testing/debugging */
-body.force-mobile-ui .icon-button {
-    width: 52px !important;
-    height: 52px !important;
-    min-width: 52px !important;
-    min-height: 52px !important;
-}
-
-body.force-mobile-ui .control-group {
-    min-height: 48px !important;
-}
-
-body.force-mobile-ui .switch {
-    width: 60px !important;
-    height: 34px !important;
-}
-
-body.force-mobile-ui .action-button {
-    min-height: 48px !important;
-}
-
-/* Platform-specific adjustments */
-body.platform-ios .control-panel {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-}
-
-body.platform-android .icon-button:active {
-    transform: scale(0.95);
-}
-
-/* Mobile UI active class (set by JavaScript) */
-.control-panel.mobile-ui-active .icon-button {
-    width: 52px !important;
-    height: 52px !important;
-    min-width: 52px !important;
-    min-height: 52px !important;
-}
-
-.control-panel.mobile-ui-active .control-group {
-    min-height: 48px !important;
-}
-
-/* Debug helper - add a visual indicator when mobile UI is active */
-body.needs-mobile-ui::before {
-    content: "Mobile UI Active";
-    position: fixed;
-    top: 5px;
-    left: 5px;
-    background: rgba(33, 150, 243, 0.8);
-    color: white;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 10px;
-    z-index: 10000;
-    pointer-events: none;
-    display: none; /* Set to 'block' for debugging */
 }
