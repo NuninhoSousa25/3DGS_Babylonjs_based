@@ -9,6 +9,8 @@ A 3D model viewer built with Babylon.js, specifically optimized for 3D Gaussian 
 - TAA is not working
 - model scalling isnt being exported by url share
 - standardize sliders
+- UI updates every 450ms regardless of visibility - Only run UI updates when control panel is visible
+- Multiple resize callbacks instead of debounced single handler
 
 ## 🌟 Features
 Model Loading & Compatibility
