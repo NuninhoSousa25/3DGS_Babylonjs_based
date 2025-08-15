@@ -2,7 +2,7 @@
    3D VIEWER UI CONTROLLER - CLEAN & ORGANIZED
    ======================================================================== */
 
-import { setupUIUpdates, startUIUpdates, stopUIUpdates, DOM, Events, ErrorMessages } from './helpers.js';
+import { setupUIUpdates, startUIUpdates, stopUIUpdates, restartUIUpdates, DOM, Events, ErrorMessages } from './helpers.js';
 import { loadModel } from './modelLoader.js';
 import { CONFIG } from './config.js';
 import { detectDevice } from './deviceDetection.js';
@@ -194,6 +194,9 @@ export function setupUI(camera, scene, engine, initialPixelRatio) {
     controlPanel.appendChild(iconBar);
     controlPanel.appendChild(contentArea);
     document.body.appendChild(controlPanel);
+    
+    // Clear DOM cache after UI creation to ensure fresh queries
+    DOM.clearCache();
     
     // Setup event handlers
     setupIconButtonHandlers(camera, scene, engine);
@@ -455,19 +458,17 @@ function createDevSection() {
  * Setup all icon button event handlers
  */
 function setupIconButtonHandlers(camera, scene, engine) {
-    // Get button references
-    const settingsButton = document.getElementById("settingsButton");
-    const infoButton = document.getElementById("infoButton");
-    const devButton = document.getElementById("devButton");
-    const resetViewButton = document.getElementById("resetViewButton");
-    const fullscreenButton = document.getElementById("fullscreenButton");
-    const shareButton = document.getElementById("shareButton");
-    const closePanelButton = document.getElementById("closePanelButton");
+    // Get button references using DOM utility
+    const buttons = DOM.getAll([
+        "settingsButton", "infoButton", "devButton", 
+        "resetViewButton", "fullscreenButton", "shareButton", "closePanelButton"
+    ]);
+    const { settingsButton, infoButton, devButton, resetViewButton, 
+            fullscreenButton, shareButton, closePanelButton } = buttons;
 
-    // Get content sections
-    const settingsContent = document.getElementById("settingsContent");
-    const infoContent = document.getElementById("infoContent");
-    const devContent = document.getElementById("devContent");
+    // Get content sections using DOM utility
+    const content = DOM.getAll(["settingsContent", "infoContent", "devContent"]);
+    const { settingsContent, infoContent, devContent } = content;
     const allContentSections = [settingsContent, infoContent, devContent];
     
     let currentlyOpenSection = null;
@@ -479,9 +480,9 @@ function setupIconButtonHandlers(camera, scene, engine) {
         
         // Close all sections first
         allContentSections.forEach(section => section.style.display = "none");
-        document.getElementById("controlPanelContent").style.display = "none";
+        DOM.get("controlPanelContent").style.display = "none";
         
-        // Reset all button states
+        // Reset all button states (use cached reference)
         [settingsButton, infoButton, devButton].forEach(btn => btn.classList.remove('active'));
         
         if (!isAlreadyOpen) {
@@ -501,7 +502,7 @@ function setupIconButtonHandlers(camera, scene, engine) {
             
             // Start UI updates only for developer tools section
             if (sectionToShow === devContent) {
-                startUIUpdates();
+                restartUIUpdates();
             }
         } else {
             currentlyOpenSection = null;
@@ -1525,8 +1526,8 @@ function setupTouchUI(controlPanel, camera) {
     controlPanel.addEventListener('touchmove', handleTouchMove, { passive: false });
     controlPanel.addEventListener('touchend', handleTouchEnd, { passive: true });
     
-    // Add visual feedback for touch buttons
-    const buttons = controlPanel.querySelectorAll('button');
+    // Add visual feedback for touch buttons (using cached query)
+    const buttons = DOM.getButtonsInContainer(controlPanel);
     buttons.forEach(button => {
         button.addEventListener('touchstart', () => button.classList.add('touch-active'), { passive: true });
         button.addEventListener('touchend', () => button.classList.remove('touch-active'), { passive: true });
@@ -1544,10 +1545,11 @@ function setupTouchUI(controlPanel, camera) {
  * Close all open panels and reset UI state
  */
 function closeAllPanels() {
-    const allContentSections = document.querySelectorAll(".content-section");
-    const controlPanelContent = document.getElementById("controlPanelContent");
-    const controlPanel = document.getElementById("controlPanel");
-    const buttons = document.querySelectorAll(".icon-button");
+    // Use cached DOM queries for better performance
+    const allContentSections = DOM.getAllContentSections();
+    const controlPanelContent = DOM.get("controlPanelContent");
+    const controlPanel = DOM.get("controlPanel");
+    const buttons = DOM.getAllIconButtons();
     
     allContentSections.forEach(section => section.style.display = "none");
     if (controlPanelContent) controlPanelContent.style.display = "none";

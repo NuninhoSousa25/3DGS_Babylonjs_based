@@ -7,6 +7,9 @@ import { CONFIG } from './config.js';
  * DOM Utility Functions for efficient element access and caching
  */
 export const DOM = {
+    // Cache for expensive queries
+    _cache: new Map(),
+
     /**
      * Get a single element by ID
      * @param {string} id - Element ID
@@ -49,6 +52,64 @@ export const DOM = {
             console.warn(`Element '${id}' not found in context: ${context}`);
         }
         return element;
+    },
+
+    /**
+     * Cache and return result of expensive DOM queries
+     * @param {string} key - Cache key
+     * @param {Function} queryFn - Function that performs the DOM query
+     * @returns {HTMLElement[]|NodeList}
+     */
+    cached(key, queryFn) {
+        if (!this._cache.has(key)) {
+            this._cache.set(key, queryFn());
+        }
+        return this._cache.get(key);
+    },
+
+    /**
+     * Clear specific cache entry or entire cache
+     * @param {string} key - Cache key to clear (optional)
+     */
+    clearCache(key = null) {
+        if (key) {
+            this._cache.delete(key);
+        } else {
+            this._cache.clear();
+        }
+    },
+
+    /**
+     * Get all content sections (cached)
+     * @returns {NodeList}
+     */
+    getAllContentSections() {
+        return this.cached('content-sections', () => 
+            document.querySelectorAll('.content-section')
+        );
+    },
+
+    /**
+     * Get all icon buttons (cached)
+     * @returns {NodeList}
+     */
+    getAllIconButtons() {
+        return this.cached('icon-buttons', () => 
+            document.querySelectorAll('.icon-button')
+        );
+    },
+
+    /**
+     * Get buttons within a specific container (cached per container)
+     * @param {HTMLElement} container - Container element
+     * @returns {NodeList}
+     */
+    getButtonsInContainer(container) {
+        const containerId = container.id || container.className || 'unknown';
+        const cacheKey = `buttons-${containerId}`;
+        return this.cached(cacheKey, () => 
+            container.querySelectorAll('button')
+        );
     }
 };
 
@@ -96,6 +157,8 @@ export const Events = {
  */
 export const WindowEvents = {
     resizeCallbacks: new Set(),
+    resizeDebounceTimer: null,
+    resizeDebounceDelay: 16, // ~60fps, good balance between responsiveness and performance
 
     /**
      * Initialize window event handlers (call once)
@@ -104,13 +167,22 @@ export const WindowEvents = {
         if (this.initialized) return;
         
         window.addEventListener("resize", () => {
-            this.resizeCallbacks.forEach(callback => {
-                try {
-                    callback();
-                } catch (error) {
-                    console.error(ErrorMessages.SYSTEM.RESIZE_CALLBACK_ERROR, error);
-                }
-            });
+            // Clear existing timer
+            if (this.resizeDebounceTimer) {
+                clearTimeout(this.resizeDebounceTimer);
+            }
+            
+            // Debounce resize callbacks to avoid excessive firing
+            this.resizeDebounceTimer = setTimeout(() => {
+                this.resizeCallbacks.forEach(callback => {
+                    try {
+                        callback();
+                    } catch (error) {
+                        console.error(ErrorMessages.SYSTEM.RESIZE_CALLBACK_ERROR, error);
+                    }
+                });
+                this.resizeDebounceTimer = null;
+            }, this.resizeDebounceDelay);
         });
         
         this.initialized = true;
@@ -139,6 +211,14 @@ export const WindowEvents = {
      */
     createEngineResizeHandler(engine) {
         return () => engine.resize();
+    },
+
+    /**
+     * Configure resize debounce delay
+     * @param {number} delay - Delay in milliseconds (default: 16ms for ~60fps)
+     */
+    setDebounceDelay(delay) {
+        this.resizeDebounceDelay = Math.max(0, delay);
     }
 };
 
@@ -216,9 +296,12 @@ let lastUIValues = {}; // Cache last values to avoid unnecessary DOM updates
  * @param {BABYLON.Engine} engine 
  */
 export function setupUIUpdates(scene, engine) {
-    // Cache elements and scene/engine references using DOM utility
+    // Clean up any existing observers first
+    stopUIUpdates();
+    
+    // Store element IDs and device info - we'll query elements fresh each time
     uiUpdateElements = {
-        ...DOM.getAll([
+        elementIds: [
             "controlPanelFps",
             "controlPanelResolution", 
             "controlPanelVertices",
@@ -229,7 +312,7 @@ export function setupUIUpdates(scene, engine) {
             "deviceType",
             "deviceMaxTouch",
             "deviceScreenSize"
-        ]),
+        ],
         // Cache device detection result - only run once!
         cachedDevice: detectDevice()
     };
@@ -237,21 +320,30 @@ export function setupUIUpdates(scene, engine) {
     uiUpdateScene = scene;
     uiUpdateEngine = engine;
 
-    if (!uiUpdateElements.controlPanelFps || !uiUpdateElements.controlPanelResolution || 
-        !uiUpdateElements.controlPanelVertices || !uiUpdateElements.controlPanelContent) {
-        console.warn("One or more UI elements are missing. UI updates will not work correctly.");
-        return;
-    }
-
     // Set up Intersection Observer for efficient visibility detection
-    if ('IntersectionObserver' in window && uiUpdateElements.controlPanelContent) {
-        uiVisibilityObserver = new IntersectionObserver((entries) => {
-            isPanelVisible = entries[0].isIntersecting;
-        }, {
-            threshold: 0.1 // Trigger when 10% of panel is visible
-        });
-        uiVisibilityObserver.observe(uiUpdateElements.controlPanelContent);
-    }
+    // Use a small delay to ensure DOM elements are ready
+    setTimeout(() => {
+        const controlPanelElement = DOM.get("controlPanelContent");
+        if ('IntersectionObserver' in window && controlPanelElement) {
+            uiVisibilityObserver = new IntersectionObserver((entries) => {
+                isPanelVisible = entries[0].isIntersecting;
+                // Start updates when panel becomes visible
+                if (isPanelVisible && !uiUpdateObserver) {
+                    startUIUpdates();
+                }
+            }, {
+                threshold: 0.1 // Trigger when 10% of panel is visible
+            });
+            uiVisibilityObserver.observe(controlPanelElement);
+        }
+        
+        // Start updates immediately if panel is visible
+        const panelElement = DOM.get("controlPanelContent");
+        if (panelElement && panelElement.offsetParent !== null) {
+            isPanelVisible = true;
+            startUIUpdates();
+        }
+    }, 100); // Small delay to ensure DOM is ready
 
 }
 
@@ -283,39 +375,43 @@ export function startUIUpdates() {
                 const height = uiUpdateEngine.getRenderHeight();
                 const totalVertices = getTotalVertices(uiUpdateScene);
 
-                // Batch DOM updates to minimize reflows - only update if values changed
-                const elements = uiUpdateElements;
+                // Query elements fresh each time to handle UI state changes
                 const newFps = fps.toFixed(2);
                 const newResolution = `${width} x ${height}`;
                 const newVertices = totalVertices.toString();
                 
-                if (elements.controlPanelFps && lastUIValues.fps !== newFps) {
-                    elements.controlPanelFps.textContent = newFps;
+                // Get fresh element references from DOM
+                const fpsElement = DOM.get("controlPanelFps");
+                const resolutionElement = DOM.get("controlPanelResolution");
+                const verticesElement = DOM.get("controlPanelVertices");
+                
+                if (fpsElement && lastUIValues.fps !== newFps) {
+                    fpsElement.textContent = newFps;
                     lastUIValues.fps = newFps;
                 }
-                if (elements.controlPanelResolution && lastUIValues.resolution !== newResolution) {
-                    elements.controlPanelResolution.textContent = newResolution;
+                if (resolutionElement && lastUIValues.resolution !== newResolution) {
+                    resolutionElement.textContent = newResolution;
                     lastUIValues.resolution = newResolution;
                 }
-                if (elements.controlPanelVertices && lastUIValues.vertices !== newVertices) {
-                    elements.controlPanelVertices.textContent = newVertices;
+                if (verticesElement && lastUIValues.vertices !== newVertices) {
+                    verticesElement.textContent = newVertices;
                     lastUIValues.vertices = newVertices;
                 }
                 
                 // Update device detection info (using cached result)
-                const { cachedDevice } = elements;
+                const { cachedDevice } = uiUpdateElements;
                 if (cachedDevice) {
-                    const updates = [
-                        [elements.deviceTouch, cachedDevice.hasTouch ? 'YES' : 'NO'],
-                        [elements.deviceMobile, cachedDevice.isMobile ? 'YES' : 'NO'],
-                        [elements.deviceTouchDevice, cachedDevice.isTouchDevice ? 'YES' : 'NO'],
-                        [elements.deviceType, cachedDevice.type],
-                        [elements.deviceMaxTouch, navigator.maxTouchPoints || 0],
-                        [elements.deviceScreenSize, `${cachedDevice.screenWidth}×${cachedDevice.screenHeight}`]
+                    const deviceUpdates = [
+                        [DOM.get("deviceTouch"), cachedDevice.hasTouch ? 'YES' : 'NO'],
+                        [DOM.get("deviceMobile"), cachedDevice.isMobile ? 'YES' : 'NO'],
+                        [DOM.get("deviceTouchDevice"), cachedDevice.isTouchDevice ? 'YES' : 'NO'],
+                        [DOM.get("deviceType"), cachedDevice.type],
+                        [DOM.get("deviceMaxTouch"), navigator.maxTouchPoints || 0],
+                        [DOM.get("deviceScreenSize"), `${cachedDevice.screenWidth}×${cachedDevice.screenHeight}`]
                     ];
                     
                     // Batch update device info elements
-                    updates.forEach(([element, value]) => {
+                    deviceUpdates.forEach(([element, value]) => {
                         if (element) element.textContent = value;
                     });
                 }
@@ -346,4 +442,23 @@ export function stopUIUpdates() {
     
     // Reset cached values
     lastUIValues = {};
+}
+
+/**
+ * Restart UI updates - call this when UI content changes or becomes visible
+ */
+export function restartUIUpdates() {
+    if (!uiUpdateScene || !uiUpdateEngine) return;
+    
+    // Stop current updates
+    if (uiUpdateObserver) {
+        stopUIUpdates();
+    }
+    
+    // Check if elements are now visible and restart
+    const panelElement = DOM.get("controlPanelContent");
+    if (panelElement && panelElement.offsetParent !== null) {
+        isPanelVisible = true;
+        startUIUpdates();
+    }
 }
