@@ -23,7 +23,10 @@ export const CONFIG = {
         supportedFormats: ['splat', 'ply', 'spz', 'gltf', 'glb', 'obj', 'stl', 'fbx'],
         
         defaultFallbackModel: "https://raw.githubusercontent.com/CedricGuillemet/dump/master/Halo_Believe.splat",
-        defaultModelScale: 1.0
+        
+        // Model processing constants
+        defaultNormalizedSize: 2.0,         // Default size for model normalization
+        urlCleanupDelay: 1000               // Delay before cleaning up object URLs (ms)
     },
 
     /* ====================================================================
@@ -137,7 +140,11 @@ export const CONFIG = {
         minimumPanDistance: 8,
         touchActionDelay: 100,
         gestureStabilityThreshold: 5,
-        inertiaTransitionTime: 150
+        inertiaTransitionTime: 150,
+        
+        // Mobile UI timing
+        orientationChangeDelay: 100,        // Delay after orientation change (ms)
+        touchIndicatorDuration: 3000        // Touch indicator display time (ms)
     },
 
     /**
@@ -211,7 +218,28 @@ export const CONFIG = {
      * UI update and refresh settings
      */
     ui: {
-        updateFrequency: 450                // UI update frequency (ms)
+        updateFrequency: 450,               // UI update frequency (ms)
+        domReadyDelay: 100,                 // Delay for DOM readiness checks (ms)
+        
+        // Touch sensitivity calculation constants
+        sensitivity: {
+            baseAngular: 2500,              // Base value for angular sensitivity calculations
+            basePanning: 1000,              // Base value for panning sensitivity calculations
+            defaultValue: 1.0               // Default sensitivity multiplier
+        },
+        
+        // Toast message timing
+        toast: {
+            showDelay: 10,                  // Delay before showing toast (ms)
+            displayDuration: 3000,          // How long to show toast (ms)
+            hideDelay: 300                  // Delay before hiding toast (ms)
+        },
+        
+        // Device detection timing
+        device: {
+            orientationChangeDelay: 100,    // Delay after orientation change (ms)
+            detectionInitDelay: 100         // Initial detection callback delay (ms)
+        }
     }
 
 };

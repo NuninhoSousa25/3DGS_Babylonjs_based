@@ -1,6 +1,7 @@
 // js/export/ViewerExporter.js
 
 import { CONFIG } from '../config.js';
+import { WindowEvents, ErrorMessages } from '../helpers.js';
 
 /**
  * ViewerExporter - Creates self-contained HTML or ZIP packages of the viewer
@@ -33,8 +34,8 @@ export class ViewerExporter {
             
             showToast('Export completed successfully!');
         } catch (error) {
-            console.error('Export failed:', error);
-            showToast('Export failed: ' + error.message, 5000);
+            console.error(ErrorMessages.SYSTEM.EXPORT_FAILED(), error);
+            showToast(ErrorMessages.SYSTEM.EXPORT_FAILED(error.message), 5000);
         }
     }
 
@@ -108,7 +109,7 @@ export class ViewerExporter {
         const modelUrl = this.scene.currentModelUrl;
         
         if (!currentModel) {
-            throw new Error('No model loaded to export');
+            throw new Error(ErrorMessages.MODEL.NO_MODEL_TO_EXPORT);
         }
 
         // For splat/ply models, we need to fetch the original data
@@ -126,7 +127,7 @@ export class ViewerExporter {
                     url: modelUrl
                 };
             } catch (error) {
-                console.error('Failed to fetch model data:', error);
+            console.error(ErrorMessages.MODEL.FETCH_FAILED, error);
                 return {
                     type: modelType,
                     format: 'unknown',
@@ -361,7 +362,7 @@ export class ViewerExporter {
                 document.getElementById('loadingOverlay').style.display = 'none';
                 
             } catch (error) {
-                console.error('Failed to load model:', error);
+            console.error(ErrorMessages.MODEL.LOAD_FAILED(), error);
                 document.getElementById('loadingOverlay').innerHTML = 
                     '<div style="color: red;">Failed to load model: ' + error.message + '</div>';
             }
@@ -381,10 +382,8 @@ export class ViewerExporter {
                 scene.render();
             });
             
-            // Handle resize
-            window.addEventListener("resize", () => {
-                engine.resize();
-            });
+            // Handle resize using centralized handler
+            WindowEvents.addResizeCallback(WindowEvents.createEngineResizeHandler(engine));
         }
         
         async function loadExportedModel(scene, modelData) {
@@ -591,8 +590,8 @@ async function initializeViewer() {
     // Start render loop
     engine.runRenderLoop(() => scene.render());
     
-    // Handle resize
-    window.addEventListener("resize", () => engine.resize());
+    // Handle resize using centralized handler
+    WindowEvents.addResizeCallback(WindowEvents.createEngineResizeHandler(engine));
 }`;
     }
 

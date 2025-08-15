@@ -2,9 +2,10 @@
    3D VIEWER UI CONTROLLER - CLEAN & ORGANIZED
    ======================================================================== */
 
-import { setupUIUpdates, startUIUpdates, stopUIUpdates } from './helpers.js';
+import { setupUIUpdates, startUIUpdates, stopUIUpdates, DOM, Events, ErrorMessages } from './helpers.js';
 import { loadModel } from './modelLoader.js';
 import { CONFIG } from './config.js';
+import { detectDevice } from './deviceDetection.js';
 
 /* ========================================================================
    SVG ICONS DEFINITIONS
@@ -50,25 +51,6 @@ function createElement(tag, options = {}) {
     return element;
 }
 
-/**
- * Adds a toggle event listener with standardized behavior
- */
-function addToggleListener(element, callback) {
-    element.addEventListener('change', (e) => {
-        callback(e.target.checked, e);
-    });
-}
-
-/**
- * Adds a range input event listener with standardized behavior
- */
-function addRangeListener(element, callback, displayElement = null) {
-    element.addEventListener('input', (e) => {
-        const value = parseFloat(e.target.value);
-        if (displayElement) displayElement.textContent = value;
-        callback(value, e);
-    });
-}
 
 /**
  * Creates a standardized toggle switch HTML
@@ -142,7 +124,7 @@ function setupCameraLimitsToggles(elements, cameraLimits) {
     
     // Master toggle
     if (masterToggle) {
-        addToggleListener(masterToggle, (checked) => {
+        Events.addToggleListener(masterToggle, (checked) => {
             cameraLimits.setEnabled(checked);
             console.log('Camera limits enabled:', checked);
         });
@@ -150,7 +132,7 @@ function setupCameraLimitsToggles(elements, cameraLimits) {
     
     // Individual limit toggles
     if (limitZoomToggle) {
-        addToggleListener(limitZoomToggle, (checked) => {
+        Events.addToggleListener(limitZoomToggle, (checked) => {
             const limits = cameraLimits.getCurrentLimits();
             cameraLimits.setDistanceLimits(checked, limits.radiusMin, limits.radiusMax);
             console.log('Zoom limits enabled:', checked);
@@ -158,7 +140,7 @@ function setupCameraLimitsToggles(elements, cameraLimits) {
     }
     
     if (limitVerticalToggle) {
-        addToggleListener(limitVerticalToggle, (checked) => {
+        Events.addToggleListener(limitVerticalToggle, (checked) => {
             const upValue = parseFloat(verticalUpRange.value);
             const downValue = parseFloat(verticalDownRange.value);
             cameraLimits.setVerticalLimitsUpDown(checked, upValue, downValue);
@@ -167,7 +149,7 @@ function setupCameraLimitsToggles(elements, cameraLimits) {
     }
     
     if (limitHorizontalToggle) {
-        addToggleListener(limitHorizontalToggle, (checked) => {
+        Events.addToggleListener(limitHorizontalToggle, (checked) => {
             const totalAngle = parseFloat(horizontalAngleRange.value);
             const offset = parseFloat(horizontalOffsetRange.value);
             cameraLimits.setHorizontalLimitsAngleOffset(checked, totalAngle, offset);
@@ -176,7 +158,7 @@ function setupCameraLimitsToggles(elements, cameraLimits) {
     }
     
     if (limitPanToggle) {
-        addToggleListener(limitPanToggle, (checked) => {
+        Events.addToggleListener(limitPanToggle, (checked) => {
             cameraLimits.setPanningEnabled(checked);
             console.log('Panning enabled:', checked);
         });
@@ -220,7 +202,7 @@ export function setupUI(camera, scene, engine, initialPixelRatio) {
     // Delay model loading setup to ensure DOM is ready
     setTimeout(() => {
         setupModelLoading(scene);
-    }, 100);
+    }, CONFIG.ui.domReadyDelay);
     
     // Setup responsive features
     if (hasTouch) {
@@ -535,25 +517,25 @@ function setupIconButtonHandlers(camera, scene, engine) {
     
    // Setup button event listeners
     if (settingsButton) {
-        settingsButton.addEventListener("click", () => toggleContentSection(settingsContent));
+        Events.addClickListener(settingsButton, () => toggleContentSection(settingsContent));
     }
     if (infoButton) {
-        infoButton.addEventListener("click", () => toggleContentSection(infoContent));
+        Events.addClickListener(infoButton, () => toggleContentSection(infoContent));
     }
     if (devButton) {
-        devButton.addEventListener("click", () => toggleContentSection(devContent));
+        Events.addClickListener(devButton, () => toggleContentSection(devContent));
     }
     if (resetViewButton) {
-        resetViewButton.addEventListener("click", () => resetCameraView(camera, scene));
+        Events.addClickListener(resetViewButton, () => resetCameraView(camera, scene));
     }
     if (fullscreenButton) {
-        fullscreenButton.addEventListener("click", () => toggleFullscreen(fullscreenButton));
+        Events.addClickListener(fullscreenButton, () => toggleFullscreen(fullscreenButton));
     }
     if (shareButton) {
-        shareButton.addEventListener("click", () => shareCameraView(camera, scene));
+        Events.addClickListener(shareButton, () => shareCameraView(camera, scene));
     }
     if (closePanelButton) {
-        closePanelButton.addEventListener("click", () => toggleContentSection(null));
+        Events.addClickListener(closePanelButton, () => toggleContentSection(null));
     }
     
     // Export button handler will be set up in setupSettingsControls
@@ -586,7 +568,7 @@ function setupSettingsControls(camera, scene) {
     // Sharpening toggle
     const sharpenToggle = document.getElementById('sharpenToggle');
     if (sharpenToggle && scene.pipeline) {
-        addToggleListener(sharpenToggle, (checked) => {
+        Events.addToggleListener(sharpenToggle, (checked) => {
             scene.pipeline.sharpenEnabled = checked;
         });
     }
@@ -595,7 +577,7 @@ function setupSettingsControls(camera, scene) {
     const sharpenIntensityRange = document.getElementById('sharpenIntensityRange');
     const sharpenIntensityDisplay = document.getElementById('sharpenIntensityDisplay');
     if (sharpenIntensityRange && sharpenIntensityDisplay && scene.pipeline) {
-        addRangeListener(sharpenIntensityRange, (value) => {
+        Events.addRangeListener(sharpenIntensityRange, (value) => {
             scene.pipeline.sharpen.edgeAmount = value;
             CONFIG.postProcessing.sharpenEdgeAmount = value;
             console.log('Sharpening intensity updated to:', value);
@@ -640,18 +622,32 @@ function setupSettingsControls(camera, scene) {
         fovDisplay.textContent = currentFovDegrees + '°';
         fovRange.value = camera.fov;
         
-        addRangeListener(fovRange, (value) => {
+        Events.addRangeListener(fovRange, (value) => {
             camera.fov = value;
             const degrees = Math.round(value * 180 / Math.PI);
             fovDisplay.textContent = degrees + '°';
             console.log('FOV updated to:', degrees + '° (' + value.toFixed(2) + ' radians)');
         }, fovDisplay);
     }
+
+    const modelScaleRange = document.getElementById('modelScaleRange');
+    const modelScaleDisplay = document.getElementById('modelScaleRangeDisplay'); // <--- CORRECTED ID
+    if (modelScaleRange && modelScaleDisplay) {
+        Events.addRangeListener(modelScaleRange, (value) => {
+            if (scene.currentModel) {
+                // This sets a uniform scale based on the slider's value.
+                // Since the model was normalized to a base size, this slider
+                // acts as a multiplier.
+                scene.currentModel.scaling.setAll(value);
+            }
+        }, modelScaleDisplay);
+    }
+
     
     // Touch sensitivity (if available)
     const touchSensitivityRange = document.getElementById('touchSensitivityRange');
     if (touchSensitivityRange) {
-        addRangeListener(touchSensitivityRange, (value) => {
+        Events.addRangeListener(touchSensitivityRange, (value) => {
             const sensitivity = value / 5.0;
             updateTouchSensitivity(sensitivity, camera);
         });
@@ -663,14 +659,19 @@ function setupSettingsControls(camera, scene) {
     // Export button handler
     const exportButton = document.getElementById('exportButton');
     if (exportButton) {
-        exportButton.addEventListener("click", () => handleExport(camera, scene, scene.getEngine()));
+        Events.addClickListener(exportButton, () => handleExport(camera, scene, scene.getEngine()));
     }
 }
+
+
 
 /**
  * Create visualization settings section HTML
  */
 function createVisualizationSection() {
+    const device = detectDevice();
+    const defaultQuality = device.isDesktop ? 'high' : 'medium';
+    
     return `
         <div class="settings-category">
             <div class="settings-title">Visualization</div>
@@ -683,11 +684,11 @@ function createVisualizationSection() {
             </div>
             
             <div class="control-group">
-                <label for="qualitySelect">Quality</label>
+                 <label for="qualitySelect">Quality</label>
                 <select id="qualitySelect" class="settings-select">
                     <option value="low">Low (Better Performance)</option>
-                    <option value="medium" selected>Medium</option>
-                    <option value="high">High (Better Quality)</option>
+                    <option value="medium" ${defaultQuality === 'medium' ? 'selected' : ''}>Medium</option>
+                    <option value="high" ${defaultQuality === 'high' ? 'selected' : ''}>High (Better Quality)</option>
                 </select>
             </div>
             
@@ -698,6 +699,10 @@ function createVisualizationSection() {
                     <span id="fovDisplay" class="range-value">46°</span>
                 </div>
             </div>
+            ${createRangeControl('modelScaleRange', 'Model Scale', 0.1, 5, 1, 0.1)}
+
+               
+
         </div>
     `;
 }
@@ -949,7 +954,7 @@ function updateUIFromLimits(elements, cameraLimits) {
 function setupCameraLimitsRanges(elements, cameraLimits) {
     // Zoom ranges
     if (elements.zoomMinRange && elements.zoomMinDisplay) {
-        addRangeListener(elements.zoomMinRange, (value) => {
+        Events.addRangeListener(elements.zoomMinRange, (value) => {
             const limits = cameraLimits.getCurrentLimits();
             cameraLimits.setDistanceLimits(limits.restrictDistance, value, limits.radiusMax);
             console.log('Min zoom set to:', value);
@@ -957,7 +962,7 @@ function setupCameraLimitsRanges(elements, cameraLimits) {
     }
     
     if (elements.zoomMaxRange && elements.zoomMaxDisplay) {
-        addRangeListener(elements.zoomMaxRange, (value) => {
+        Events.addRangeListener(elements.zoomMaxRange, (value) => {
             const limits = cameraLimits.getCurrentLimits();
             cameraLimits.setDistanceLimits(limits.restrictDistance, limits.radiusMin, value);
             console.log('Max zoom set to:', value);
@@ -966,7 +971,7 @@ function setupCameraLimitsRanges(elements, cameraLimits) {
     
     // Vertical ranges (up/down)
     if (elements.verticalUpRange && elements.verticalUpDisplay) {
-        addRangeListener(elements.verticalUpRange, (value) => {
+        Events.addRangeListener(elements.verticalUpRange, (value) => {
             const downValue = parseFloat(elements.verticalDownRange.value);
             cameraLimits.setVerticalLimitsUpDown(true, value, downValue);
             console.log('Up limit set to:', value + '°');
@@ -974,7 +979,7 @@ function setupCameraLimitsRanges(elements, cameraLimits) {
     }
     
     if (elements.verticalDownRange && elements.verticalDownDisplay) {
-        addRangeListener(elements.verticalDownRange, (value) => {
+        Events.addRangeListener(elements.verticalDownRange, (value) => {
             const upValue = parseFloat(elements.verticalUpRange.value);
             cameraLimits.setVerticalLimitsUpDown(true, upValue, value);
             console.log('Down limit set to:', value + '°');
@@ -992,13 +997,13 @@ function setupCameraLimitsRanges(elements, cameraLimits) {
     }
     
     if (elements.horizontalAngleRange && elements.horizontalAngleDisplay) {
-        addRangeListener(elements.horizontalAngleRange, (value) => {
+        Events.addRangeListener(elements.horizontalAngleRange, (value) => {
             updateHorizontalLimits();
         }, elements.horizontalAngleDisplay);
     }
     
     if (elements.horizontalOffsetRange && elements.horizontalOffsetDisplay) {
-        addRangeListener(elements.horizontalOffsetRange, (value) => {
+        Events.addRangeListener(elements.horizontalOffsetRange, (value) => {
             updateHorizontalLimits();
         }, elements.horizontalOffsetDisplay);
     }
@@ -1163,7 +1168,7 @@ function toggleFullscreen(fullscreenButton) {
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(err => {
             console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-            showToast('Fullscreen mode failed. It might be disabled in your browser settings.');
+            showToast(ErrorMessages.SYSTEM.FULLSCREEN_FAILED);
         });
     } else {
         if (document.exitFullscreen) {
@@ -1250,8 +1255,8 @@ function updateQualitySettings(quality, scene) {
     
     const qualitySettings = {
         low: { scaling: 1.5, fxaa: false, sharpen: false },
-        medium: { scaling: 1.0, fxaa: true, sharpen: false },
-        high: { scaling: 0.75, fxaa: true, sharpen: true }
+        medium: { scaling: 1.0, fxaa: false, sharpen: true },
+        high: { scaling: 0.70, fxaa: false, sharpen: true }
     };
     
     const settings = qualitySettings[quality];
@@ -1289,10 +1294,10 @@ function updateQualitySettings(quality, scene) {
 function updateTouchSensitivity(sensitivity, camera) {
     if (!camera) return;
     
-    // Adjust camera sensitivity parameters
-    camera.angularSensibilityX = 2500 / sensitivity;
-    camera.angularSensibilityY = 2500 / sensitivity;
-    camera.panningSensibility = 1000 / sensitivity;
+    // Adjust camera sensitivity parameters using CONFIG constants
+    camera.angularSensibilityX = CONFIG.ui.sensitivity.baseAngular / sensitivity;
+    camera.angularSensibilityY = CONFIG.ui.sensitivity.baseAngular / sensitivity;
+    camera.panningSensibility = CONFIG.ui.sensitivity.basePanning / sensitivity;
     
     // Update gesture controller if available
     if (window.gestureController && window.gestureController.thresholds) {
@@ -1336,7 +1341,7 @@ function setupModelLoading(scene) {
         urlButton.addEventListener("click", async () => {
             const urlInput = document.getElementById("modelUrlInput");
             if (!urlInput || !urlInput.value.trim()) {
-                showToast("Please enter a URL to load", 3000);
+                showToast(ErrorMessages.INPUT.EMPTY_URL, CONFIG.ui.toast.displayDuration);
                 return;
             }
             
@@ -1405,7 +1410,7 @@ async function loadModelWithSpinner(scene, source, spinner, type) {
         
     } catch (error) {
         console.error("Error loading model:", error);
-        showToast(`Error loading model: ${error.message}`, 5000);
+        showToast(ErrorMessages.MODEL.LOAD_FAILED(error.message), 5000);
     } finally {
         // Hide loading spinner
         if (spinner) spinner.style.display = "none";
@@ -1463,7 +1468,7 @@ function triggerFileLoad(scene) {
             
         } catch (error) {
             console.error("Error loading model:", error);
-            showToast(`Error loading model: ${error.message}`, 5000);
+            showToast(ErrorMessages.MODEL.LOAD_FAILED(error.message), 5000);
         } finally {
             // Hide loading spinner
             const spinner = document.getElementById("loadingSpinner");
@@ -1556,7 +1561,7 @@ function closeAllPanels() {
 /**
  * Show a temporary toast message
  */
-function showToast(message, duration = 3000) {
+function showToast(message, duration = CONFIG.ui.toast.displayDuration) {
     // Remove existing toast
     const existingToast = document.getElementById('toast-message');
     if (existingToast) {
@@ -1573,7 +1578,7 @@ function showToast(message, duration = 3000) {
     // Add to document and show
     document.body.appendChild(toast);
     
-    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => toast.classList.add('show'), CONFIG.ui.toast.showDelay);
     
     // Hide after duration
     setTimeout(() => {
@@ -1582,7 +1587,7 @@ function showToast(message, duration = 3000) {
             if (toast.parentNode) {
                 document.body.removeChild(toast);
             }
-        }, 300);
+        }, CONFIG.ui.toast.hideDelay);
     }, duration);
 }
 
@@ -1875,7 +1880,7 @@ function setupTAA(scene, camera) {
             scene._haltonSequence = customTAA.haltonSequence;
             console.log('Custom TAA enabled with Halton sequence jittering');
         } else {
-            throw new Error('Custom TAA setup failed');
+            throw new Error(ErrorMessages.SYSTEM.TAA_SETUP_FAILED);
         }
         
     } catch (error) {

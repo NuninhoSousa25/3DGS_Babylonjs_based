@@ -107,13 +107,18 @@ html, body {
    3. LAYOUT & STRUCTURE
    ======================================================================== */
 
-/* Main Control Panel Container */
-.control-panel {
+/* Base Control Panel Positioning - Shared by all control panel states */
+.control-panel,
+#controlPanel {
   position: fixed !important;
   top: var(--spacing-md) !important;
   right: var(--spacing-md) !important;
   bottom: auto !important;
   left: auto !important;
+}
+
+/* Main Control Panel Container */
+.control-panel {
   width: auto;
   max-height: 90vh;
   color: var(--color-text-primary);
@@ -126,16 +131,11 @@ html, body {
 
 /* Panel States */
 .control-panel.expanded {
-  position: fixed !important;
   width: min(90vw, 400px);
   max-height: 90vh;
   background-color: transparent;
   border-radius: var(--border-radius-lg);
   padding: 0;
-  top: var(--spacing-md) !important;
-  right: var(--spacing-md) !important;
-  bottom: auto !important;
-  left: auto !important;
   margin: 0 !important;
 }
 
@@ -149,16 +149,6 @@ html, body {
   box-shadow: var(--shadow-lg);
   margin-left: 0;
   margin-right: 0;
-}
-
-/* Positioning Override - Ensure Top-Right Always */
-#controlPanel,
-.control-panel {
-  position: fixed !important;
-  top: var(--spacing-md) !important;
-  right: var(--spacing-md) !important;
-  bottom: auto !important;
-  left: auto !important;
 }
 
 /* ========================================================================
@@ -248,18 +238,24 @@ html, body {
 
 /* === BUTTONS & ICONS === */
 
-/* Icon Buttons */
-.icon-button {
-  background: none;
+/* Shared Button Base */
+.icon-button,
+.action-button {
   border: none;
-  color: var(--color-text-primary);
-  padding: var(--spacing-sm);
-  margin: 0 var(--spacing-xs);
   cursor: pointer;
-  border-radius: var(--border-radius-circle);
   display: flex;
   justify-content: center;
   align-items: center;
+  transition: background-color var(--transition-fast);
+}
+
+/* Icon Buttons */
+.icon-button {
+  background: none;
+  color: var(--color-text-primary);
+  padding: var(--spacing-sm);
+  margin: 0 var(--spacing-xs);
+  border-radius: var(--border-radius-circle);
   width: 44px;
   height: 44px;
   transition: background-color var(--transition-fast), color var(--transition-fast);
@@ -291,15 +287,9 @@ html, body {
   padding: var(--spacing-md) var(--spacing-lg);
   background-color: var(--color-accent);
   color: white;
-  border: none;
   border-radius: var(--border-radius-md);
-  cursor: pointer;
   font-size: var(--font-size-base);
   font-weight: 500;
-  transition: background-color var(--transition-fast);
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 .action-button:hover {
@@ -378,7 +368,7 @@ input:checked + .slider:before {
   transform: translateX(24px);
 }
 
-/* Range Sliders */
+/* Range Sliders - Base Styles */
 .slider-range {
   width: 100%;
   height: 5px;
@@ -394,8 +384,9 @@ input:checked + .slider:before {
   opacity: 1;
 }
 
-.slider-range::-webkit-slider-thumb {
-  appearance: none;
+/* Slider Thumb - Shared Styles */
+.slider-range::-webkit-slider-thumb,
+.slider-range::-moz-range-thumb {
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -403,12 +394,11 @@ input:checked + .slider:before {
   cursor: pointer;
 }
 
+.slider-range::-webkit-slider-thumb {
+  appearance: none;
+}
+
 .slider-range::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  cursor: pointer;
   border: none;
 }
 
@@ -431,8 +421,9 @@ input:checked + .slider:before {
 
 /* === INFO DISPLAYS === */
 
-/* Settings Sections */
-.settings-category {
+/* Content Groups - Shared Styles */
+.settings-category,
+.info-group {
   margin-bottom: var(--spacing-lg);
   padding: var(--spacing-md);
   background-color: var(--color-bg-secondary);
@@ -452,19 +443,6 @@ input:checked + .slider:before {
   margin: var(--spacing-lg) 0;
 }
 
-/* Info Groups */
-.info-group {
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-md);
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--border-radius-md);
-}
-
-.info-title {
-  font-weight: 500;
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-md);
-}
 
 .info-list {
   margin: 0;
@@ -487,7 +465,8 @@ input:checked + .slider:before {
   margin-bottom: var(--spacing-lg);
 }
 
-.dev-title {
+.dev-title,
+.info-title {
   font-weight: 500;
   margin-bottom: var(--spacing-md);
   color: var(--color-text-primary);
@@ -518,7 +497,7 @@ input:checked + .slider:before {
   font-family: monospace;
 }
 
-/* Model Loader */
+/* Model Loader - Shared Input Styles */
 .model-loader {
   margin-bottom: var(--spacing-md);
 }
@@ -528,19 +507,25 @@ input:checked + .slider:before {
   margin-bottom: var(--spacing-lg);
 }
 
-.file-label {
-  display: block;
+.file-label,
+.url-input {
   width: 100%;
   padding: var(--spacing-md);
   background-color: var(--color-bg-secondary);
   border-radius: var(--border-radius-md);
+  transition: background-color var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.file-label {
+  display: block;
   text-align: center;
   cursor: pointer;
   margin-bottom: var(--spacing-sm);
-  transition: background-color var(--transition-fast);
 }
 
-.file-label:hover {
+.file-label:hover,
+.url-input:focus {
   background-color: var(--color-bg-tertiary);
 }
 
@@ -555,20 +540,11 @@ input[type="file"] {
 }
 
 .url-input {
-  width: 100%;
-  padding: var(--spacing-md);
-  background-color: var(--color-bg-secondary);
   border: none;
-  border-radius: var(--border-radius-md);
   color: var(--color-text-primary);
   margin-bottom: var(--spacing-sm);
   font-size: var(--font-size-base);
-  box-sizing: border-box;
-}
-
-.url-input:focus {
   outline: none;
-  background-color: var(--color-bg-tertiary);
 }
 
 /* ========================================================================
@@ -643,24 +619,8 @@ input[type="file"] {
   background: linear-gradient(to right, var(--color-bg-secondary), var(--color-accent));
 }
 
-.limit-details .slider-range::-webkit-slider-thumb {
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  cursor: pointer;
-  border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: all var(--transition-fast);
-}
-
-.limit-details .slider-range::-webkit-slider-thumb:hover {
-  background: var(--color-accent-hover);
-  transform: scale(1.1);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
-}
-
+/* Enhanced Slider Thumbs for Camera Limits */
+.limit-details .slider-range::-webkit-slider-thumb,
 .limit-details .slider-range::-moz-range-thumb {
   width: 18px;
   height: 18px;
@@ -672,6 +632,11 @@ input[type="file"] {
   transition: all var(--transition-fast);
 }
 
+.limit-details .slider-range::-webkit-slider-thumb {
+  appearance: none;
+}
+
+.limit-details .slider-range::-webkit-slider-thumb:hover,
 .limit-details .slider-range::-moz-range-thumb:hover {
   background: var(--color-accent-hover);
   transform: scale(1.1);
@@ -1171,12 +1136,7 @@ input[type="file"] {
   }
   
   .control-panel {
-    position: fixed !important;
     width: auto;
-    top: var(--spacing-md) !important;
-    right: var(--spacing-md) !important;
-    bottom: auto !important;
-    left: auto !important;
   }
   
   .control-panel-content {
@@ -1256,7 +1216,6 @@ input[type="file"] {
   }
   
   .control-panel.expanded {
-    position: fixed !important;
     width: 100%;
     height: 100%;
     top: 0 !important;
@@ -1270,7 +1229,6 @@ input[type="file"] {
 
   #controlPanel.expanded,
   .control-panel.expanded {
-    position: fixed !important;
     top: 0 !important;
     right: 0 !important;
     bottom: 0 !important;

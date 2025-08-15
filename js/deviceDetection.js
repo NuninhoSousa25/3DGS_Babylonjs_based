@@ -1,5 +1,7 @@
 // js/deviceDetection.js
 
+import { CONFIG } from './config.js';
+
 /**
  * Unified device detection system with consistent breakpoints
  */
@@ -118,7 +120,7 @@ export function setupDeviceChangeListener(callback) {
     const handleOrientationChange = () => {
         setTimeout(() => {
             handleResize();
-        }, 100); // Small delay to allow browser to complete orientation change
+        }, CONFIG.ui.device.orientationChangeDelay);
     };
     
     // Add listeners - also listen to more events
@@ -126,7 +128,7 @@ export function setupDeviceChangeListener(callback) {
     window.addEventListener('orientationchange', handleOrientationChange);
     
     // Force an immediate callback to ensure initial state
-    setTimeout(() => callback(currentDevice), 100);
+    setTimeout(() => callback(currentDevice), CONFIG.ui.device.detectionInitDelay);
     
     // Return cleanup function
     return () => {

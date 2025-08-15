@@ -97,7 +97,7 @@ function setupOrientationHandler(camera, scene) {
                 // Landscape specific adjustments if needed
                 camera.beta = Math.min(camera.beta, Math.PI / 2.5);
             }
-        }, 300);
+        }, CONFIG.mobile.orientationChangeDelay);
     });
 
 function addTouchDebugIndicator() {
@@ -123,7 +123,7 @@ function addTouchDebugIndicator() {
         if (indicator.parentNode) {
             indicator.parentNode.removeChild(indicator);
         }
-    }, 3000);
+    }, CONFIG.mobile.touchIndicatorDuration);
 }
 
 }

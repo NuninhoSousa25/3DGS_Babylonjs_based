@@ -1,5 +1,5 @@
 // js/modelLoader.js - FIXED VERSION
-import { setMeshesPickable } from './helpers.js';
+import { setMeshesPickable, ErrorMessages } from './helpers.js';
 import { CONFIG } from './config.js';
 import { animateCamera } from './cameraControl.js';
 
@@ -23,14 +23,12 @@ export async function loadSplatModel(scene, url) {
     console.log(`Loading .splat/.ply model from URL: ${url}`);
 
     if (!BABYLON.GaussianSplattingMesh) {
-        throw new Error("GaussianSplattingMesh is not defined. Ensure the necessary plugin or script is loaded.");
+        throw new Error(ErrorMessages.MODEL.SPLAT_PLUGIN_MISSING);
     }
 
     const splatMesh = new BABYLON.GaussianSplattingMesh("mySplatMesh", null, scene);
-    console.log("GaussianSplattingMesh instance created:", splatMesh);
 
     await splatMesh.loadFileAsync(url);
-    console.log("Model file loaded successfully.");
 
     return splatMesh;
 }
@@ -53,7 +51,6 @@ export function centerAndFitModel(model, camera, scene) {
                 max: info.maximum
             };
         } else {
-            console.log("Model doesn't have bounding info");
             return;
         }
         
@@ -71,11 +68,41 @@ export function centerAndFitModel(model, camera, scene) {
         camera.radius = Math.min(targetRadius, CONFIG.cameraLimits.defaultLimits.zoom.max);
         camera.target = BABYLON.Vector3.Zero();
         
-        console.log("Model centered and fitted to view");
     } catch (error) {
         console.warn("Could not auto-center model:", error);
     }
 }
+
+export function normalizeModelScale(model, targetSize = 2.0) {
+    if (!model) return;
+
+    try {
+        // Use getHierarchyBoundingVectors for an accurate size of the model and its children.
+        const boundingInfo = model.getHierarchyBoundingVectors();
+        const size = boundingInfo.max.subtract(boundingInfo.min);
+
+        // If the size is zero, do nothing to avoid division by zero errors.
+        if (size.x === 0 && size.y === 0 && size.z === 0) {
+            return;
+        }
+
+        // Find the largest dimension of the model's bounding box.
+        const maxDimension = Math.max(size.x, size.y, size.z);
+
+        // Calculate the scaling factor needed to make the largest dimension equal to targetSize.
+        const scaleFactor = targetSize / maxDimension;
+
+        // Apply the scaling factor to the model.
+        // setAll is used to ensure the scale is uniform.
+        model.scaling.setAll(scaleFactor);
+
+        console.log(`Model normalized with a scale factor of: ${scaleFactor.toFixed(4)}`);
+
+    } catch (error) {
+        console.warn("Could not normalize model scale:", error);
+    }
+}
+
 
 /**
  * Loads a model based on the source type.
@@ -135,12 +162,10 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
     try {
         if (CONFIG.modelLoader.supportedFormats.includes(extension)) {
             if (extension === 'spz') {
-                console.log("Loading as .spz using SceneLoader.ImportMeshAsync");
                 const result = await BABYLON.SceneLoader.ImportMeshAsync(null, "", url, scene);
                 currentModel = result.meshes[0];
                 currentModel.position.y = 0;
                 currentModelType = 'mesh';
-                console.log("Successfully loaded .spz model:", currentModel);
                 
             } else if (extension === 'gltf' || extension === 'glb') {
                 console.log(`Loading as .${extension} using SceneLoader.ImportMeshAsync`);
@@ -173,7 +198,6 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
                     mesh.isPickable = true;
                 });
                 
-                console.log("Successfully loaded GLTF/GLB model:", currentModel);
                 
             } else if (extension === 'obj') {
                 console.log(`Loading as .${extension} using SceneLoader.ImportMeshAsync`);
@@ -213,9 +237,7 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
                 // Log materials info for debugging
                 if (result.materials && result.materials.length > 0) {
                     console.log(`Successfully loaded OBJ model with ${result.materials.length} materials:`, currentModel);
-                    console.log("Materials found:", result.materials.map(m => m.name));
                 } else {
-                    console.log("Successfully loaded OBJ model (no materials - MTL file may be missing):", currentModel);
                 }
                 
             } else if (extension === 'splat' || extension === 'ply') {
@@ -297,20 +319,29 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
             
 
         } else {
-            throw new Error(`Unsupported file format: .${extension}`);
+            throw new Error(ErrorMessages.MODEL.UNSUPPORTED_FORMAT(extension));
         }
 
         // Ensure all meshes are pickable
         setMeshesPickable(currentModel);
 
-        // Apply fixed default scale from config
-        applyDefaultScale(currentModel);
-        
+        // **NEW:** Normalize the model scale to a consistent size
+        normalizeModelScale(currentModel, CONFIG.modelLoader.defaultNormalizedSize);
+
         // Center and fit the model to view
         const camera = scene.activeCamera;
         if (camera) {
             centerAndFitModel(currentModel, camera, scene);
         }
+
+        // Reset the UI scale slider to its default value for the new model
+        const modelScaleRange = document.getElementById('modelScaleRange');
+        const modelScaleDisplay = document.getElementById('modelScaleDisplay');
+        if (modelScaleRange && modelScaleDisplay) {
+            modelScaleRange.value = 1;
+            modelScaleDisplay.textContent = '1.0';
+        }
+
         
         
         
@@ -326,7 +357,7 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
         // Clean up object URL if created
         if (isFile && url && (extension === 'splat' || extension === 'ply')) {
             // Delay cleanup to ensure model is fully loaded
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            setTimeout(() => URL.revokeObjectURL(url), CONFIG.modelLoader.urlCleanupDelay);
         }
         
         // Clear progress callback
@@ -347,7 +378,7 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
 /**
  * Applies the default scale from config to the model.
  */
-function applyDefaultScale(model) {
+/*function applyDefaultScale(model) {
     if (!model) return;
     
     const defaultScale = CONFIG.modelLoader.defaultModelScale;
@@ -359,4 +390,4 @@ function applyDefaultScale(model) {
     } catch (error) {
         console.error("Error applying default scale to model:", error);
     }
-}
+}*/

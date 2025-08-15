@@ -8,6 +8,7 @@ import { CONFIG } from './config.js';  // Import the centralized configuration
 import { setupMobileControls } from './mobileControl.js';
 import { detectDevice } from './deviceDetection.js';
 import { CameraLimits } from './cameraLimits.js';
+import { WindowEvents, ErrorMessages } from './helpers.js';
 
 /**
  * Global Variables
@@ -37,7 +38,6 @@ async function setupLighting(scene) {
         
         // HDR provides lighting and reflections but no visible skybox
         
-        console.log("HDR environment lighting setup complete");
         
         // Add minimal fill lighting for areas that might be too dark
         if (lightConfig.hdr.useFillLight) {
@@ -49,7 +49,6 @@ async function setupLighting(scene) {
             fillLight.intensity = lightConfig.hdr.fillLightIntensity;
             fillLight.diffuse = new BABYLON.Color3(...lightConfig.hdr.fillLightColor);
             
-            console.log("Added subtle fill light to complement HDR lighting");
         }
         
     } catch (error) {
@@ -85,7 +84,6 @@ function setupBasicLighting(scene, lightConfig) {
     directionalLight.diffuse = new BABYLON.Color3(...lightConfig.directional.diffuse);
     directionalLight.specular = new BABYLON.Color3(...lightConfig.directional.specular);
 
-    console.log("Basic lighting setup complete - GLB models should be illuminated");
 }
 
 /**
@@ -185,7 +183,6 @@ function configureAutoRotation(camera) {
         camera.autoRotationBehavior.idleRotationWaitTime = autoConfig.idleRotationWaitTime;
         camera.autoRotationBehavior.idleRotationSpeed = autoConfig.idleRotationSpeed;
         camera.autoRotationBehavior.idleRotationSpinUpTime = autoConfig.idleRotationSpinUpTime;
-        console.log("Auto-rotation configured");
     }
 }
 
@@ -197,7 +194,6 @@ function cleanup(scene, engine) {
     if (gestureController) {
         try {
             gestureController.dispose();
-            console.log("Gesture controller disposed.");
         } catch (e) {
             console.warn("Error disposing gesture controller:", e);
         }
@@ -208,7 +204,6 @@ function cleanup(scene, engine) {
     if (cameraLimits) {
         try {
             cameraLimits.dispose();
-            console.log("Camera limits disposed.");
         } catch (e) {
             console.warn("Error disposing camera limits:", e);
         }
@@ -220,25 +215,21 @@ function cleanup(scene, engine) {
     if (pipeline) {
         pipeline.dispose();
         pipeline = null;
-        console.log("Post-processing pipeline disposed.");
     }
 
     // Dispose current model
     disposeCurrentModel(scene.currentModel, scene.currentModelType);
     scene.currentModel = null;
     scene.currentModelType = null;
-    console.log("Current model disposed.");
 
     // Dispose scene
     if (scene) {
         scene.dispose();
-        console.log("Scene disposed.");
     }
 
     // Dispose engine
     if (engine) {
         engine.dispose();
-        console.log("Engine disposed.");
     }
 }
 
@@ -278,11 +269,6 @@ async function createScene() {
         
         // TEST CODE - Verify camera limits integration
         setTimeout(() => {
-            console.log("=== CAMERA LIMITS TEST ===");
-            console.log("Camera limits object:", scene.cameraLimits);
-            console.log("Is enabled:", scene.cameraLimits?.isEnabled);
-            console.log("Current limits:", scene.cameraLimits?.getCurrentLimits());
-            console.log("========================");
         }, 2000);
         
         // Configure camera auto-rotation
@@ -294,14 +280,12 @@ async function createScene() {
         // Double-click to center - only for desktop devices (conflicts with mobile touch)
         if (!device.hasTouch && !device.isTouchDevice) {
             setupDoubleClickPan(scene, camera);
-            console.log("Double-click pan setup for desktop.");
         }
 
         // Setup touch-optimized controls if device has touch capability
         // This is additional to the default controls
         if (device.hasTouch || device.isTouchDevice) {
             try {
-                console.log("Setting up touch-optimized controls");
                 // Setup touch controls - this doesn't replace default controls
                 // but adds better touch handling
                 gestureController = setupMobileControls(camera, scene);
@@ -316,14 +300,12 @@ async function createScene() {
 
         // Post-processing
         pipeline = addPostEffects(scene, camera);
-        console.log("Post-processing pipeline added.");
         
         // Initial anti-aliasing will be applied through the post-processing pipeline
         // TAA mode can be selected in the UI settings
 
         // UI
         setupUI(camera, scene, engine, initialPixelRatio);
-        console.log("UI handlers set up.");
 
         // Attempt to load a model from URL param or default
         const urlParams = new URLSearchParams(window.location.search);
@@ -335,11 +317,10 @@ async function createScene() {
                 console.log(`Loading model from URL parameter: ${decodedModelUrl}`);
                 await loadModel(scene, decodedModelUrl, CONFIG.modelLoader.defaultFallbackModel);
             } catch (error) {
-                console.error("Error loading model from URL parameter:", error);
+                console.error(ErrorMessages.MODEL.LOAD_FAILED('from URL parameter'), error);
                 await loadModel(scene, CONFIG.modelLoader.defaultFallbackModel, CONFIG.modelLoader.defaultFallbackModel);
             }
         } else {
-            console.log("Loading default model:", CONFIG.defaultModelUrl);
             await loadModel(scene, CONFIG.defaultModelUrl, CONFIG.modelLoader.defaultFallbackModel);
         }
         
@@ -355,21 +336,15 @@ async function createScene() {
                 scene.render();
             }
         });
-        console.log("Render loop started.");
 
-        // Handle window resize
-        window.addEventListener("resize", () => {
-            engine.resize();
-            console.log("Engine resized.");
-        });
+        // Handle window resize using centralized handler
+        WindowEvents.addResizeCallback(WindowEvents.createEngineResizeHandler(engine));
 
         // Handle scene disposal for cleanup
         scene.onDisposeObservable.add(() => {
             cleanup(scene, engine);
-            console.log("Scene disposed and resources cleaned up.");
         });
 
-        console.log("Scene created and ready!");
     } catch (error) {
         console.error("Error during scene creation:", error);
         cleanup(scene, engine);
