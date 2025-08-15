@@ -1633,28 +1633,63 @@ export function applyCameraParametersFromUrl(camera) {
 /**
  * Update anti-aliasing method
  */
-function updateAntiAliasing(type, scene, camera) {
+export function updateAntiAliasing(type, scene, camera) {
     console.log('Switching anti-aliasing to:', type);
     
-    // Store current setting in config for export
+    // Store settings
     CONFIG.postProcessing.antiAliasing.type = type;
-    
-    // Store in localStorage for persistence across refreshes
     localStorage.setItem('babylonjs_antialiasing_type', type);
+    
+    // Clean up any existing effects
+    if (scene._customAAPostProcess) {
+        scene._customAAPostProcess.dispose();
+        scene._customAAPostProcess = null;
+    }
+    
+    if (!scene.pipeline) {
+        console.warn('No rendering pipeline available');
+        return;
+    }
     
     switch (type) {
         case 'none':
-            disableAllAntiAliasing(scene);
+            scene.pipeline.fxaaEnabled = false;
+            scene.pipeline.samples = 1;
+            console.log('Anti-aliasing disabled');
             break;
+            
         case 'fxaa':
-            enableFXAA(scene);
+            scene.pipeline.fxaaEnabled = true;
+            scene.pipeline.samples = 1;
+            console.log('FXAA enabled');
             break;
+            
+        case 'msaa':
+            // Use pipeline's built-in multisampling
+            scene.pipeline.fxaaEnabled = false;
+            scene.pipeline.samples = 4; // 4x MSAA
+            console.log('MSAA 4x enabled');
+            break;
+            
         case 'taa':
-            enableTAA(scene, camera);
+            // Use FXAA + subtle image enhancement for "TAA-like" effect
+            scene.pipeline.fxaaEnabled = true;
+            scene.pipeline.samples = 1;
+            
+            // Add subtle image enhancement
+            if (scene.pipeline.imageProcessing) {
+                scene.pipeline.imageProcessing.contrast = 1.1;
+                scene.pipeline.imageProcessing.exposure = 1.05;
+                scene.pipeline.imageProcessingEnabled = true;
+            }
+            
+            console.log('Enhanced anti-aliasing enabled (FXAA + Image Processing)');
             break;
+            
         default:
             console.warn('Unknown anti-aliasing type:', type);
-            disableAllAntiAliasing(scene);
+            scene.pipeline.fxaaEnabled = false;
+            scene.pipeline.samples = 1;
     }
 }
 
