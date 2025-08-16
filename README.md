@@ -6,8 +6,6 @@ A 3D model viewer built with Babylon.js, specifically optimized for 3D Gaussian 
 - better ui for mobile
 - performance
 - code quality
-- remove all anti aliasing aside from fxaa, leave non as default
-- load model & export viewer  button -standerdization
 - isolate the export viewer function
 - Multiple resize callbacks instead of debounced single handler
 
