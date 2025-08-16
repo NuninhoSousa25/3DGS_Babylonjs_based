@@ -11,6 +11,7 @@ A 3D model viewer built with Babylon.js, specifically optimized for 3D Gaussian 
 - Multiple resize callbacks instead of debounced single handler
 - change default hdri
 - gltf oclusion - verify
+- fbx is not working
 - its a bit slow loading in big 3d models
 
 ## 🌟 Features
