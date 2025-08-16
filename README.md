@@ -11,6 +11,7 @@ A 3D model viewer built with Babylon.js, specifically optimized for 3D Gaussian 
 - Multiple resize callbacks instead of debounced single handler
 - change default hdri
 - gltf oclusion - verify
+- its a bit slow loading in mig 3d models
 
 ## 🌟 Features
 Model Loading & Compatibility
