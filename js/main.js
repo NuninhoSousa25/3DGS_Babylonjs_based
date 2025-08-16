@@ -21,10 +21,10 @@
 
 import { setupCamera, animateCamera } from './cameraControl.js';
 import { loadModel, disposeCurrentModel } from './modelLoader.js';
-import { setupUI, applyCameraParametersFromUrl } from './ui.js';
+import { setupUI, applyCameraParametersFromUrl, applyModelScaleFromUrl } from './ui.js';
 import { addPostEffects } from './postProcessing.js';
 import { getPickResult } from './picking.js';
-import { CONFIG } from './config.js';  // Import the centralized configuration
+import { CONFIG, setupLighting } from './config.js';  // Import the centralized configuration and lighting
 import { setupMobileControls } from './mobileControl.js';
 import { detectDevice } from './deviceDetection.js';
 import { CameraLimits } from './cameraLimits.js';
@@ -38,73 +38,6 @@ let pipeline = null; // For post-process reuse
 let gestureController = null; // For mobile gesture control
 let cameraLimits = null; // For camera movement limitations
 
-/**
- * Setup lighting for GLB/GLTF models
- * GLB models need proper lighting to be visible, unlike splat files which are self-illuminated
- */
-async function setupLighting(scene) {
-    const lightConfig = CONFIG.lighting;
-    
-    try {
-        // Add HDR environment lighting as primary light source
-        const hdrTexture = new BABYLON.CubeTexture(
-            lightConfig.hdr.environmentUrl,
-            scene
-        );
-        
-        // Set the environment texture for IBL (Image-Based Lighting)
-        scene.environmentTexture = hdrTexture;
-        scene.environmentIntensity = lightConfig.hdr.intensity;
-        
-        // HDR provides lighting and reflections but no visible skybox
-        
-        
-        // Add minimal fill lighting for areas that might be too dark
-        if (lightConfig.hdr.useFillLight) {
-            const fillLight = new BABYLON.HemisphericLight(
-                "fillLight", 
-                new BABYLON.Vector3(0, 1, 0), 
-                scene
-            );
-            fillLight.intensity = lightConfig.hdr.fillLightIntensity;
-            fillLight.diffuse = new BABYLON.Color3(...lightConfig.hdr.fillLightColor);
-            
-        }
-        
-    } catch (error) {
-        console.warn("Failed to load HDR environment, falling back to basic lighting:", error);
-        
-        // Fallback to basic lighting if HDR fails
-        setupBasicLighting(scene, lightConfig);
-    }
-}
-
-/**
- * Fallback basic lighting system
- */
-function setupBasicLighting(scene, lightConfig) {
-    // Create a hemisphere light for ambient lighting
-    const hemisphereLight = new BABYLON.HemisphericLight(
-        "hemisphereLight", 
-        new BABYLON.Vector3(0, 1, 0), 
-        scene
-    );
-    hemisphereLight.intensity = lightConfig.hemisphere.intensity;
-    hemisphereLight.diffuse = new BABYLON.Color3(...lightConfig.hemisphere.diffuse);
-    hemisphereLight.specular = new BABYLON.Color3(...lightConfig.hemisphere.specular);
-    hemisphereLight.groundColor = new BABYLON.Color3(...lightConfig.hemisphere.groundColor);
-
-    // Create a directional light for key lighting
-    const directionalLight = new BABYLON.DirectionalLight(
-        "directionalLight", 
-        new BABYLON.Vector3(...lightConfig.directional.direction), 
-        scene
-    );
-    directionalLight.intensity = lightConfig.directional.intensity;
-    directionalLight.diffuse = new BABYLON.Color3(...lightConfig.directional.diffuse);
-    directionalLight.specular = new BABYLON.Color3(...lightConfig.directional.specular);
-
-}
 
 /**
  * Initialize Engine and Scene
@@ -344,6 +277,8 @@ async function createScene() {
             await loadModel(scene, CONFIG.defaultModelUrl, CONFIG.modelLoader.defaultFallbackModel);
         }
         
+        // Apply model scale from URL if present (must be after model loading)
+        applyModelScaleFromUrl(scene);
         
         // Apply camera limits from URL if present
         if (cameraLimits && urlParams.toString()) {
@@ -399,6 +334,8 @@ function setupDragAndDrop(canvas, scene) {
             try {
                 // Pass the File object directly to loadModel
                 await loadModel(scene, files[0], CONFIG.modelLoader.defaultFallbackModel);
+                // Apply model scale from URL if present (for shared URLs)
+                applyModelScaleFromUrl(scene);
             } catch (error) {
                 console.error('Error loading dropped file:', error);
             }

@@ -29,7 +29,7 @@
    
    ======================================================================== */
 
-import { setMeshesPickable, ErrorMessages } from './helpers.js';
+import { setMeshesPickable, ErrorMessages, LoadingSpinner } from './helpers.js';
 import { CONFIG } from './config.js';
 import { animateCamera } from './cameraControl.js';
 
@@ -141,8 +141,7 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
     let { currentModel, currentModelType } = disposeCurrentModel(scene.currentModel, scene.currentModelType);
 
     // Show loading spinner
-    const spinner = document.getElementById("loadingSpinner");
-    if (spinner) spinner.style.display = "block";
+    LoadingSpinner.show("block");
 
     // Setup progress callback
     BABYLON.SceneLoader.OnProgress = (event) => {
@@ -150,10 +149,7 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
             ? Math.floor((event.loaded / event.total) * 100) 
             : 0;
         
-        const spinnerText = document.querySelector('.spinner-text');
-        if (spinnerText && percentage > 0) {
-            spinnerText.textContent = `Loading Model... ${percentage}%`;
-        }
+        LoadingSpinner.updateProgress(percentage);
     };
 
     let url = '';
@@ -395,7 +391,7 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
     }
 
     // Hide loading spinner
-    if (spinner) spinner.style.display = "none";
+    LoadingSpinner.hide();
 
     // Update scene properties
     scene.currentModel = currentModel;

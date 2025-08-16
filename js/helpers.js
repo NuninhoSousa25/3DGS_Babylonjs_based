@@ -12,6 +12,7 @@
    - Events - Standardized event listener management 
    - WindowEvents - Centralized window event management with debouncing
    - ErrorMessages - Consistent error message constants
+   - LoadingSpinner - Centralized loading spinner management
    - setMeshesPickable() - Make Babylon.js meshes pickable
    - getTotalVertices() - Count scene vertices
    - setupUIUpdates() - Initialize UI update system
@@ -487,3 +488,102 @@ export function restartUIUpdates() {
         startUIUpdates();
     }
 }
+
+/**
+ * Centralized Loading Spinner Management
+ */
+export const LoadingSpinner = {
+    // Cache spinner element reference
+    _spinnerElement: null,
+    _spinnerTextElement: null,
+    
+    /**
+     * Get spinner element with caching
+     * @returns {HTMLElement|null}
+     */
+    _getSpinnerElement() {
+        if (!this._spinnerElement) {
+            this._spinnerElement = DOM.get("loadingSpinner");
+        }
+        return this._spinnerElement;
+    },
+    
+    /**
+     * Get spinner text element with caching
+     * @returns {HTMLElement|null}
+     */
+    _getSpinnerTextElement() {
+        if (!this._spinnerTextElement) {
+            this._spinnerTextElement = document.querySelector('.spinner-text');
+        }
+        return this._spinnerTextElement;
+    },
+    
+    /**
+     * Show the loading spinner
+     * @param {string} displayStyle - CSS display style ('block', 'flex', etc.)
+     * @param {string} text - Optional text to display
+     */
+    show(displayStyle = 'block', text = null) {
+        const spinner = this._getSpinnerElement();
+        if (spinner) {
+            spinner.style.display = displayStyle;
+            
+            // Update text if provided
+            if (text) {
+                this.updateText(text);
+            }
+        }
+    },
+    
+    /**
+     * Hide the loading spinner
+     */
+    hide() {
+        const spinner = this._getSpinnerElement();
+        if (spinner) {
+            spinner.style.display = "none";
+        }
+    },
+    
+    /**
+     * Update spinner text
+     * @param {string} text - Text to display
+     */
+    updateText(text) {
+        const spinnerText = this._getSpinnerTextElement();
+        if (spinnerText) {
+            spinnerText.textContent = text;
+        }
+    },
+    
+    /**
+     * Update progress text with percentage
+     * @param {number} percentage - Progress percentage (0-100)
+     * @param {string} baseText - Base text (default: "Loading Model...")
+     */
+    updateProgress(percentage, baseText = "Loading Model...") {
+        if (percentage > 0) {
+            this.updateText(`${baseText} ${percentage}%`);
+        } else {
+            this.updateText(baseText);
+        }
+    },
+    
+    /**
+     * Reset cached elements (call when DOM changes)
+     */
+    resetCache() {
+        this._spinnerElement = null;
+        this._spinnerTextElement = null;
+    },
+    
+    /**
+     * Check if spinner is currently visible
+     * @returns {boolean}
+     */
+    isVisible() {
+        const spinner = this._getSpinnerElement();
+        return spinner && spinner.style.display !== "none";
+    }
+};

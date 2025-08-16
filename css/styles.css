@@ -371,11 +371,11 @@ input:checked + .slider:before {
 /* Range Sliders - Base Styles */
 .slider-range {
   width: 100%;
-  height: 5px;
-  border-radius: 5px;
+  height: 6px;
+  border-radius: 3px;
   background: var(--color-bg-tertiary);
   outline: none;
-  opacity: 0.7;
+  opacity: 0.8;
   transition: opacity var(--transition-fast);
   cursor: pointer;
 }
@@ -387,11 +387,14 @@ input:checked + .slider:before {
 /* Slider Thumb - Shared Styles */
 .slider-range::-webkit-slider-thumb,
 .slider-range::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--color-accent);
   cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all var(--transition-fast);
 }
 
 .slider-range::-webkit-slider-thumb {
@@ -400,6 +403,13 @@ input:checked + .slider:before {
 
 .slider-range::-moz-range-thumb {
   border: none;
+}
+
+.slider-range::-webkit-slider-thumb:hover,
+.slider-range::-moz-range-thumb:hover {
+  background: var(--color-accent-hover);
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
 }
 
 /* Select Dropdowns */
@@ -605,42 +615,12 @@ input[type="file"] {
 .limit-details .slider-range {
   flex: 1;
   min-width: 100px;
-  height: 6px;
-  border-radius: 3px;
   background: linear-gradient(to right, var(--color-bg-tertiary), var(--color-accent-light));
-  outline: none;
-  opacity: 0.8;
   transition: opacity var(--transition-fast), background var(--transition-fast);
-  cursor: pointer;
 }
 
 .limit-details .slider-range:hover {
-  opacity: 1;
   background: linear-gradient(to right, var(--color-bg-secondary), var(--color-accent));
-}
-
-/* Enhanced Slider Thumbs for Camera Limits */
-.limit-details .slider-range::-webkit-slider-thumb,
-.limit-details .slider-range::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  cursor: pointer;
-  border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: all var(--transition-fast);
-}
-
-.limit-details .slider-range::-webkit-slider-thumb {
-  appearance: none;
-}
-
-.limit-details .slider-range::-webkit-slider-thumb:hover,
-.limit-details .slider-range::-moz-range-thumb:hover {
-  background: var(--color-accent-hover);
-  transform: scale(1.1);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
 }
 
 .settings-category .action-button {

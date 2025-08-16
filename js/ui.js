@@ -2,7 +2,7 @@
    3D VIEWER UI CONTROLLER - CLEAN & ORGANIZED
    ======================================================================== */
 
-import { setupUIUpdates, startUIUpdates, stopUIUpdates, restartUIUpdates, DOM, Events, ErrorMessages } from './helpers.js';
+import { setupUIUpdates, startUIUpdates, stopUIUpdates, restartUIUpdates, DOM, Events, ErrorMessages, LoadingSpinner } from './helpers.js';
 import { loadModel } from './modelLoader.js';
 import { CONFIG } from './config.js';
 import { detectDevice } from './deviceDetection.js';
@@ -75,7 +75,7 @@ function createRangeControl(id, label, min, max, value, step = 1, unit = '') {
         <div class="control-group">
             <label for="${id}">${label}</label>
             <div class="range-container">
-                <input type="range" id="${id}" min="${min}" max="${max}" value="${value}" step="${step}">
+                <input type="range" id="${id}" min="${min}" max="${max}" value="${value}" step="${step}" class="slider-range">
                 <span id="${id}Display" class="range-value">${value}${unit}</span>
             </div>
         </div>
@@ -95,16 +95,16 @@ function getCameraLimitsElements() {
         limitPanToggle: document.getElementById('limitPanToggle'),
         
         // Range controls
-        zoomMinRange: document.getElementById('zoomMinRange'),
-        zoomMaxRange: document.getElementById('zoomMaxRange'),
+        zoomMinRange: document.getElementById('minDistanceRange'),
+        zoomMaxRange: document.getElementById('maxDistanceRange'),
         verticalUpRange: document.getElementById('verticalUpRange'),
         verticalDownRange: document.getElementById('verticalDownRange'),
         horizontalAngleRange: document.getElementById('horizontalAngleRange'),
         horizontalOffsetRange: document.getElementById('horizontalOffsetRange'),
         
         // Display elements
-        zoomMinDisplay: document.getElementById('zoomMinDisplay'),
-        zoomMaxDisplay: document.getElementById('zoomMaxDisplay'),
+        zoomMinDisplay: document.getElementById('minDistanceDisplay'),
+        zoomMaxDisplay: document.getElementById('maxDistanceDisplay'),
         verticalUpDisplay: document.getElementById('verticalUpDisplay'),
         verticalDownDisplay: document.getElementById('verticalDownDisplay'),
         horizontalAngleDisplay: document.getElementById('horizontalAngleDisplay'),
@@ -733,18 +733,18 @@ function createCameraLimitsSection() {
             </div>
             
             <div class="control-group">
-                <label for="zoomMinRange">Zoom Min</label>
+                <label for="minDistanceRange">Min Distance</label>
                 <div class="range-container">
-                    <input type="range" id="zoomMinRange" min="0.1" max="30" value="2.5" step="0.1" class="slider-range">
-                    <span id="zoomMinDisplay" class="range-value">2.5</span>
+                    <input type="range" id="minDistanceRange" min="0.1" max="30" value="1.0" step="0.1" class="slider-range">
+                    <span id="minDistanceDisplay" class="range-value">1.0</span>
                 </div>
             </div>
             
             <div class="control-group">
-                <label for="zoomMaxRange">Zoom Max</label>
+                <label for="maxDistanceRange">Max Distance</label>
                 <div class="range-container">
-                    <input type="range" id="zoomMaxRange" min="1" max="50" value="15" step="0.5" class="slider-range">
-                    <span id="zoomMaxDisplay" class="range-value">15.0</span>
+                    <input type="range" id="maxDistanceRange" min="1" max="50" value="15" step="0.5" class="slider-range">
+                    <span id="maxDistanceDisplay" class="range-value">15.0</span>
                 </div>
             </div>
             
@@ -953,12 +953,12 @@ function updateUIFromLimits(elements, cameraLimits) {
  * Setup all range control event handlers for camera limits
  */
 function setupCameraLimitsRanges(elements, cameraLimits) {
-    // Zoom ranges
+    // Distance ranges
     if (elements.zoomMinRange && elements.zoomMinDisplay) {
         Events.addRangeListener(elements.zoomMinRange, (value) => {
             const limits = cameraLimits.getCurrentLimits();
             cameraLimits.setDistanceLimits(limits.restrictDistance, value, limits.radiusMax);
-            console.log('Min zoom set to:', value);
+            console.log('Min distance set to:', value);
         }, elements.zoomMinDisplay);
     }
     
@@ -966,7 +966,7 @@ function setupCameraLimitsRanges(elements, cameraLimits) {
         Events.addRangeListener(elements.zoomMaxRange, (value) => {
             const limits = cameraLimits.getCurrentLimits();
             cameraLimits.setDistanceLimits(limits.restrictDistance, limits.radiusMin, value);
-            console.log('Max zoom set to:', value);
+            console.log('Max distance set to:', value);
         }, elements.zoomMaxDisplay);
     }
     
@@ -1216,6 +1216,13 @@ function shareCameraView(camera, scene) {
         tz: camera.target.z.toFixed(2)
     });
     
+    // Add model scale if available
+    if (scene.currentModel && scene.currentModel.scaling) {
+        // Model scaling is uniform, so we can use any component (x, y, or z)
+        const modelScale = scene.currentModel.scaling.x;
+        params.set('scale', modelScale.toFixed(2));
+    }
+    
     // Add camera limits to shared URL
     if (scene.cameraLimits) {
         const limitsParams = scene.cameraLimits.getLimitsForUrl();
@@ -1318,12 +1325,10 @@ function setupModelLoading(scene) {
     console.log("setupModelLoading called");
     const fileButton = document.getElementById("loadModelFileButton");
     const urlButton = document.getElementById("loadModelUrlButton");
-    const spinner = document.getElementById("loadingSpinner");
     
     console.log("Elements found:");
     console.log("- fileButton:", fileButton);
     console.log("- urlButton:", urlButton);
-    console.log("- spinner:", spinner);
     
     // File loading handler
     if (fileButton) {
@@ -1346,7 +1351,7 @@ function setupModelLoading(scene) {
                 return;
             }
             
-            await loadModelWithSpinner(scene, urlInput.value.trim(), spinner, "url");
+            await loadModelWithSpinner(scene, urlInput.value.trim(), "url");
         });
     }
 }
@@ -1354,10 +1359,10 @@ function setupModelLoading(scene) {
 /**
  * Load model with loading spinner and error handling
  */
-async function loadModelWithSpinner(scene, source, spinner, type) {
+async function loadModelWithSpinner(scene, source, type) {
     try {
         // Show loading spinner
-        if (spinner) spinner.style.display = "flex";
+        LoadingSpinner.show("flex");
         
         console.log(`Loading model from ${type}: ${type === 'file' ? source.name : source}`);
         console.log("Source object:", source);
@@ -1372,6 +1377,9 @@ async function loadModelWithSpinner(scene, source, spinner, type) {
         
         const result = await loadModel(scene, source, CONFIG.modelLoader.defaultFallbackModel);
         console.log("Load model result:", result);
+        
+        // Apply model scale from URL if present (for shared URLs)
+        applyModelScaleFromUrl(scene);
         
         // Store model URL for sharing
         // Store model URL for sharing
@@ -1414,7 +1422,7 @@ async function loadModelWithSpinner(scene, source, spinner, type) {
         showToast(ErrorMessages.MODEL.LOAD_FAILED(error.message), 5000);
     } finally {
         // Hide loading spinner
-        if (spinner) spinner.style.display = "none";
+        LoadingSpinner.hide();
     }
 }
 
@@ -1453,8 +1461,7 @@ function triggerFileLoad(scene) {
         
         // Load the model
         try {
-            const spinner = document.getElementById("loadingSpinner");
-            if (spinner) spinner.style.display = "flex";
+            LoadingSpinner.show("flex");
             
             console.log("Starting model loading...");
             const result = await loadModel(scene, file, CONFIG.modelLoader.defaultFallbackModel);
@@ -1472,8 +1479,7 @@ function triggerFileLoad(scene) {
             showToast(ErrorMessages.MODEL.LOAD_FAILED(error.message), 5000);
         } finally {
             // Hide loading spinner
-            const spinner = document.getElementById("loadingSpinner");
-            if (spinner) spinner.style.display = "none";
+            LoadingSpinner.hide();
         }
         
         // Clean up the input element
@@ -1630,6 +1636,33 @@ export function applyCameraParametersFromUrl(camera) {
         }
         
         console.log("Applied camera parameters from URL");
+    }
+}
+
+/**
+ * Apply model scale from URL parameters (for sharing feature)
+ * Should be called after the model is loaded
+ */
+export function applyModelScaleFromUrl(scene) {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    if (urlParams.has('scale') && scene.currentModel) {
+        const scale = parseFloat(urlParams.get('scale'));
+        
+        if (!isNaN(scale) && scale > 0) {
+            // Apply the scale to the model
+            scene.currentModel.scaling.setAll(scale);
+            
+            // Update the UI slider to reflect the loaded scale
+            const modelScaleRange = document.getElementById('modelScaleRange');
+            const modelScaleDisplay = document.getElementById('modelScaleRangeDisplay');
+            if (modelScaleRange && modelScaleDisplay) {
+                modelScaleRange.value = scale;
+                modelScaleDisplay.textContent = scale.toFixed(1);
+            }
+            
+            console.log(`Applied model scale from URL: ${scale}`);
+        }
     }
 }
 
