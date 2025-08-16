@@ -7,6 +7,7 @@ A 3D model viewer built with Babylon.js, specifically optimized for 3D Gaussian 
 - performance
 - code quality
 - isolate the export viewer function
+- revise export by url
 - Multiple resize callbacks instead of debounced single handler
 
 ## 🌟 Features
