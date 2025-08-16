@@ -7,7 +7,6 @@ A 3D model viewer built with Babylon.js, specifically optimized for 3D Gaussian 
 - performance
 - code quality
 - TAA is not working
-- model scalling isnt being exported by url share
 - Multiple resize callbacks instead of debounced single handler
 
 ## 🌟 Features
