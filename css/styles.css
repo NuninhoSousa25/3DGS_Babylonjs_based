@@ -284,7 +284,7 @@ html, body {
 /* Action Buttons */
 .action-button {
   width: 100%;
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-lg);
   background-color: var(--color-accent);
   color: white;
   border-radius: var(--border-radius-md);
@@ -300,6 +300,16 @@ html, body {
   background-color: var(--color-bg-tertiary);
   color: var(--color-text-secondary);
   cursor: not-allowed;
+}
+
+/* Action Button Icon + Text Layout */
+.action-button svg {
+  margin-right: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.action-button .button-text {
+  flex: 1;
 }
 
 /* === FORM CONTROLS === */
@@ -1065,9 +1075,9 @@ input[type="file"] {
   }
   
   .action-button {
-    padding: var(--spacing-md) var(--spacing-lg);
+    padding: var(--spacing-sm) var(--spacing-lg);
     font-size: var(--font-size-base);
-    min-height: 48px;
+    min-height: 44px;
   }
   
   .settings-title {
@@ -1139,7 +1149,7 @@ input[type="file"] {
   }
   
   .action-button {
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md);
     font-size: var(--font-size-lg);
   }
 
@@ -1216,7 +1226,7 @@ input[type="file"] {
   }
 
   .settings-category .action-button {
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm);
     font-size: var(--font-size-base);
   }
   

@@ -138,11 +138,23 @@ export class CameraLimits {
      * Update camera's built-in constraints to match our limits
      */
     updateCameraConstraints() {
-        // Update Babylon.js camera constraints
-        this.camera.lowerRadiusLimit = this.limits.radiusMin;
-        this.camera.upperRadiusLimit = this.limits.radiusMax;
-        this.camera.lowerBetaLimit = this.limits.betaMin;
-        this.camera.upperBetaLimit = this.limits.betaMax;
+        // Apply distance limits only if enabled
+        if (this.limits.restrictDistance) {
+            this.camera.lowerRadiusLimit = this.limits.radiusMin;
+            this.camera.upperRadiusLimit = this.limits.radiusMax;
+        } else {
+            this.camera.lowerRadiusLimit = null;
+            this.camera.upperRadiusLimit = null;
+        }
+        
+        // Apply vertical limits only if enabled
+        if (this.limits.restrictVertical) {
+            this.camera.lowerBetaLimit = this.limits.betaMin;
+            this.camera.upperBetaLimit = this.limits.betaMax;
+        } else {
+            this.camera.lowerBetaLimit = null;
+            this.camera.upperBetaLimit = null;
+        }
         
         if (this.limits.restrictHorizontal) {
             this.camera.lowerAlphaLimit = this.limits.alphaMin;
@@ -377,6 +389,9 @@ setUIUpdateCallback(callback) {
         this.limits.betaMax = Math.min(Math.PI - 0.01, Math.max(upBeta, downBeta));
         
         this.updateCameraConstraints();
+        
+        // Immediately check constraints after changing settings
+        this.enforceConstraints();
         
         console.log(`Vertical limits ${enabled ? 'enabled' : 'disabled'}:`, 
             `${upDegrees}° (up) to ${downDegrees}° (down)`);

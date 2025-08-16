@@ -73,6 +73,7 @@ export function createDevSection() {
                 <div class="dev-title">Load Model</div>
                 <div class="model-loader file-loader">
                     <button id="loadModelFileButton" class="action-button">
+                        ${ICONS.file_open}
                         <span class="button-text">Load from File</span>
                     </button>
                 </div>
@@ -80,6 +81,7 @@ export function createDevSection() {
                 <div class="model-loader url-loader">
                     <input type="text" id="modelUrlInput" placeholder="Enter model URL" class="url-input">
                     <button id="loadModelUrlButton" class="action-button">
+                        ${ICONS.file_open}
                         <span class="button-text">Load from URL</span>
                     </button>
                 </div>

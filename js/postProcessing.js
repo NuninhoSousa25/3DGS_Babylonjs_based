@@ -11,7 +11,7 @@
    - addPostEffects() - Setup and configure rendering pipeline with effects
    
    FEATURES:
-   - Anti-aliasing (FXAA, TAA, MSAA)
+   - Anti-aliasing (FXAA)
    - Image sharpening with edge detection
    - Configurable quality presets
    - Performance-aware effect management
@@ -56,13 +56,9 @@ export function addPostEffects(scene, camera) {
     if (aaType === 'fxaa') {
         pipeline.fxaaEnabled = true;
         console.log(`FXAA enabled`);
-    } else if (aaType === 'none') {
+    } else {
         pipeline.fxaaEnabled = false;
         console.log(`Anti-aliasing disabled`);
-    } else {
-        // For TAA, disable FXAA here - it will be handled separately
-        pipeline.fxaaEnabled = false;
-        console.log(`FXAA disabled for ${aaType.toUpperCase()} mode`);
     }
 
     // Store the pipeline in the scene for easy access

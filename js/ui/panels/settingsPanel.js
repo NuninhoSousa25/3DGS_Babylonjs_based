@@ -7,6 +7,7 @@ import { showToast } from '../components/toast.js';
 import { setupUIUpdates, startUIUpdates, stopUIUpdates, restartUIUpdates, DOM, Events, ErrorMessages, LoadingSpinner } from '../../helpers.js';
 import { CONFIG } from '../../config.js';
 import { detectDevice } from '../../deviceDetection.js';
+import { ICONS } from '../components/icons.js';
 
 /**
  * Create complete settings section HTML using smaller components
@@ -161,7 +162,8 @@ function createCameraLimitsSection() {
             
             <div class="control-group">
                 <button id="resetLimitsButton" class="action-button" style="width: 100%; margin-top: 8px;">
-                    Reset to Defaults
+                    ${ICONS.reset_view}
+                    <span class="button-text">Reset to Defaults</span>
                 </button>
             </div>
         </div>
@@ -192,9 +194,8 @@ function createPostProcessingSection() {
             <div class="control-group">
                 <label for="antiAliasingSelect">Anti-Aliasing</label>
                 <select id="antiAliasingSelect" class="settings-select">
-                    <option value="none">None</option>
+                    <option value="none" ${CONFIG.postProcessing.antiAliasing.type === 'none' ? 'selected' : ''}>None</option>
                     <option value="fxaa" ${CONFIG.postProcessing.antiAliasing.type === 'fxaa' ? 'selected' : ''}>FXAA (Fast)</option>
-                    <option value="taa" ${CONFIG.postProcessing.antiAliasing.type === 'taa' ? 'selected' : ''}>TAA (Temporal)</option>
                 </select>
             </div>
         </div>
@@ -646,28 +647,6 @@ function updateAntiAliasing(type, scene, camera) {
             scene.pipeline.fxaaEnabled = true;
             scene.pipeline.samples = 1;
             console.log('FXAA enabled');
-            break;
-            
-        case 'msaa':
-            // Use pipeline's built-in multisampling
-            scene.pipeline.fxaaEnabled = false;
-            scene.pipeline.samples = 4; // 4x MSAA
-            console.log('MSAA 4x enabled');
-            break;
-            
-        case 'taa':
-            // Use FXAA + subtle image enhancement for "TAA-like" effect
-            scene.pipeline.fxaaEnabled = true;
-            scene.pipeline.samples = 1;
-            
-            // Add subtle image enhancement
-            if (scene.pipeline.imageProcessing) {
-                scene.pipeline.imageProcessing.contrast = 1.1;
-                scene.pipeline.imageProcessing.exposure = 1.05;
-                scene.pipeline.imageProcessingEnabled = true;
-            }
-            
-            console.log('Enhanced anti-aliasing enabled (FXAA + Image Processing)');
             break;
             
         default:

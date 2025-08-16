@@ -59,7 +59,7 @@ export const CONFIG = {
         sharpenEdgeAmount: 0.62,
         fxaaEnabled: true,
         antiAliasing: {
-            type: 'fxaa',                   // 'none', 'fxaa', 'taa'
+            type: 'none',                   // 'none', 'fxaa'
             taaEnabled: false,
             taaSamples: 64
         }
