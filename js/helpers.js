@@ -1,4 +1,29 @@
-// js/helpers.js
+/* ========================================================================
+   3D VIEWER - UTILITY HELPERS & DOM MANAGEMENT
+   ========================================================================
+   
+   PURPOSE:
+   Provides utility functions for DOM manipulation, event handling, error 
+   management, and UI update coordination. Contains reusable helpers used
+   throughout the application.
+   
+   EXPORTS:
+   - DOM - Utility functions for element access and caching
+   - Events - Standardized event listener management 
+   - WindowEvents - Centralized window event management with debouncing
+   - ErrorMessages - Consistent error message constants
+   - setMeshesPickable() - Make Babylon.js meshes pickable
+   - getTotalVertices() - Count scene vertices
+   - setupUIUpdates() - Initialize UI update system
+   - startUIUpdates() - Start UI update observer
+   - stopUIUpdates() - Stop UI update observer  
+   - restartUIUpdates() - Restart UI updates when content changes
+   
+   DEPENDENCIES:
+   - Device detection for responsive behavior
+   - Configuration constants
+   
+   ======================================================================== */
 
 import { detectDevice } from './deviceDetection.js';
 import { CONFIG } from './config.js';

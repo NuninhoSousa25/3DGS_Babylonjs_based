@@ -1,4 +1,29 @@
-// js/gestureControl.js - FIXED VERSION
+/* ========================================================================
+   3D VIEWER - ADVANCED GESTURE CONTROL
+   ========================================================================
+   
+   PURPOSE:
+   Provides advanced gesture recognition and handling for touch interactions.
+   Implements sophisticated multi-touch gestures including pinch-to-zoom,
+   rotation, and smooth camera manipulation beyond basic Babylon.js controls.
+   
+   EXPORTS:
+   - GestureControl - Class for advanced touch gesture handling
+   
+   FEATURES:
+   - Multi-touch gesture recognition (pinch, rotate, pan)
+   - Smooth interpolation for natural touch feedback
+   - Velocity-based momentum and inertia
+   - Touch state management and gesture disambiguation
+   - Integration with camera animation system
+   - Mobile-optimized performance
+   
+   DEPENDENCIES:
+   - Babylon.js scene and camera system
+   - Camera animation utilities
+   - Configuration constants for gesture sensitivity
+   
+   ======================================================================== */
 
 import { CONFIG } from './config.js';
 import { animateCamera } from './cameraControl.js';

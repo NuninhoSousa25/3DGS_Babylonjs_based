@@ -1,5 +1,29 @@
-// js/postProcessing.js
-import { CONFIG } from './config.js'; // Import CONFIG for post-processing configurations
+/* ========================================================================
+   3D VIEWER - POST-PROCESSING EFFECTS
+   ========================================================================
+   
+   PURPOSE:
+   Manages visual post-processing effects including anti-aliasing, sharpening,
+   and image enhancement. Provides configurable rendering pipeline with
+   multiple AA techniques (FXAA, TAA) and quality settings.
+   
+   EXPORTS:
+   - addPostEffects() - Setup and configure rendering pipeline with effects
+   
+   FEATURES:
+   - Anti-aliasing (FXAA, TAA, MSAA)
+   - Image sharpening with edge detection
+   - Configurable quality presets
+   - Performance-aware effect management
+   - Mobile-optimized settings
+   
+   DEPENDENCIES:
+   - Babylon.js DefaultRenderingPipeline
+   - Configuration constants for effect settings
+   
+   ======================================================================== */
+
+import { CONFIG } from './config.js';
 
 /**
  * Adds and manages post-processing effects.

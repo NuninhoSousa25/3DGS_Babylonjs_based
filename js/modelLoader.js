@@ -1,4 +1,34 @@
-// js/modelLoader.js - FIXED VERSION
+/* ========================================================================
+   3D VIEWER - MODEL LOADING & MANAGEMENT
+   ========================================================================
+   
+   PURPOSE:
+   Handles loading, processing, and management of 3D models in various formats.
+   Supports GLTF/GLB, OBJ, STL, FBX, SPZ, and Gaussian Splatting (.splat/.ply).
+   Includes model centering, scaling, and material assignment.
+   
+   EXPORTS:
+   - loadModel() - Main model loading function for all supported formats
+   - disposeCurrentModel() - Clean up and dispose current model
+   - loadSplatModel() - Load Gaussian Splatting models
+   - centerAndFitModel() - Center model and fit camera view
+   - normalizeModelScale() - Normalize model to consistent size
+   
+   SUPPORTED FORMATS:
+   - .gltf/.glb - PBR models with materials and textures
+   - .obj - Mesh models with optional .mtl materials  
+   - .stl - STL models with auto-applied PBR materials
+   - .fbx - FBX models with animations
+   - .spz - Compressed models
+   - .splat/.ply - Gaussian Splatting point clouds
+   
+   DEPENDENCIES:
+   - Babylon.js scene loader and mesh utilities
+   - Configuration constants for model settings
+   - Error handling and progress reporting
+   
+   ======================================================================== */
+
 import { setMeshesPickable, ErrorMessages } from './helpers.js';
 import { CONFIG } from './config.js';
 import { animateCamera } from './cameraControl.js';

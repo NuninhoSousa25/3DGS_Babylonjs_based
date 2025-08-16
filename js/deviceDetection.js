@@ -1,4 +1,28 @@
-// js/deviceDetection.js
+/* ========================================================================
+   3D VIEWER - DEVICE DETECTION & RESPONSIVE BEHAVIOR
+   ========================================================================
+   
+   PURPOSE:
+   Detects device capabilities and screen characteristics for responsive
+   3D viewer behavior. Provides unified device detection with consistent
+   breakpoints and touch capability detection.
+   
+   EXPORTS:
+   - DEVICE_BREAKPOINTS - Screen size breakpoint constants
+   - detectDevice() - Comprehensive device detection and capability analysis
+   
+   FEATURES:
+   - Mobile/desktop detection with CSS-aligned breakpoints
+   - Touch capability detection
+   - Screen resolution and orientation analysis
+   - Performance classification (mobile/desktop)
+   - User agent parsing for device types
+   
+   DEPENDENCIES:
+   - Configuration constants for device settings
+   - Browser APIs for capability detection
+   
+   ======================================================================== */
 
 import { CONFIG } from './config.js';
 

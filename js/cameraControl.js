@@ -1,4 +1,30 @@
-// js/cameraControl.js
+/* ========================================================================
+   3D VIEWER - CAMERA CONTROL & NAVIGATION
+   ========================================================================
+   
+   PURPOSE:
+   Manages camera setup, navigation controls, and smooth camera animations.
+   Provides arc-rotate camera with touch support, auto-rotation, and 
+   configurable limits. Handles both desktop and mobile interactions.
+   
+   EXPORTS:
+   - setupCamera() - Initialize and configure arc-rotate camera
+   - animateCamera() - Smooth camera movement to target position
+   
+   FEATURES:
+   - Arc-rotate camera with configurable limits
+   - Touch and mouse navigation support
+   - Auto-rotation with idle detection
+   - Smooth animation system
+   - Responsive sensitivity settings
+   - Mobile-optimized controls
+   
+   DEPENDENCIES:
+   - Babylon.js camera system
+   - Configuration constants for camera settings
+   - Gesture control for advanced touch handling
+   
+   ======================================================================== */
 
 import { CONFIG } from './config.js';
 import { GestureControl } from './gestureControl.js';

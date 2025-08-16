@@ -1,4 +1,33 @@
-// js/export/ViewerExporter.js
+/* ========================================================================
+   3D VIEWER - VIEWER EXPORT SYSTEM
+   ========================================================================
+   
+   PURPOSE:
+   Creates exportable standalone viewers with current model, settings, and
+   camera state. Generates self-contained HTML files or ZIP packages that
+   can be shared and run independently.
+   
+   EXPORTS:
+   - ViewerExporter - Class for creating exportable viewer packages
+   - setupExportButton() - Add export functionality to UI
+   - showExportDialog() - Display export options dialog
+   
+   FEATURES:
+   - Self-contained HTML export with embedded assets
+   - ZIP package export with organized file structure
+   - Model data embedding (base64) or URL referencing
+   - Camera state and settings preservation
+   - Post-processing configuration export
+   - Camera limits export for constrained navigation
+   - Multiple format support (HTML, ZIP)
+   
+   DEPENDENCIES:
+   - Configuration system for export settings
+   - Helper utilities for DOM manipulation
+   - JSZip library for ZIP generation (loaded dynamically)
+   - Toast notifications for user feedback
+   
+   ======================================================================== */
 
 import { CONFIG } from '../config.js';
 import { WindowEvents, ErrorMessages } from '../helpers.js';

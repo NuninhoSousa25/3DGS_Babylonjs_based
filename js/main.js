@@ -1,4 +1,24 @@
-// js/main.js
+/* ========================================================================
+   3D VIEWER - MAIN APPLICATION ENTRY POINT
+   ========================================================================
+   
+   PURPOSE:
+   Main application initialization and scene creation for the 3D viewer.
+   Coordinates all subsystems and handles the primary rendering loop.
+   
+   EXPORTS:
+   - createScene() - Initialize and start the 3D viewer application
+   
+   DEPENDENCIES:
+   - Camera control system for navigation
+   - Model loading and management
+   - UI components and controls
+   - Post-processing effects
+   - Mobile and touch support
+   - Device detection
+   
+   ======================================================================== */
+
 import { setupCamera, animateCamera } from './cameraControl.js';
 import { loadModel, disposeCurrentModel } from './modelLoader.js';
 import { setupUI, applyCameraParametersFromUrl } from './ui.js';

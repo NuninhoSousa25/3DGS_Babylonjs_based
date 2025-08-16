@@ -1,4 +1,30 @@
-// js/cameraLimits.js - NEW FILE
+/* ========================================================================
+   3D VIEWER - CAMERA LIMITS & MOVEMENT RESTRICTIONS
+   ========================================================================
+   
+   PURPOSE:
+   Provides calculated area-based movement restrictions around 3D models.
+   Allows users to set custom camera boundaries for zoom, rotation, and
+   panning to control viewer navigation and focus areas.
+   
+   EXPORTS:
+   - CameraLimits - Class for managing camera movement restrictions
+   
+   FEATURES:
+   - Zoom distance limits (min/max radius)
+   - Vertical rotation limits (beta angle constraints)
+   - Horizontal rotation limits (alpha angle constraints)  
+   - Pan area restrictions around model
+   - URL parameter serialization for sharing camera limits
+   - Dynamic limit adjustment based on model size
+   - Visual debug indicators for limit boundaries
+   
+   DEPENDENCIES:
+   - Babylon.js camera system
+   - Configuration constants for default limits
+   - URL parameter handling for limit persistence
+   
+   ======================================================================== */
 
 import { CONFIG } from './config.js';
 

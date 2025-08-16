@@ -1,4 +1,26 @@
-// js/picking.js
+/* ========================================================================
+   3D VIEWER - MESH PICKING & INTERACTION
+   ========================================================================
+   
+   PURPOSE:
+   Handles 3D mesh picking and interaction detection for mouse and touch
+   events. Provides multiple picking strategies for reliable hit detection
+   across different model types and scenarios.
+   
+   EXPORTS:
+   - getPickResult() - Multi-strategy picking with fallback methods
+   
+   FEATURES:
+   - Multiple picking strategies (direct, ray-based, frustum)
+   - Reliable hit detection for various model types
+   - Touch and mouse interaction support
+   - Fallback mechanisms for edge cases
+   
+   DEPENDENCIES:
+   - Babylon.js picking system
+   - Scene and camera references
+   
+   ======================================================================== */
 
 /**
  * Streamlines the picking logic by attempting multiple picking strategies.

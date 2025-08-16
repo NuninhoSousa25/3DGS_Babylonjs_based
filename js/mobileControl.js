@@ -1,4 +1,29 @@
-// js/mobileControl.js
+/* ========================================================================
+   3D VIEWER - MOBILE & TOUCH CONTROLS
+   ========================================================================
+   
+   PURPOSE:
+   Provides optimized touch controls and mobile-specific navigation for
+   3D viewer. Enhances default Babylon.js controls with better touch
+   responsiveness and mobile-friendly interaction patterns.
+   
+   EXPORTS:
+   - setupMobileControls() - Initialize mobile-optimized camera controls
+   
+   FEATURES:
+   - Touch-optimized navigation with improved sensitivity
+   - Mobile device detection and adaptive behavior
+   - Enhanced gesture recognition for pinch/zoom
+   - Responsive touch feedback
+   - Integration with device detection system
+   
+   DEPENDENCIES:
+   - Babylon.js camera control system
+   - Gesture control for advanced touch handling
+   - Device detection for mobile optimization
+   - Configuration constants for mobile settings
+   
+   ======================================================================== */
 
 import { CONFIG } from './config.js';
 import { GestureControl } from './gestureControl.js';
