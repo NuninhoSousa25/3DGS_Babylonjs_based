@@ -71,22 +71,23 @@ export const CONFIG = {
     lighting: {
         // Primary HDR environment lighting
         hdr: {
-            environmentUrl: "https://playground.babylonjs.com/textures/environment.dds",
-            intensity: 1.0,
+           
+            environmentUrl: "https://www.babylonjs-playground.com/textures/parking.env",
+            intensity: 0.50,
             useFillLight: true,
-            fillLightIntensity: 0.1,
+            fillLightIntensity: 0.7,
             fillLightColor: [1, 1, 1]
         },
         
         // Fallback lighting (if HDR fails)
         hemisphere: {
-            intensity: 0.6,
+            intensity: 0.0,
             diffuse: [1, 1, 1],
             specular: [0.2, 0.2, 0.2],
             groundColor: [0.2, 0.2, 0.3]
         },
         directional: {
-            intensity: 0.8,
+            intensity: 0.5,
             direction: [-0.5, -1, -0.5],
             diffuse: [1, 1, 1],
             specular: [0.3, 0.3, 0.3]
