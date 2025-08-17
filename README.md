@@ -9,7 +9,6 @@ A 3D model viewer built with Babylon.js, specifically optimized for 3D Gaussian 
 - revise export by url
 - obj in case there no material, aply default material as in .stl 
 - Multiple resize callbacks instead of debounced single handler
-- change default hdri
 - gltf oclusion - verify
 - fbx is not working
 - its a bit slow loading in big 3d models
