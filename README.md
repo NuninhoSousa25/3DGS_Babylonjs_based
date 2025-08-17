@@ -4,15 +4,6 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 
 ## 📋 Development Status
 
-### ✅ Recently Completed
-- **Comprehensive URL sharing** with complete state preservation
-- **URL compression system** for shorter, cleaner shareable links
-- **Enhanced settings panel** with all options exportable via URL
-- **Camera limits system** with full URL serialization
-- **Export functionality** with HTML/ZIP package generation
-- **Post-processing pipeline** with sharpening and anti-aliasing
-- **Touch controls optimization** for mobile devices
-
 ### 🔄 To Implement / Fix
 - Better UI layout for smaller mobile screens
 - Performance optimizations for large models (>100MB)
@@ -22,6 +13,15 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - GLTF occlusion verification
 - FBX format support debugging
 - Loading optimization for large 3D models
+
+### ✅ Recently Completed
+- **Comprehensive URL sharing** with complete state preservation
+- **URL compression system** for shorter, cleaner shareable links
+- **Enhanced settings panel** with all options exportable via URL
+- **Camera limits system** with full URL serialization
+- **Export functionality** with HTML/ZIP package generation
+- **Post-processing pipeline** with sharpening and anti-aliasing
+- **Touch controls optimization** for mobile devices
 
 ## 🌟 Core Features
 
