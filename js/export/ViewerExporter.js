@@ -125,7 +125,15 @@ export class ViewerExporter {
             autoRotation: this.camera.useAutoRotationBehavior,
             quality: document.getElementById('qualitySelect')?.value || 'medium',
             hardwareScaling: this.engine.getHardwareScalingLevel(),
-            pixelRatio: window.devicePixelRatio
+            pixelRatio: window.devicePixelRatio,
+            
+            // Additional settings panel state
+            sharpening: {
+                enabled: this.scene.pipeline?.sharpenEnabled || false,
+                intensity: this.scene.pipeline?.sharpen?.edgeAmount || 1.0
+            },
+            antiAliasing: document.getElementById('antiAliasingSelect')?.value || 'none',
+            touchSensitivity: document.getElementById('touchSensitivityRange')?.value || '5'
         };
     }
 

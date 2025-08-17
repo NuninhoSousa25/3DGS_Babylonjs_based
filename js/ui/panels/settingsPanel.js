@@ -558,7 +558,7 @@ async function handleExport(camera, scene, engine) {
 /**
  * Update rendering quality settings
  */
-function updateQualitySettings(quality, scene) {
+export function updateQualitySettings(quality, scene) {
     const engine = scene.getEngine();
     
     const qualitySettings = {
@@ -618,7 +618,7 @@ function updateTouchSensitivity(sensitivity, camera) {
 /**
  * Update anti-aliasing method
  */
-function updateAntiAliasing(type, scene, camera) {
+export function updateAntiAliasing(type, scene, camera) {
     console.log('Switching anti-aliasing to:', type);
     
     // Store settings

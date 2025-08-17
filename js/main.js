@@ -21,7 +21,7 @@
 
 import { setupCamera, animateCamera } from './cameraControl.js';
 import { loadModel, disposeCurrentModel } from './modelLoader.js';
-import { setupUI, applyCameraParametersFromUrl, applyModelScaleFromUrl } from './ui.js';
+import { setupUI, applyCameraParametersFromUrl, applyModelScaleFromUrl, applySettingsPanelFromUrl } from './ui.js';
 import { addPostEffects } from './postProcessing.js';
 import { getPickResult } from './picking.js';
 import { CONFIG, setupLighting } from './config.js';  // Import the centralized configuration and lighting
@@ -261,7 +261,9 @@ async function createScene() {
         setupUI(camera, scene, engine, initialPixelRatio);
 
         // Attempt to load a model from URL param or default
-        const urlParams = new URLSearchParams(window.location.search);
+        // Import the decompression function
+        const { decompressUrlParameters } = await import('./ui.js');
+        const urlParams = decompressUrlParameters();
         const modelUrl = urlParams.get('model');
 
         if (modelUrl) {
@@ -284,6 +286,9 @@ async function createScene() {
         if (cameraLimits && urlParams.toString()) {
             cameraLimits.applyLimitsFromUrl(urlParams);
         }
+        
+        // Apply settings panel state from URL if present (must be after UI setup)
+        applySettingsPanelFromUrl(camera, scene);
 
         // Start render loop
         engine.runRenderLoop(() => {

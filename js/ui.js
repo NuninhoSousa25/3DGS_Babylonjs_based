@@ -8,7 +8,7 @@ import { createElement, createToggleSwitch, createRangeControl } from './ui/comp
 import { showToast } from './ui/components/toast.js';
 
 // Import panels
-import { createSettingsSection, setupSettingsControls } from './ui/panels/settingsPanel.js';
+import { createSettingsSection, setupSettingsControls, updateQualitySettings, updateAntiAliasing } from './ui/panels/settingsPanel.js';
 import { createDevSection, setupModelLoading } from './ui/panels/devPanel.js';
 import { createInfoSection } from './ui/panels/infoPanel.js';
 
@@ -429,6 +429,9 @@ function shareCameraView(camera, scene) {
         params.set('scale', modelScale.toFixed(2));
     }
     
+    // Add settings panel state
+    addSettingsPanelToUrl(params, camera, scene);
+    
     // Add camera limits to shared URL
     if (scene.cameraLimits) {
         const limitsParams = scene.cameraLimits.getLimitsForUrl();
@@ -439,11 +442,16 @@ function shareCameraView(camera, scene) {
         });
     }
     
-    const shareUrl = `${window.location.href.split('?')[0]}?${params.toString()}`;
+    // Always apply URL compression for shorter, cleaner URLs
+    const originalParams = params.toString();
+    const compressedParams = compressUrlParameters(params);
+    const shareUrl = `${window.location.href.split('?')[0]}?${compressedParams}`;
+    
+    console.log(`URL compressed from ${originalParams.length} to ${compressedParams.length} characters`);
     
     // Copy to clipboard
     navigator.clipboard.writeText(shareUrl).then(() => {
-        showToast('URL with camera limits copied to clipboard!');
+        showToast('URL with complete settings copied to clipboard!');
     }).catch(() => {
         // Fallback for older browsers
         const tempInput = createElement('input', { 
@@ -454,7 +462,7 @@ function shareCameraView(camera, scene) {
         tempInput.select();
         document.execCommand('copy');
         document.body.removeChild(tempInput);
-        showToast('URL with camera limits copied to clipboard!');
+        showToast('URL with complete settings copied to clipboard!');
     });
 }
 
@@ -551,10 +559,191 @@ function updateTouchSensitivity(sensitivity, camera) {
 }
 
 /**
+ * URL Parameter Compression System
+ * Maps full parameter names to short codes for more compact URLs
+ */
+const URL_PARAM_MAP = {
+    // Camera parameters
+    'model': 'm',
+    'alpha': 'a',
+    'beta': 'b', 
+    'radius': 'r',
+    'fov': 'f',
+    'tx': 'x',
+    'ty': 'y',
+    'tz': 'z',
+    'scale': 's',
+    
+    // Settings panel
+    'autoRotate': 'ar',
+    'quality': 'q',
+    'sharpen': 'sh',
+    'sharpenIntensity': 'si',
+    'antiAliasing': 'aa',
+    'touchSensitivity': 'ts',
+    
+    // Camera limits (shorter codes)
+    'restrictions': 'rest',
+    'alphaMin': 'an',
+    'alphaMax': 'ax',
+    'betaMin': 'bn',
+    'betaMax': 'bx',
+    'radiusMin': 'rn',
+    'radiusMax': 'rx'
+};
+
+const REVERSE_URL_PARAM_MAP = Object.fromEntries(
+    Object.entries(URL_PARAM_MAP).map(([k, v]) => [v, k])
+);
+
+/**
+ * Compress URL parameters by using short codes and base64 encoding when beneficial
+ */
+function compressUrlParameters(params) {
+    const compressed = new URLSearchParams();
+    
+    for (const [key, value] of params.entries()) {
+        const shortKey = URL_PARAM_MAP[key] || key;
+        
+        // For numeric values, round to reasonable precision
+        if (!isNaN(parseFloat(value)) && isFinite(value)) {
+            const numValue = parseFloat(value);
+            compressed.set(shortKey, numValue.toFixed(2));
+        } else {
+            // For string values, apply compression
+            if (key === 'model') {
+                // Keep model URLs as-is since they need to be valid
+                compressed.set(shortKey, value);
+            } else if (key === 'quality') {
+                // Compress quality values: low=l, medium=m, high=h
+                const qualityMap = { 'low': 'l', 'medium': 'm', 'high': 'h' };
+                compressed.set(shortKey, qualityMap[value] || value);
+            } else if (key === 'antiAliasing') {
+                // Compress AA values: none=n, fxaa=f
+                const aaMap = { 'none': 'n', 'fxaa': 'f' };
+                compressed.set(shortKey, aaMap[value] || value);
+            } else if (key === 'restrictions') {
+                // Keep restrictions as-is since they're already compressed
+                compressed.set(shortKey, value);
+            } else {
+                compressed.set(shortKey, value);
+            }
+        }
+    }
+    
+    // If still very long, encode the entire parameter string in base64
+    const compressedString = compressed.toString();
+    if (compressedString.length > 2000) {
+        // Use base64 encoding as last resort for extremely long URLs
+        const encoded = btoa(compressedString);
+        return `c=${encoded}`;
+    }
+    
+    return compressedString;
+}
+
+/**
+ * Decompress URL parameters by reversing the compression process
+ */
+export function decompressUrlParameters() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Check if URL is base64 compressed
+    if (urlParams.has('c')) {
+        try {
+            const decoded = atob(urlParams.get('c'));
+            const decodedParams = new URLSearchParams(decoded);
+            
+            // Convert short keys back to full keys
+            const fullParams = new URLSearchParams();
+            for (const [shortKey, value] of decodedParams.entries()) {
+                const fullKey = REVERSE_URL_PARAM_MAP[shortKey] || shortKey;
+                
+                // Decompress specific values
+                let decompressedValue = value;
+                if (fullKey === 'quality') {
+                    const qualityMap = { 'l': 'low', 'm': 'medium', 'h': 'high' };
+                    decompressedValue = qualityMap[value] || value;
+                } else if (fullKey === 'antiAliasing') {
+                    const aaMap = { 'n': 'none', 'f': 'fxaa' };
+                    decompressedValue = aaMap[value] || value;
+                }
+                
+                fullParams.set(fullKey, decompressedValue);
+            }
+            
+            return fullParams;
+        } catch (error) {
+            console.warn('Failed to decompress URL parameters:', error);
+            return urlParams;
+        }
+    }
+    
+    // Convert short keys back to full keys for uncompressed URLs
+    const fullParams = new URLSearchParams();
+    for (const [shortKey, value] of urlParams.entries()) {
+        const fullKey = REVERSE_URL_PARAM_MAP[shortKey] || shortKey;
+        
+        // Decompress specific values
+        let decompressedValue = value;
+        if (fullKey === 'quality') {
+            const qualityMap = { 'l': 'low', 'm': 'medium', 'h': 'high' };
+            decompressedValue = qualityMap[value] || value;
+        } else if (fullKey === 'antiAliasing') {
+            const aaMap = { 'n': 'none', 'f': 'fxaa' };
+            decompressedValue = aaMap[value] || value;
+        }
+        
+        fullParams.set(fullKey, decompressedValue);
+    }
+    
+    return fullParams;
+}
+
+/**
+ * Add settings panel state to URL parameters
+ */
+function addSettingsPanelToUrl(params, camera, scene) {
+    // Auto rotation setting
+    if (camera.useAutoRotationBehavior !== CONFIG.camera.useAutoRotationBehavior) {
+        params.set('autoRotate', camera.useAutoRotationBehavior ? '1' : '0');
+    }
+    
+    // Quality setting
+    const qualitySelect = document.getElementById('qualitySelect');
+    if (qualitySelect && qualitySelect.value !== 'medium') {
+        params.set('quality', qualitySelect.value);
+    }
+    
+    // Post-processing settings
+    if (scene.pipeline) {
+        // Sharpening
+        if (scene.pipeline.sharpenEnabled !== CONFIG.postProcessing.sharpenEnabled) {
+            params.set('sharpen', scene.pipeline.sharpenEnabled ? '1' : '0');
+        }
+        if (scene.pipeline.sharpen && Math.abs(scene.pipeline.sharpen.edgeAmount - CONFIG.postProcessing.sharpenEdgeAmount) > 0.01) {
+            params.set('sharpenIntensity', scene.pipeline.sharpen.edgeAmount.toFixed(1));
+        }
+        
+        // Anti-aliasing
+        const antiAliasingSelect = document.getElementById('antiAliasingSelect');
+        if (antiAliasingSelect && antiAliasingSelect.value !== CONFIG.postProcessing.antiAliasing.type) {
+            params.set('antiAliasing', antiAliasingSelect.value);
+        }
+    }
+    
+    // Touch sensitivity (if different from default)
+    const touchSensitivityRange = document.getElementById('touchSensitivityRange');
+    if (touchSensitivityRange && touchSensitivityRange.value !== '5') {
+        params.set('touchSensitivity', touchSensitivityRange.value);
+    }
+}
+
+/**
  * Apply camera parameters from URL (for sharing feature)
  */
 export function applyCameraParametersFromUrl(camera) {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = decompressUrlParameters();
     
     if (urlParams.has('alpha') && urlParams.has('beta') && urlParams.has('radius')) {
         const alpha = parseFloat(urlParams.get('alpha'));
@@ -595,7 +784,7 @@ export function applyCameraParametersFromUrl(camera) {
  * Should be called after the model is loaded
  */
 export function applyModelScaleFromUrl(scene) {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = decompressUrlParameters();
     
     if (urlParams.has('scale') && scene.currentModel) {
         const scale = parseFloat(urlParams.get('scale'));
@@ -615,4 +804,93 @@ export function applyModelScaleFromUrl(scene) {
             console.log(`Applied model scale from URL: ${scale}`);
         }
     }
+}
+
+/**
+ * Apply settings panel state from URL parameters (for sharing feature)
+ * Should be called after UI is set up
+ */
+export function applySettingsPanelFromUrl(camera, scene) {
+    const urlParams = decompressUrlParameters();
+    
+    // Auto rotation setting
+    if (urlParams.has('autoRotate')) {
+        const autoRotate = urlParams.get('autoRotate') === '1';
+        camera.useAutoRotationBehavior = autoRotate;
+        
+        const autoRotateToggle = document.getElementById('autoRotateToggle');
+        if (autoRotateToggle) {
+            autoRotateToggle.checked = autoRotate;
+        }
+        
+        if (!autoRotate && camera.autoRotationBehavior) {
+            camera.stopAutoRotation();
+        }
+    }
+    
+    // Quality setting
+    if (urlParams.has('quality')) {
+        const quality = urlParams.get('quality');
+        const qualitySelect = document.getElementById('qualitySelect');
+        if (qualitySelect && ['low', 'medium', 'high'].includes(quality)) {
+            qualitySelect.value = quality;
+            updateQualitySettings(quality, scene);
+        }
+    }
+    
+    // Post-processing settings
+    if (scene.pipeline) {
+        // Sharpening
+        if (urlParams.has('sharpen')) {
+            const sharpen = urlParams.get('sharpen') === '1';
+            scene.pipeline.sharpenEnabled = sharpen;
+            
+            const sharpenToggle = document.getElementById('sharpenToggle');
+            if (sharpenToggle) {
+                sharpenToggle.checked = sharpen;
+            }
+        }
+        
+        if (urlParams.has('sharpenIntensity')) {
+            const intensity = parseFloat(urlParams.get('sharpenIntensity'));
+            if (!isNaN(intensity) && intensity >= 0 && intensity <= 2) {
+                scene.pipeline.sharpen.edgeAmount = intensity;
+                CONFIG.postProcessing.sharpenEdgeAmount = intensity;
+                
+                const sharpenIntensityRange = document.getElementById('sharpenIntensityRange');
+                const sharpenIntensityDisplay = document.getElementById('sharpenIntensityDisplay');
+                if (sharpenIntensityRange && sharpenIntensityDisplay) {
+                    sharpenIntensityRange.value = intensity;
+                    sharpenIntensityDisplay.textContent = intensity.toFixed(1);
+                }
+            }
+        }
+        
+        // Anti-aliasing
+        if (urlParams.has('antiAliasing')) {
+            const aaType = urlParams.get('antiAliasing');
+            if (['none', 'fxaa'].includes(aaType)) {
+                updateAntiAliasing(aaType, scene, camera);
+                
+                const antiAliasingSelect = document.getElementById('antiAliasingSelect');
+                if (antiAliasingSelect) {
+                    antiAliasingSelect.value = aaType;
+                }
+            }
+        }
+    }
+    
+    // Touch sensitivity
+    if (urlParams.has('touchSensitivity')) {
+        const sensitivity = parseInt(urlParams.get('touchSensitivity'));
+        if (!isNaN(sensitivity) && sensitivity >= 1 && sensitivity <= 10) {
+            const touchSensitivityRange = document.getElementById('touchSensitivityRange');
+            if (touchSensitivityRange) {
+                touchSensitivityRange.value = sensitivity;
+                updateTouchSensitivity(sensitivity / 5.0, camera);
+            }
+        }
+    }
+    
+    console.log("Applied settings panel state from URL");
 }
