@@ -10,7 +10,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - Code quality improvements and documentation
 - OBJ material handling - apply default material when missing (like STL)
 - Multiple resize callbacks instead of debounced single handler
-- GLTF occlusion verification
+- GLTF culling / occlusion verification
 - FBX format support debugging
 - Loading optimization for large 3D models
 
