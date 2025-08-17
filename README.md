@@ -13,6 +13,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - GLTF culling / occlusion verification
 - FBX format support debugging
 - Loading optimization for large 3D models
+- check behaviur with auto rotate and horizontal limitation
 
 ### ✅ Recently Completed
 - **Comprehensive URL sharing** with complete state preservation
