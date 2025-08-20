@@ -16,6 +16,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - check behaviur with auto rotate and horizontal limitation
 - when opening the scene via shared url it takes longer, but most importantly doesnt show loading icon
 - loading model usually doent apear centered
+- picking bg color
 
 ### ✅ Recently Completed
 - **Comprehensive URL sharing** with complete state preservation
