@@ -188,7 +188,25 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
     try {
         if (CONFIG.modelLoader.supportedFormats.includes(extension)) {
             if (extension === 'spz') {
-                const result = await BABYLON.SceneLoader.ImportMeshAsync(null, "", url, scene);
+                console.log(`Loading as .${extension} using SceneLoader.ImportMeshAsync`);
+                let result;
+                if (isFile) {
+                    // This new block handles the File object from drag-and-drop
+                    result = await BABYLON.SceneLoader.ImportMeshAsync(
+                        "",
+                        "",
+                        modelSource,
+                        scene
+                    );
+                } else {
+                    // This existing logic handles loading from a URL
+                    result = await BABYLON.SceneLoader.ImportMeshAsync(
+                        null, 
+                        "", 
+                        url, 
+                        scene
+                    );
+                }
                 currentModel = result.meshes[0];
                 currentModel.position.y = 0;
                 currentModelType = 'mesh';
