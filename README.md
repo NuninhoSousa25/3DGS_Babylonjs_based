@@ -6,6 +6,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 
 ### 🔄 To Implement / Fix
 - Better UI layout for smaller mobile screens
+- IMPORTANT - .spz only work if imported via url, not by drang and drop or load file
 - Performance optimizations for large models (>100MB)
 - Code quality improvements and documentation
 - OBJ material handling - apply default material when missing (like STL)
