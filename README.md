@@ -17,6 +17,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - when opening the scene via shared url it takes longer, but most importantly doesnt show loading icon
 - loading model usually doent apear centered
 - picking bg color
+- in dev tab add model file size below vertix count
 - revise picking logic, its not consistent when trying to select 3dgs
 
 ### ✅ Recently Completed
