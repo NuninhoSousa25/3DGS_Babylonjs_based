@@ -13,6 +13,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - Multiple resize callbacks instead of debounced single handler
 - GLTF culling / occlusion verification
 - FBX format support debugging
+- default cube after error in loading model is not cleared when a new model is loaded after
 - Loading optimization for large 3D models
 - check behaviur with auto rotate and horizontal limitation
 - when opening the scene via shared url it takes longer, but most importantly doesnt show loading icon
