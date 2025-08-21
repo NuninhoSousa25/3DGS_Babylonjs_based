@@ -5,21 +5,24 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ## 📋 Development Status
 
 ### 🔄 To Implement / Fix
-- Better UI layout for smaller mobile screens
 - IMPORTANT - .spz only work if imported via url, not by drang and drop or load file
-- Performance optimizations for large models (>100MB)
-- Code quality improvements and documentation
+- picking bg color
+- in dev tab add model file size below vertix count
+
 - OBJ material handling - apply default material when missing (like STL)
 - Multiple resize callbacks instead of debounced single handler
-- GLTF culling / occlusion verification
-- FBX format support debugging
+
+- ------
 - default cube after error in loading model is not cleared when a new model is loaded after
 - Loading optimization for large 3D models
 - check behaviur with auto rotate and horizontal limitation
 - when opening the scene via shared url it takes longer, but most importantly doesnt show loading icon
-- loading model usually doent apear centered
-- picking bg color
-- in dev tab add model file size below vertix count
+- loading model pop up - usually doent apear centered
+- GLTF culling / occlusion verification
+- FBX format support debugging
+- Performance optimizations for large models (>100MB)
+- Code quality improvements and documentation
+- Better UI layout for smaller mobile screens
 - revise picking logic, its not consistent when trying to select 3dgs
 
 ### ✅ Recently Completed
