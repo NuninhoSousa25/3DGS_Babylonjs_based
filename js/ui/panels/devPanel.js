@@ -6,7 +6,7 @@ import { ICONS } from '../components/icons.js';
 import { createElement } from '../components/controls.js';
 import { showToast } from '../components/toast.js';
 import { loadModel } from '../../modelLoader.js';
-import { setupUIUpdates, startUIUpdates, stopUIUpdates, restartUIUpdates, DOM, Events, ErrorMessages, LoadingSpinner } from '../../helpers.js';
+import { setupUIUpdates, startUIUpdates, updateFileSizeDisplay,  stopUIUpdates, restartUIUpdates, DOM, Events, ErrorMessages, LoadingSpinner } from '../../helpers.js';
 import { CONFIG } from '../../config.js';
 
 /**
@@ -31,6 +31,10 @@ export function createDevSection() {
                     <div class="info-row">
                         <span class="info-label">Vertices:</span>
                         <span id="controlPanelVertices" class="info-value">0</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">File Size:</span>
+                        <span id="controlPanelFileSize" class="info-value">0 KB</span>
                     </div>
                 </div>
             </div>
@@ -148,61 +152,26 @@ export function setupModelLoading(scene) {
  */
 async function loadModelWithSpinner(scene, source, type) {
     try {
-        // Show loading spinner
         LoadingSpinner.show("flex");
         
-        console.log(`Loading model from ${type}: ${type === 'file' ? source.name : source}`);
-        console.log("Source object:", source);
+        // The call to loadModel is correct.
+        await loadModel(scene, source, CONFIG.modelLoader.defaultFallbackModel);
         
-        if (type === 'file') {
-            console.log("File details - Name:", source.name, "Size:", source.size, "Type:", source.type);
-            const extension = source.name.split('.').pop().toLowerCase();
-            console.log("File extension:", extension);
-            console.log("Supported formats:", CONFIG.modelLoader.supportedFormats);
-            console.log("Extension supported:", CONFIG.modelLoader.supportedFormats.includes(extension));
-        }
-        
-        const result = await loadModel(scene, source, CONFIG.modelLoader.defaultFallbackModel);
-        console.log("Load model result:", result);
-        
-        // Apply model scale from URL if present (for shared URLs)
+        // This is still useful to apply URL params to a newly loaded model.
         applyModelScaleFromUrl(scene);
         
-        // Store model URL for sharing
-        if (result && result.currentModel) {
-            // Set the model URL for the exporter and sharing feature
-            scene.currentModelUrl = (type === 'file') ? URL.createObjectURL(source) : source;
-
-            // Determine and set the model type for the exporter
-            const fileName = (type === 'file') ? source.name : source;
-            const extension = fileName.split('?')[0].split('.').pop().toLowerCase();
-
-            if (['splat', 'ply'].includes(extension)) {
-                scene.currentModelType = 'splat';
-            } else if (['gltf', 'glb', 'obj'].includes(extension)) {
-                scene.currentModelType = 'mesh';
-            } else {
-                scene.currentModelType = 'unknown'; // Handle other cases
-            }
-
-            // This property is also used by the exporter
-            scene.currentModel = result.currentModel;
-
-            console.log(`Model info set on scene: type='${scene.currentModelType}', url='${scene.currentModelUrl}'`);
-        }
+        // The block that set scene.currentModelUrl and scene.currentModelType has been removed.
+        // loadModel from modelLoader.js already handles this correctly.
         
-        // Show success message
         const fileName = type === 'file' ? source.name : 'URL';
         showToast(`Model "${fileName}" loaded successfully`);
         
-        // Close panel
         closeAllPanels();
         
     } catch (error) {
         console.error("Error loading model:", error);
         showToast(ErrorMessages.MODEL.LOAD_FAILED(error.message), 5000);
     } finally {
-        // Hide loading spinner
         LoadingSpinner.hide();
     }
 }
@@ -227,7 +196,8 @@ function triggerFileLoad(scene) {
             console.log("No file selected");
             return;
         }
-        
+        updateFileSizeDisplay(file.size);
+
         console.log("File selected:", file.name, "Size:", file.size);
         
         // Validate file extension

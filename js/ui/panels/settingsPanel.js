@@ -33,9 +33,10 @@ function createVisualizationSection() {
     const defaultQuality = device.isDesktop ? 'high' : 'medium';
     
     return `
-        <div class="settings-category">
-            <div class="settings-title">Visualization</div>
-            <div class="control-group">
+        <div class="settings-category" id="visualizationCategory">
+            <div class="settings-title" data-target="visualizationContent">Visualization</div>
+            <div class="settings-category-content" id="visualizationContent">
+                <div class="control-group">
                 <label for="autoRotateToggle">Auto Rotation</label>
                 <label class="switch">
                     <input type="checkbox" id="autoRotateToggle" ${CONFIG.camera.useAutoRotationBehavior ? 'checked' : ''}>
@@ -59,7 +60,8 @@ function createVisualizationSection() {
                     <span id="fovDisplay" class="range-value">46°</span>
                 </div>
             </div>
-            ${createRangeControl('modelScaleRange', 'Model Scale', 0.1, 5, 1, 0.1)}
+                ${createRangeControl('modelScaleRange', 'Model Scale', 0.1, 5, 1, 0.1)}
+            </div>
         </div>
     `;
 }
@@ -69,10 +71,10 @@ function createVisualizationSection() {
  */
 function createCameraLimitsSection() {
     return `
-        <div class="settings-category">
-            <div class="settings-title">Camera Limits</div>
-            
-            <div class="control-group">
+        <div class="settings-category" id="cameraLimitsCategory">
+            <div class="settings-title" data-target="cameraLimitsContent">Camera Limits</div>
+            <div class="settings-category-content" id="cameraLimitsContent">
+                <div class="control-group">
                 <label for="cameraLimitsToggle">Enable Camera Limits</label>
                 <label class="switch">
                     <input type="checkbox" id="cameraLimitsToggle" checked>
@@ -175,9 +177,10 @@ function createCameraLimitsSection() {
  */
 function createPostProcessingSection() {
     return `
-        <div class="settings-category">
-            <div class="settings-title">Post Processing</div>
-            <div class="control-group">
+        <div class="settings-category" id="postProcessingCategory">
+            <div class="settings-title" data-target="postProcessingContent">Post Processing</div>
+            <div class="settings-category-content" id="postProcessingContent">
+                <div class="control-group">
                 <label for="sharpenToggle">Sharpening</label>
                 <label class="switch">
                     <input type="checkbox" id="sharpenToggle" ${CONFIG.postProcessing.sharpenEnabled ? 'checked' : ''}>
@@ -207,11 +210,13 @@ function createPostProcessingSection() {
  */
 function createTouchControlsSection() {
     return `
-        <div class="settings-category">
-            <div class="settings-title">Touch Controls</div>
-            <div class="control-group">
+        <div class="settings-category" id="touchControlsCategory">
+            <div class="settings-title" data-target="touchControlsContent">Touch Controls</div>
+            <div class="settings-category-content" id="touchControlsContent">
+                <div class="control-group">
                 <label for="touchSensitivityRange">Touch Sensitivity</label>
                 <input type="range" id="touchSensitivityRange" min="1" max="10" value="5" class="slider-range">
+                </div>
             </div>
         </div>
     `;
@@ -324,6 +329,9 @@ export function setupSettingsControls(camera, scene) {
     if (exportButton) {
         Events.addClickListener(exportButton, () => handleExport(camera, scene, scene.getEngine()));
     }
+    
+    // Setup mobile collapsible sections
+    setupMobileCollapsibleSections();
 }
 
 /**
@@ -545,6 +553,74 @@ function setupCameraLimitsControls(camera, scene) {
     updateUI();
     
     console.log('Camera limits controls initialized (auto-calculate removed)');
+}
+
+/**
+ * Setup mobile collapsible sections for better touch experience
+ */
+function setupMobileCollapsibleSections() {
+    // Only enable collapsible sections on touch devices
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (!isTouchDevice) return;
+    
+    // Get all settings titles
+    const settingsTitles = document.querySelectorAll('.settings-title[data-target]');
+    
+    settingsTitles.forEach(title => {
+        const targetId = title.getAttribute('data-target');
+        const targetContent = document.getElementById(targetId);
+        const category = title.closest('.settings-category');
+        
+        if (!targetContent || !category) return;
+        
+        // Start with camera limits collapsed to save space
+        if (targetId === 'cameraLimitsContent') {
+            category.classList.add('collapsed');
+        }
+        
+        // Add click handler
+        title.addEventListener('click', () => {
+            const isCollapsed = category.classList.contains('collapsed');
+            
+            if (isCollapsed) {
+                // Expand this section
+                category.classList.remove('collapsed');
+                title.classList.remove('collapsed');
+                
+                // Optionally collapse other sections to save space on small screens
+                if (window.innerWidth < 480) {
+                    settingsTitles.forEach(otherTitle => {
+                        if (otherTitle !== title) {
+                            const otherTargetId = otherTitle.getAttribute('data-target');
+                            const otherCategory = otherTitle.closest('.settings-category');
+                            if (otherCategory && otherTargetId !== 'visualizationContent') {
+                                // Keep visualization always expanded, collapse others
+                                otherCategory.classList.add('collapsed');
+                                otherTitle.classList.add('collapsed');
+                            }
+                        }
+                    });
+                }
+            } else {
+                // Collapse this section
+                category.classList.add('collapsed');
+                title.classList.add('collapsed');
+            }
+        });
+        
+        // Add touch-friendly hover effects
+        title.addEventListener('touchstart', () => {
+            title.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+        }, { passive: true });
+        
+        title.addEventListener('touchend', () => {
+            setTimeout(() => {
+                title.style.backgroundColor = '';
+            }, 150);
+        }, { passive: true });
+    });
+    
+    console.log('Mobile collapsible sections initialized');
 }
 
 // Import functions that need to be available in this scope

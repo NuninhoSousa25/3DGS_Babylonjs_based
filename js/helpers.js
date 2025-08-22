@@ -489,6 +489,31 @@ export function restartUIUpdates() {
     }
 }
 
+// In helpers.js, add a new function
+
+/**
+ * Updates the file size display in the developer panel.
+ * @param {number} bytes - The size of the model file in bytes.
+ */
+export function updateFileSizeDisplay(bytes) {
+    const fileSizeElement = DOM.get("controlPanelFileSize");
+    if (!fileSizeElement) return;
+
+    if (bytes === 0) {
+        fileSizeElement.textContent = 'N/A'; // For URL-loaded models for now
+        return;
+    }
+
+    const kb = bytes / 1024;
+    const mb = kb / 1024;
+
+    if (mb >= 1) {
+        fileSizeElement.textContent = `${mb.toFixed(2)} MB`;
+    } else {
+        fileSizeElement.textContent = `${kb.toFixed(2)} KB`;
+    }
+}
+
 /**
  * Centralized Loading Spinner Management
  */

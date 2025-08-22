@@ -192,46 +192,52 @@ function setupIconButtonHandlers(camera, scene, engine) {
     
     // Content section toggle function
    function toggleContentSection(sectionToShow) {
-        const isAlreadyOpen = currentlyOpenSection === sectionToShow;
-        const wasDevSectionOpen = currentlyOpenSection === devContent;
-        
-        // Close all sections first
-        allContentSections.forEach(section => section.style.display = "none");
-        DOM.get("controlPanelContent").style.display = "none";
-        
-        // Reset all button states (use cached reference)
-        [settingsButton, infoButton, devButton].forEach(btn => btn.classList.remove('active'));
-        
-        if (!isAlreadyOpen) {
-            // Open requested section
-            sectionToShow.style.display = "block";
-            document.getElementById("controlPanelContent").style.display = "block";
-            currentlyOpenSection = sectionToShow;
-            
-            // Set active button state
-            if (sectionToShow === settingsContent) settingsButton.classList.add('active');
-            else if (sectionToShow === infoContent) infoButton.classList.add('active');
-            else if (sectionToShow === devContent) devButton.classList.add('active');
-            
-            // Show close button and expand panel
-            closePanelButton.style.display = 'block';
-            document.getElementById("controlPanel").classList.add("expanded");
-            
-            // Start UI updates only for developer tools section
-            if (sectionToShow === devContent) {
-                restartUIUpdates();
-            }
-        } else {
-            currentlyOpenSection = null;
-            closePanelButton.style.display = 'none';
-            document.getElementById("controlPanel").classList.remove("expanded");
+    const isAlreadyOpen = currentlyOpenSection === sectionToShow;
+    const wasDevSectionOpen = currentlyOpenSection === devContent;
+
+    // Close all sections first (with added safety check)
+    allContentSections.forEach(section => {
+        if (section) {
+            section.style.display = "none";
         }
-        
-        // Stop UI updates if we're closing developer tools or switching away from it
-        if (wasDevSectionOpen && sectionToShow !== devContent) {
-            stopUIUpdates();
+    });
+    DOM.get("controlPanelContent").style.display = "none";
+
+    // Reset all button states
+    [settingsButton, infoButton, devButton].forEach(btn => btn.classList.remove('active'));
+
+    // THE FIX: Ensure sectionToShow exists before trying to open it
+    if (!isAlreadyOpen && sectionToShow) {
+        // Open requested section
+        sectionToShow.style.display = "block";
+        document.getElementById("controlPanelContent").style.display = "block";
+        currentlyOpenSection = sectionToShow;
+
+        // Set active button state
+        if (sectionToShow === settingsContent) settingsButton.classList.add('active');
+        else if (sectionToShow === infoContent) infoButton.classList.add('active');
+        else if (sectionToShow === devContent) devButton.classList.add('active');
+
+        // Show close button and expand panel
+        closePanelButton.style.display = 'block';
+        document.getElementById("controlPanel").classList.add("expanded");
+
+        // Start UI updates for developer tools
+        if (sectionToShow === devContent) {
+            restartUIUpdates();
         }
+    } else {
+        // This block now correctly handles closing the panel
+        currentlyOpenSection = null;
+        closePanelButton.style.display = 'none';
+        document.getElementById("controlPanel").classList.remove("expanded");
     }
+
+    // Stop UI updates when closing developer tools
+    if (wasDevSectionOpen && sectionToShow !== devContent) {
+        stopUIUpdates();
+    }
+}
     
    // Setup button event listeners
     if (settingsButton) {
@@ -795,7 +801,7 @@ export function applyModelScaleFromUrl(scene) {
             
             // Update the UI slider to reflect the loaded scale
             const modelScaleRange = document.getElementById('modelScaleRange');
-            const modelScaleDisplay = document.getElementById('modelScaleRangeDisplay');
+            const modelScaleDisplay = document.getElementById('modelScaleDisplay');
             if (modelScaleRange && modelScaleDisplay) {
                 modelScaleRange.value = scale;
                 modelScaleDisplay.textContent = scale.toFixed(1);

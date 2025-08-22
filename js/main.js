@@ -266,6 +266,8 @@ async function createScene() {
         const urlParams = decompressUrlParameters();
         const modelUrl = urlParams.get('model');
 
+        
+
         if (modelUrl) {
             try {
                 const decodedModelUrl = decodeURIComponent(modelUrl);
