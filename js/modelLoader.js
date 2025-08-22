@@ -282,6 +282,15 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
                 if (result.materials && result.materials.length > 0) {
                     console.log(`Successfully loaded OBJ model with ${result.materials.length} materials:`, currentModel);
                 } else {
+                    console.log("OBJ model loaded without materials. Applying default PBR material.");
+                    result.meshes.forEach((mesh, index) => {
+                        const pbrMaterial = new BABYLON.PBRMaterial(`objPBRMaterial_${index}`, scene);
+                        pbrMaterial.albedoColor = new BABYLON.Color3(0.6, 0.6, 0.6); // Base color
+                        pbrMaterial.metallic = 0.0;  // Not very metallic
+                        pbrMaterial.roughness = 0.6; // A bit rough
+                        pbrMaterial.backFaceCulling = false;
+                        mesh.material = pbrMaterial;
+                    });
                 }
                 
             } else if (extension === 'splat' || extension === 'ply') {
