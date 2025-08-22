@@ -5,7 +5,6 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ## 📋 Development Status
 
 ### 🔄 To Implement / Fix
-- IMPORTANT - .spz only work if imported via url, not by drang and drop or load file
 - picking bg color
 - in dev tab add model file size below vertix count
 
