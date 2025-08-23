@@ -5,7 +5,6 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ## 📋 Development Status
 
 ### 🔄 To Implement / Fix
-- - in dev tab add model file size below vertix count
 - picking bg color
 - model file size not working
 - - default cube after error in loading model is not cleared when a new model is loaded after
