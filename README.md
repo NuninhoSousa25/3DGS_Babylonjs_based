@@ -5,9 +5,9 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ## 📋 Development Status
 
 ### 🔄 To Implement / Fix
-- picking bg color
 - model file size not working
-- - default cube after error in loading model is not cleared when a new model is loaded after
+- add picking bg color and implement it on the url properties
+  
 - Multiple resize callbacks instead of debounced single handler
 [Violation] 'setTimeout' handler took 146ms
 babylon.js:1 [Violation] 'requestAnimationFrame' handler took 152ms
