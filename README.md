@@ -8,8 +8,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - OBJ material handling - apply default material when missing (like STL)
 - - in dev tab add model file size below vertix count
 - picking bg color
-- - IMPORTANT - .spz only work if imported via url, not by drang and drop or load file
-- in dev tab add model file size below vertix count
+- model file size not working
 - - default cube after error in loading model is not cleared when a new model is loaded after
 - Multiple resize callbacks instead of debounced single handler
 [Violation] 'setTimeout' handler took 146ms
