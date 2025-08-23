@@ -14,7 +14,7 @@ import { ICONS } from '../components/icons.js';
  */
 export function createSettingsSection(hasTouch) {
     return `
-        <div id="settingsContent" class="content-section" style="display: none;">
+        <div id="settingsContent" class="content-section">
             <h4>Settings</h4>
             
             ${createVisualizationSection()}
@@ -72,8 +72,10 @@ function createVisualizationSection() {
 function createCameraLimitsSection() {
     return `
         <div class="settings-category" id="cameraLimitsCategory">
-            <div class="settings-title" data-target="cameraLimitsContent">Camera Limits</div>
-            <div class="settings-category-content" id="cameraLimitsContent">
+            <div class="settings-title" data-target="cameraLimitsSettingsContent">Camera Limits</div>
+            
+            <div class="settings-category-content" id="cameraLimitsSettingsContent">
+               
                 <div class="control-group">
                 <label for="cameraLimitsToggle">Enable Camera Limits</label>
                 <label class="switch">
@@ -169,6 +171,7 @@ function createCameraLimitsSection() {
                 </button>
             </div>
         </div>
+        </div>
     `;
 }
 
@@ -202,6 +205,12 @@ function createPostProcessingSection() {
                 </select>
             </div>
         </div>
+        </div>
+
+        
+       
+
+
     `;
 }
 

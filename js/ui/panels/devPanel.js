@@ -14,7 +14,7 @@ import { CONFIG } from '../../config.js';
  */
 export function createDevSection() {
     return `
-        <div id="devContent" class="content-section" style="display: none;">
+        <div id="devContent" class="content-section">
             <h4>Developer Tools</h4>
             
             <div class="dev-section">

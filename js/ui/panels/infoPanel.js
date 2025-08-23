@@ -7,7 +7,7 @@
  */
 export function createInfoSection(hasTouch) {
     return `
-        <div id="infoContent" class="content-section" style="display: none;">
+        <div id="infoContent" class="content-section">
             <h4>Controls</h4>
             
             <div class="info-group">

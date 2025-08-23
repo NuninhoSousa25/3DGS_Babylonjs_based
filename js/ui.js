@@ -1,10 +1,10 @@
 /* ========================================================================
-   3D VIEWER UI CONTROLLER - REFACTORED & MODULAR
+   3D VIEWER UI CONTROLLER
    ======================================================================== */
 
 // Import components
 import { ICONS } from './ui/components/icons.js';
-import { createElement, createToggleSwitch, createRangeControl } from './ui/components/controls.js';
+import { createElement } from './ui/components/controls.js';
 import { showToast } from './ui/components/toast.js';
 
 // Import panels
@@ -13,7 +13,7 @@ import { createDevSection, setupModelLoading } from './ui/panels/devPanel.js';
 import { createInfoSection } from './ui/panels/infoPanel.js';
 
 // Import dependencies
-import { setupUIUpdates, startUIUpdates, stopUIUpdates, restartUIUpdates, DOM, Events, ErrorMessages, LoadingSpinner } from './helpers.js';
+import { setupUIUpdates, stopUIUpdates, restartUIUpdates, DOM, Events, ErrorMessages, LoadingSpinner } from './helpers.js';
 import { loadModel } from './modelLoader.js';
 import { CONFIG } from './config.js';
 import { detectDevice } from './deviceDetection.js';
@@ -29,6 +29,8 @@ import { detectDevice } from './deviceDetection.js';
  * @param {number} initialPixelRatio - Initial device pixel ratio
  */
 export function setupUI(camera, scene, engine, initialPixelRatio) {
+    console.log("🎨 [UI Setup] Starting UI setup...");
+    
     // Initialize camera and engine settings
     initializeCameraSettings(camera);
     initializeEngineSettings(engine, initialPixelRatio);
@@ -47,6 +49,12 @@ export function setupUI(camera, scene, engine, initialPixelRatio) {
     controlPanel.appendChild(iconBar);
     controlPanel.appendChild(contentArea);
     document.body.appendChild(controlPanel);
+    
+    // Initially hide all content sections
+    const sections = contentArea.querySelectorAll('.content-section');
+    sections.forEach(section => {
+        section.style.display = 'none';
+    });
     
     // Clear DOM cache after UI creation to ensure fresh queries
     DOM.clearCache();
@@ -67,6 +75,8 @@ export function setupUI(camera, scene, engine, initialPixelRatio) {
     
     // Start UI update loop
     setupUIUpdates(scene, engine);
+    
+    console.log("🎨 [UI Setup] UI setup complete!");
 }
 
 /* ========================================================================
@@ -91,7 +101,6 @@ function initializeCameraSettings(camera) {
  */
 function initializeEngineSettings(engine, initialPixelRatio) {
     engine.setHardwareScalingLevel(1 / initialPixelRatio);
-    console.log(`Hardware scaling level set to: ${1 / initialPixelRatio}`);
 }
 
 /**
@@ -102,7 +111,6 @@ function initializePostProcessingSettings(scene) {
         scene.pipeline.sharpen.edgeAmount = CONFIG.postProcessing.sharpenEdgeAmount;
         scene.pipeline.sharpenEnabled = CONFIG.postProcessing.sharpenEnabled;
         scene.pipeline.fxaaEnabled = CONFIG.postProcessing.fxaaEnabled;
-        console.log(`Post-processing settings applied from config`);
     }
 }
 
@@ -157,12 +165,17 @@ function createContentArea(hasTouch) {
     });
     contentArea.style.display = "none";
     
+    // Get the HTML for each section
+    const settingsHTML = createSettingsSection(hasTouch);
+    const infoHTML = createInfoSection(hasTouch);
+    const devHTML = createDevSection();
+    
     contentArea.innerHTML = `
         <button id="closePanelButton" class="close-panel-button" title="Close Panel">×</button>
         
-        ${createSettingsSection(hasTouch)}
-        ${createInfoSection(hasTouch)}
-        ${createDevSection()}
+        ${settingsHTML}
+        ${infoHTML}
+        ${devHTML}
     `;
     
     return contentArea;
@@ -183,71 +196,80 @@ function setupIconButtonHandlers(camera, scene, engine) {
     const { settingsButton, infoButton, devButton, resetViewButton, 
             fullscreenButton, shareButton, closePanelButton } = buttons;
 
-    // Get content sections using DOM utility
-    const content = DOM.getAll(["settingsContent", "infoContent", "devContent"]);
-    const { settingsContent, infoContent, devContent } = content;
-    const allContentSections = [settingsContent, infoContent, devContent];
-    
+    // Track currently open section
     let currentlyOpenSection = null;
     
     // Content section toggle function
-   function toggleContentSection(sectionToShow) {
-    const isAlreadyOpen = currentlyOpenSection === sectionToShow;
-    const wasDevSectionOpen = currentlyOpenSection === devContent;
+    function toggleContentSection(sectionToShow) {
+        const allContentSections = DOM.getAllContentSections();
+        const isAlreadyOpen = currentlyOpenSection === sectionToShow;
+        const wasDevSectionOpen = currentlyOpenSection && currentlyOpenSection.id === 'devContent';
+        
+        // Close all sections first
+        allContentSections.forEach(section => {
+            if (section) section.style.display = "none";
+        });
+        
+        const controlPanelContent = DOM.get("controlPanelContent");
 
-    // Close all sections first (with added safety check)
-    allContentSections.forEach(section => {
-        if (section) {
-            section.style.display = "none";
+        // Reset all button states
+        [settingsButton, infoButton, devButton].forEach(btn => {
+            if (btn) btn.classList.remove('active');
+        });
+
+        // If a new section is to be opened
+        if (!isAlreadyOpen && sectionToShow) {
+            // Ensure the container is visible, then show the specific section
+            if (controlPanelContent) controlPanelContent.style.display = "block";
+            sectionToShow.style.display = "block";
+            currentlyOpenSection = sectionToShow;
+
+            // Set active button state
+            if (sectionToShow.id === 'settingsContent' && settingsButton) {
+                settingsButton.classList.add('active');
+            } else if (sectionToShow.id === 'infoContent' && infoButton) {
+                infoButton.classList.add('active');
+            } else if (sectionToShow.id === 'devContent' && devButton) {
+                devButton.classList.add('active');
+            }
+
+            // Show close button and expand panel
+            if (closePanelButton) closePanelButton.style.display = 'block';
+            const controlPanel = DOM.get("controlPanel");
+            if (controlPanel) controlPanel.classList.add("expanded");
+
+            // Start UI updates only for the developer tools panel
+            if (sectionToShow.id === 'devContent') {
+                restartUIUpdates();
+            }
+        } else {
+            // This block handles closing the currently open panel
+            currentlyOpenSection = null;
+            if (closePanelButton) closePanelButton.style.display = 'none';
+            
+            const controlPanel = DOM.get("controlPanel");
+            if (controlPanel) controlPanel.classList.remove("expanded");
+            
+            if (controlPanelContent) {
+                controlPanelContent.style.display = "none";
+            }
         }
-    });
-    DOM.get("controlPanelContent").style.display = "none";
 
-    // Reset all button states
-    [settingsButton, infoButton, devButton].forEach(btn => btn.classList.remove('active'));
-
-    // THE FIX: Ensure sectionToShow exists before trying to open it
-    if (!isAlreadyOpen && sectionToShow) {
-        // Open requested section
-        sectionToShow.style.display = "block";
-        document.getElementById("controlPanelContent").style.display = "block";
-        currentlyOpenSection = sectionToShow;
-
-        // Set active button state
-        if (sectionToShow === settingsContent) settingsButton.classList.add('active');
-        else if (sectionToShow === infoContent) infoButton.classList.add('active');
-        else if (sectionToShow === devContent) devButton.classList.add('active');
-
-        // Show close button and expand panel
-        closePanelButton.style.display = 'block';
-        document.getElementById("controlPanel").classList.add("expanded");
-
-        // Start UI updates for developer tools
-        if (sectionToShow === devContent) {
-            restartUIUpdates();
+        // Stop UI updates if the developer tools panel was just closed
+        if (wasDevSectionOpen && (!sectionToShow || sectionToShow.id !== 'devContent')) {
+            stopUIUpdates();
         }
-    } else {
-        // This block now correctly handles closing the panel
-        currentlyOpenSection = null;
-        closePanelButton.style.display = 'none';
-        document.getElementById("controlPanel").classList.remove("expanded");
     }
-
-    // Stop UI updates when closing developer tools
-    if (wasDevSectionOpen && sectionToShow !== devContent) {
-        stopUIUpdates();
-    }
-}
     
-   // Setup button event listeners
+    // Setup button event listeners
     if (settingsButton) {
-        Events.addClickListener(settingsButton, () => toggleContentSection(settingsContent));
+        Events.addClickListener(settingsButton, () => toggleContentSection(DOM.get("settingsContent")));
     }
     if (infoButton) {
-        Events.addClickListener(infoButton, () => toggleContentSection(infoContent));
+        Events.addClickListener(infoButton, () => toggleContentSection(DOM.get("infoContent")));
     }
     if (devButton) {
-        Events.addClickListener(devButton, () => toggleContentSection(devContent));
+        Events.addClickListener(devButton, () => toggleContentSection(DOM.get("devContent")));
     }
     if (resetViewButton) {
         Events.addClickListener(resetViewButton, () => resetCameraView(camera, scene));
@@ -271,6 +293,7 @@ function setupIconButtonHandlers(camera, scene, engine) {
 /* ========================================================================
    CAMERA AND VIEW FUNCTIONS
    ======================================================================== */
+
 /**
  * Reset camera to initial view with smooth animation
  */
@@ -294,85 +317,38 @@ function resetCameraView(camera, scene) {
         CONFIG.cameraLimits.defaultLimits.zoom.min
     );
     
-    console.log(`Resetting to: alpha=${CONFIG.camera.alpha}, beta=${CONFIG.camera.beta}, radius=${targetRadius}`);
-    
-    // Create animation group
     const animationGroup = new BABYLON.AnimationGroup("resetViewAnimation", scene);
     
     // Create animations for each camera property
     const animations = [
-        { 
-            property: "target", 
-            startValue: camera.target.clone(), 
-            endValue: new BABYLON.Vector3(0, 0, 0),
-            type: BABYLON.Animation.ANIMATIONTYPE_VECTOR3
-        },
-        { 
-            property: "alpha", 
-            startValue: camera.alpha, 
-            endValue: CONFIG.camera.alpha,
-            type: BABYLON.Animation.ANIMATIONTYPE_FLOAT
-        },
-        { 
-            property: "beta", 
-            startValue: camera.beta, 
-            endValue: CONFIG.camera.beta,
-            type: BABYLON.Animation.ANIMATIONTYPE_FLOAT
-        },
-        { 
-            property: "radius", 
-            startValue: camera.radius, 
-            endValue: targetRadius,
-            type: BABYLON.Animation.ANIMATIONTYPE_FLOAT
-        }
+        { property: "target", endValue: new BABYLON.Vector3(0, 0, 0), type: BABYLON.Animation.ANIMATIONTYPE_VECTOR3 },
+        { property: "alpha", endValue: CONFIG.camera.alpha, type: BABYLON.Animation.ANIMATIONTYPE_FLOAT },
+        { property: "beta", endValue: CONFIG.camera.beta, type: BABYLON.Animation.ANIMATIONTYPE_FLOAT },
+        { property: "radius", endValue: targetRadius, type: BABYLON.Animation.ANIMATIONTYPE_FLOAT }
     ];
     
-    // Add animations to the group
-    animations.forEach(({ property, startValue, endValue, type }) => {
+    animations.forEach(({ property, endValue, type }) => {
         const animation = new BABYLON.Animation(
-            `reset${property.charAt(0).toUpperCase() + property.slice(1)}`,
-            property,
-            60, // 60 FPS for smoother animation
-            type,
+            `reset${property.charAt(0).toUpperCase() + property.slice(1)}`, property, 60, type,
             BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT
         );
-        
-        animation.setKeys([
-            { frame: 0, value: startValue },
-            { frame: 60, value: endValue } // 1 second animation
-        ]);
-        
-        // Add easing for smoother animation
-        animation.setEasingFunction(new BABYLON.CubicEase());
-        animation.getEasingFunction().setEasingMode(BABYLON.EasingFunction.EASINGMODE_EASEINOUT);
-        
+        animation.setKeys([ { frame: 0, value: camera[property] }, { frame: 60, value: endValue } ]);
+        const easingFunction = new BABYLON.CubicEase();
+        easingFunction.setEasingMode(BABYLON.EasingFunction.EASINGMODE_EASEINOUT);
+        animation.setEasingFunction(easingFunction);
         animationGroup.addTargetedAnimation(animation, camera);
     });
     
-    // Add completion callback
     animationGroup.onAnimationGroupEndObservable.add(() => {
-        console.log("Reset animation completed");
-        
-        // Ensure camera constraints are properly applied after animation
-        camera.radius = Math.max(
-            Math.min(camera.radius, CONFIG.cameraLimits.defaultLimits.zoom.max),
-            CONFIG.cameraLimits.defaultLimits.zoom.min
-        );
-        
-        // Re-enable auto-rotation if it was previously active
         if (wasAutoRotating && camera.autoRotationBehavior && CONFIG.camera.autoRotation) {
             camera.autoRotationBehavior.idleRotationSpeed = CONFIG.camera.autoRotation.idleRotationSpeed;
         }
-        
-        // Clean up the animation group
         animationGroup.dispose();
     });
     
-    // Start the animation
-    animationGroup.play(false); // false = don't loop
-    
-    console.log("Reset animation started");
+    animationGroup.play(false);
 }
+
 
 /**
  * Toggle fullscreen mode
@@ -383,12 +359,9 @@ function toggleFullscreen(fullscreenButton) {
             console.error(`Error attempting to enable full-screen mode: ${err.message}`);
             showToast(ErrorMessages.SYSTEM.FULLSCREEN_FAILED);
         });
-    } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        }
+    } else if (document.exitFullscreen) {
+        document.exitFullscreen();
     }
-    
     updateFullscreenButton(fullscreenButton);
 }
 
@@ -413,10 +386,8 @@ function updateFullscreenButton(fullscreenButton) {
 function shareCameraView(camera, scene) {
     if (!camera) return;
     
-    // Get current model URL
     const currentModelUrl = scene.currentModelUrl || CONFIG.defaultModelUrl;
     
-    // Build base parameters
     const params = new URLSearchParams({
         model: currentModelUrl,
         alpha: camera.alpha.toFixed(2),
@@ -428,17 +399,12 @@ function shareCameraView(camera, scene) {
         tz: camera.target.z.toFixed(2)
     });
     
-    // Add model scale if available
     if (scene.currentModel && scene.currentModel.scaling) {
-        // Model scaling is uniform, so we can use any component (x, y, or z)
-        const modelScale = scene.currentModel.scaling.x;
-        params.set('scale', modelScale.toFixed(2));
+        params.set('scale', scene.currentModel.scaling.x.toFixed(2));
     }
     
-    // Add settings panel state
     addSettingsPanelToUrl(params, camera, scene);
     
-    // Add camera limits to shared URL
     if (scene.cameraLimits) {
         const limitsParams = scene.cameraLimits.getLimitsForUrl();
         Object.entries(limitsParams).forEach(([key, value]) => {
@@ -448,22 +414,15 @@ function shareCameraView(camera, scene) {
         });
     }
     
-    // Always apply URL compression for shorter, cleaner URLs
-    const originalParams = params.toString();
     const compressedParams = compressUrlParameters(params);
     const shareUrl = `${window.location.href.split('?')[0]}?${compressedParams}`;
     
-    console.log(`URL compressed from ${originalParams.length} to ${compressedParams.length} characters`);
+    console.log(`URL compression active. Final length: ${compressedParams.length} characters.`);
     
-    // Copy to clipboard
     navigator.clipboard.writeText(shareUrl).then(() => {
         showToast('URL with complete settings copied to clipboard!');
     }).catch(() => {
-        // Fallback for older browsers
-        const tempInput = createElement('input', { 
-            type: 'text',
-            value: shareUrl 
-        });
+        const tempInput = createElement('input', { type: 'text', value: shareUrl });
         document.body.appendChild(tempInput);
         tempInput.select();
         document.execCommand('copy');
@@ -479,7 +438,6 @@ function shareCameraView(camera, scene) {
  * Setup touch-specific UI features
  */
 function setupTouchUI(controlPanel, camera) {
-    // Add swipe-to-close gesture for expanded panel
     let touchStartY = 0;
     
     const handleTouchStart = (e) => {
@@ -490,11 +448,8 @@ function setupTouchUI(controlPanel, camera) {
     
     const handleTouchMove = (e) => {
         if (controlPanel.classList.contains('expanded') && touchStartY > 0) {
-            const touchY = e.touches[0].clientY;
-            const diff = touchY - touchStartY;
-            
-            // Swipe down by 50px to close
-            if (diff > 50) {
+            const diff = e.touches[0].clientY - touchStartY;
+            if (diff > 50) { // Swipe down by 50px to close
                 closeAllPanels();
                 touchStartY = 0;
                 e.preventDefault();
@@ -502,16 +457,11 @@ function setupTouchUI(controlPanel, camera) {
         }
     };
     
-    const handleTouchEnd = () => {
-        touchStartY = 0;
-    };
-    
-    // Add touch event listeners
     controlPanel.addEventListener('touchstart', handleTouchStart, { passive: true });
     controlPanel.addEventListener('touchmove', handleTouchMove, { passive: false });
-    controlPanel.addEventListener('touchend', handleTouchEnd, { passive: true });
+    controlPanel.addEventListener('touchend', () => touchStartY = 0, { passive: true });
     
-    // Add visual feedback for touch buttons (using cached query)
+    // Add visual feedback for touch buttons
     const buttons = DOM.getButtonsInContainer(controlPanel);
     buttons.forEach(button => {
         button.addEventListener('touchstart', () => button.classList.add('touch-active'), { passive: true });
@@ -519,7 +469,6 @@ function setupTouchUI(controlPanel, camera) {
         button.addEventListener('touchcancel', () => button.classList.remove('touch-active'), { passive: true });
     });
     
-    // Apply default touch settings
     updateTouchSensitivity(1.0, camera);
 }
 
@@ -530,7 +479,6 @@ function setupTouchUI(controlPanel, camera) {
  * Close all open panels and reset UI state
  */
 function closeAllPanels() {
-    // Use cached DOM queries for better performance
     const allContentSections = DOM.getAllContentSections();
     const controlPanelContent = DOM.get("controlPanelContent");
     const controlPanel = DOM.get("controlPanel");
@@ -541,7 +489,6 @@ function closeAllPanels() {
     if (controlPanel) controlPanel.classList.remove("expanded");
     buttons.forEach(btn => btn.classList.remove('active'));
     
-    // Stop UI updates when closing all panels
     stopUIUpdates();
 }
 
@@ -551,18 +498,18 @@ function closeAllPanels() {
 function updateTouchSensitivity(sensitivity, camera) {
     if (!camera) return;
     
-    // Adjust camera sensitivity parameters using CONFIG constants
     camera.angularSensibilityX = CONFIG.ui.sensitivity.baseAngular / sensitivity;
     camera.angularSensibilityY = CONFIG.ui.sensitivity.baseAngular / sensitivity;
     camera.panningSensibility = CONFIG.ui.sensitivity.basePanning / sensitivity;
     
-    // Update gesture controller if available
     if (window.gestureController && window.gestureController.thresholds) {
         const thresholds = window.gestureController.thresholds;
         thresholds.pinchSensitivity = CONFIG.gesture.pinchSensitivity * sensitivity;
         thresholds.panSensitivity = (CONFIG.mobile.panningSensibility / 1000) * sensitivity;
     }
 }
+
+// [Include all URL parameter functions and remaining code unchanged...]
 
 /**
  * URL Parameter Compression System

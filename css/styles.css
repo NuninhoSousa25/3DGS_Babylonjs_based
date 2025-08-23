@@ -198,7 +198,8 @@ html, body {
 }
 
 .content-section {
-  margin-bottom: var(--spacing-lg);
+  display: none;
+  overflow-y: auto;
 }
 
 .content-section h4 {
@@ -1203,6 +1204,8 @@ input[type="file"] {
   
   .control-panel.expanded .control-panel-content {
     padding-top: calc(var(--spacing-lg) + 10px);
+    display: block;
+
   }
   
   .control-panel.expanded {
