@@ -5,7 +5,6 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ## 📋 Development Status
 
 ### 🔄 To Implement / Fix
-- OBJ material handling - apply default material when missing (like STL)
 - - in dev tab add model file size below vertix count
 - picking bg color
 - model file size not working
