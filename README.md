@@ -8,6 +8,8 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - picking bg color
 - in dev tab add model file size below vertix count
 - Multiple resize callbacks instead of debounced single handler
+[Violation] 'setTimeout' handler took 146ms
+babylon.js:1 [Violation] 'requestAnimationFrame' handler took 152ms
 
 - ------
 - default cube after error in loading model is not cleared when a new model is loaded after
