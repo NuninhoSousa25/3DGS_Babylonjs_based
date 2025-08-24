@@ -7,7 +7,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ### 🔄 To Implement / Fix
 - Multiple resize callbacks instead of debounced single handler
 - FINALIZE refracture modelloader funciton  + urlmaneger- double check with opus
-- performance is worst on mobile if sharpness is disabled
+- performance is worst when sharpness is disabled - why?
 
 Problem: FPS updates were running continuously even when the dev panel was closed, wasting CPU cycles.
 
