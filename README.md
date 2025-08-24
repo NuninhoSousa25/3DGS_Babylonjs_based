@@ -18,10 +18,8 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - Loading optimization for large 3D models
 
 - GLTF culling / occlusion verification
-- FBX format support debugging
   
 - Better UI layout for smaller mobile screens
-- revise picking logic, its not consistent when trying to select 3dgs
 - - if its better for performance and easly implemented, shared urls dont need the dev panel, 
 
 
