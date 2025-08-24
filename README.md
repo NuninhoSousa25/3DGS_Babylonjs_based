@@ -15,7 +15,6 @@ babylon.js:1 [Violation] 'requestAnimationFrame' handler took 152ms
 - ------
 - default cube after error in loading model is not cleared when a new model is loaded after
 - Loading optimization for large 3D models
-- check behaviur with auto rotate and horizontal limitation
 - when opening the scene via shared url it takes longer, but most importantly doesnt show loading icon
 - loading model pop up - usually doent apear centered
 - GLTF culling / occlusion verification
