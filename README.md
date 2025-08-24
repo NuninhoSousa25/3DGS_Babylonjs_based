@@ -5,24 +5,23 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ## 📋 Development Status
 
 ### 🔄 To Implement / Fix
-- Sharpening Intensity is not being transmited by the url
 - Multiple resize callbacks instead of debounced single handler
-- Model Scale when trasmited by the url does not update the slider on page load
 - refracture model loader funciton
 
 - ------
 - default cube after error in loading model is not cleared when a new model is loaded after
-- Loading optimization for large 3D models
 - === DEVICE DETECTION DEBUG === messages 3 times on the console
-- when opening the scene via shared url it takes longer, but most importantly doesnt show loading icon
-- loading model pop up - usually doent apear centered
+- - loading model pop up - usually doent apear centered
+
+- - Loading optimization for large 3D models
+
 - GLTF culling / occlusion verification
-- if its better for performance and easly implemented, shared urls dont need the dev panel, 
 - FBX format support debugging
-- Performance optimizations for large models (>100MB)
-- Code quality improvements and documentation
+- 
 - Better UI layout for smaller mobile screens
 - revise picking logic, its not consistent when trying to select 3dgs
+- - if its better for performance and easly implemented, shared urls dont need the dev panel, 
+
 
 ### ✅ Recently Completed
 - **Background Color Picker** with full URL parameter support and real-time updates
