@@ -8,16 +8,14 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - Multiple resize callbacks instead of debounced single handler
 - FINALIZE refracture modelloader funciton  + urlmaneger- double check with opus
 
-
-- ------
 - default cube after error in loading model is not cleared when a new model is loaded after
-- - loading model pop up - usually doent apear centered
+- loading model pop up - usually doent apear centered
 
-- - Loading optimization for large 3D models
+- Loading optimization for large 3D models
 
 - GLTF culling / occlusion verification
 - FBX format support debugging
-- 
+  
 - Better UI layout for smaller mobile screens
 - revise picking logic, its not consistent when trying to select 3dgs
 - - if its better for performance and easly implemented, shared urls dont need the dev panel, 
