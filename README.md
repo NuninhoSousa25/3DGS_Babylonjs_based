@@ -11,7 +11,6 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - Multiple resize callbacks instead of debounced single handler
 [Violation] 'setTimeout' handler took 146ms
 babylon.js:1 [Violation] 'requestAnimationFrame' handler took 152ms
--when a model is loaded, its doenst update the model scale slider --Model normalized with a scale factor of: 0.5025 
 
 - ------
 - default cube after error in loading model is not cleared when a new model is loaded after
