@@ -6,7 +6,6 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 
 ### 🔄 To Implement / Fix
 - model file size not working
-- add picking bg color and implement it on the url properties
 - Sharpening Intensity is not being transmited by the url
 - Multiple resize callbacks instead of debounced single handler
 [Violation] 'setTimeout' handler took 146ms
@@ -18,6 +17,7 @@ babylon.js:1 [Violation] 'requestAnimationFrame' handler took 152ms
 - when opening the scene via shared url it takes longer, but most importantly doesnt show loading icon
 - loading model pop up - usually doent apear centered
 - GLTF culling / occlusion verification
+- if its better for performance and easly implemented, shared urls dont need the dev panel, 
 - FBX format support debugging
 - Performance optimizations for large models (>100MB)
 - Code quality improvements and documentation
