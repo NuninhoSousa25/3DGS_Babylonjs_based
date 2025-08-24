@@ -598,6 +598,59 @@ input[type="file"] {
   margin-bottom: 0;
 }
 
+/* Color Picker Styles */
+.color-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.color-container:last-child {
+  margin-bottom: 0;
+}
+
+.color-picker {
+  width: 50px;
+  height: 30px;
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+
+.color-picker:hover {
+  border-color: var(--color-accent);
+}
+
+.color-picker::-webkit-color-swatch-wrapper {
+  padding: 0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.color-picker::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+.color-picker::-moz-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+.color-value {
+  min-width: 70px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-family: monospace;
+  padding: 4px 8px;
+  background: var(--color-bg-tertiary);
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+}
+
 .range-label {
   min-width: 70px;
   font-size: var(--font-size-sm);

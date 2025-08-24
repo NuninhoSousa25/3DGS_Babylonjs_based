@@ -542,7 +542,9 @@ const URL_PARAM_MAP = {
     'betaMin': 'bn',
     'betaMax': 'bx',
     'radiusMin': 'rn',
-    'radiusMax': 'rx'
+    'radiusMax': 'rx',
+    // Background color
+    'backgroundColor': 'bg'
 };
 
 const REVERSE_URL_PARAM_MAP = Object.fromEntries(
@@ -689,6 +691,12 @@ function addSettingsPanelToUrl(params, camera, scene) {
     const touchSensitivityRange = document.getElementById('touchSensitivityRange');
     if (touchSensitivityRange && touchSensitivityRange.value !== '5') {
         params.set('touchSensitivity', touchSensitivityRange.value);
+    }
+    
+    // Background color (if different from default)
+    const backgroundColorPicker = document.getElementById('backgroundColorPicker');
+    if (backgroundColorPicker && backgroundColorPicker.value !== '#191919') {
+        params.set('backgroundColor', backgroundColorPicker.value);
     }
 }
 
@@ -841,6 +849,28 @@ export function applySettingsPanelFromUrl(camera, scene) {
             if (touchSensitivityRange) {
                 touchSensitivityRange.value = sensitivity;
                 updateTouchSensitivity(sensitivity / 5.0, camera);
+            }
+        }
+    }
+    
+    // Background color
+    if (urlParams.has('backgroundColor')) {
+        const bgColor = urlParams.get('backgroundColor');
+        // Validate hex color format
+        if (/^#[0-9A-F]{6}$/i.test(bgColor)) {
+            const backgroundColorPicker = document.getElementById('backgroundColorPicker');
+            const backgroundColorDisplay = document.getElementById('backgroundColorPickerDisplay');
+            
+            if (backgroundColorPicker && backgroundColorDisplay) {
+                backgroundColorPicker.value = bgColor;
+                backgroundColorDisplay.textContent = bgColor.toUpperCase();
+                
+                // Convert hex to RGB values (0-1 range for Babylon.js)
+                const r = parseInt(bgColor.substr(1, 2), 16) / 255;
+                const g = parseInt(bgColor.substr(3, 2), 16) / 255;
+                const b = parseInt(bgColor.substr(5, 2), 16) / 255;
+                
+                scene.clearColor = new BABYLON.Color3(r, g, b);
             }
         }
     }

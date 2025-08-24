@@ -58,6 +58,21 @@ export function createRangeControl(id, label, min, max, value, step = 1, unit = 
 }
 
 /**
+ * Creates a standardized color picker control HTML
+ */
+export function createColorControl(id, label, value = '#191919') {
+    return `
+        <div class="control-group">
+            <label for="${id}">${label}</label>
+            <div class="color-container">
+                <input type="color" id="${id}" value="${value}" class="color-picker">
+                <span id="${id}Display" class="color-value">${value}</span>
+            </div>
+        </div>
+    `;
+}
+
+/**
  * Gets all camera limits control elements
  */
 export function getCameraLimitsElements() {

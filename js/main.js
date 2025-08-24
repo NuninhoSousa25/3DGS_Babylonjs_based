@@ -38,6 +38,111 @@ let pipeline = null; // For post-process reuse
 let gestureController = null; // For mobile gesture control
 let cameraLimits = null; // For camera movement limitations
 
+/**
+ * Check if URL contains parameters indicating a shared scene
+ */
+function isSharedURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Check for compressed URL (shared URLs are usually compressed)
+    if (urlParams.has('c')) {
+        return true;
+    }
+    
+    // Check for common shared URL parameters
+    const sharedParams = ['model', 'm', 'alpha', 'a', 'beta', 'b', 'radius', 'r'];
+    return sharedParams.some(param => urlParams.has(param));
+}
+
+/**
+ * Show early loading feedback for shared URLs
+ */
+function showSharedURLLoadingFeedback() {
+    if (!isSharedURL()) return false;
+    
+    // Create early loading overlay
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.id = 'early-loading-overlay';
+    loadingOverlay.innerHTML = `
+        <div class="early-loading-content">
+            <div class="loading-spinner-large"></div>
+            <div class="loading-text">Loading shared scene...</div>
+            <div class="loading-subtext">Initializing 3D viewer and applying settings</div>
+        </div>
+    `;
+    
+    // Add styles for the early loading overlay
+    const style = document.createElement('style');
+    style.textContent = `
+        #early-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            color: #ffffff;
+        }
+        
+        .early-loading-content {
+            text-align: center;
+            max-width: 400px;
+            padding: 2rem;
+        }
+        
+        .loading-spinner-large {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid #2196f3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+        
+        .loading-text {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+        }
+        
+        .loading-subtext {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.4;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    `;
+    
+    document.head.appendChild(style);
+    document.body.appendChild(loadingOverlay);
+    
+    return true;
+}
+
+/**
+ * Remove early loading feedback overlay
+ */
+function removeSharedURLLoadingFeedback() {
+    const overlay = document.getElementById('early-loading-overlay');
+    if (overlay) {
+        overlay.style.opacity = '0';
+        overlay.style.transition = 'opacity 0.3s ease-out';
+        setTimeout(() => {
+            overlay.remove();
+        }, 300);
+    }
+}
+
 
 /**
  * Initialize Engine and Scene
@@ -193,6 +298,9 @@ function cleanup(scene, engine) {
 
 
 async function createScene() {
+    // Show early loading feedback for shared URLs
+    const isLoadingSharedURL = showSharedURLLoadingFeedback();
+    
     try {
         const { engine: eng, scene: scn, canvas } = await initializeEngineAndScene();
         engine = eng;
@@ -292,6 +400,13 @@ async function createScene() {
         // Apply settings panel state from URL if present (must be after UI setup)
         applySettingsPanelFromUrl(camera, scene);
 
+        // Remove early loading overlay once everything is initialized
+        if (isLoadingSharedURL) {
+            setTimeout(() => {
+                removeSharedURLLoadingFeedback();
+            }, 500); // Small delay to ensure everything is rendered
+        }
+
         // Start render loop
         engine.runRenderLoop(() => {
             if (scene) {
@@ -309,6 +424,12 @@ async function createScene() {
 
     } catch (error) {
         console.error("Error during scene creation:", error);
+        
+        // Remove loading overlay on error
+        if (isLoadingSharedURL) {
+            removeSharedURLLoadingFeedback();
+        }
+        
         cleanup(scene, engine);
     }
 }

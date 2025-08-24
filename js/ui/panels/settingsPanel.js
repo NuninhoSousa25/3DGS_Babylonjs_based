@@ -2,7 +2,7 @@
    SETTINGS PANEL COMPONENT
    ======================================================================== */
 
-import { createToggleSwitch, createRangeControl, getCameraLimitsElements, createElement } from '../components/controls.js';
+import { createToggleSwitch, createRangeControl, createColorControl, getCameraLimitsElements, createElement } from '../components/controls.js';
 import { showToast } from '../components/toast.js';
 import { setupUIUpdates, startUIUpdates, stopUIUpdates, restartUIUpdates, DOM, Events, ErrorMessages, LoadingSpinner } from '../../helpers.js';
 import { CONFIG } from '../../config.js';
@@ -61,6 +61,7 @@ function createVisualizationSection() {
                 </div>
             </div>
                 ${createRangeControl('modelScaleRange', 'Model Scale', 0.1, 5, 1, 0.1)}
+                ${createColorControl('backgroundColorPicker', 'Background Color', '#191919')}
             </div>
         </div>
     `;
@@ -319,6 +320,23 @@ export function setupSettingsControls(camera, scene) {
                 scene.currentModel.scaling.setAll(value);
             }
         }, modelScaleDisplay);
+    }
+
+    // Background color picker
+    const backgroundColorPicker = document.getElementById('backgroundColorPicker');
+    const backgroundColorDisplay = document.getElementById('backgroundColorPickerDisplay');
+    if (backgroundColorPicker && backgroundColorDisplay) {
+        backgroundColorPicker.addEventListener('input', (event) => {
+            const color = event.target.value;
+            backgroundColorDisplay.textContent = color.toUpperCase();
+            
+            // Convert hex to RGB values (0-1 range for Babylon.js)
+            const r = parseInt(color.substr(1, 2), 16) / 255;
+            const g = parseInt(color.substr(3, 2), 16) / 255;
+            const b = parseInt(color.substr(5, 2), 16) / 255;
+            
+            scene.clearColor = new BABYLON.Color3(r, g, b);
+        });
     }
 
     // Touch sensitivity (if available)

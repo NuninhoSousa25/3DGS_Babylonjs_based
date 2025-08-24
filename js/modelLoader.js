@@ -29,9 +29,25 @@
    
    ======================================================================== */
 
-import { setMeshesPickable, ErrorMessages, LoadingSpinner } from './helpers.js';
+import { setMeshesPickable, ErrorMessages, LoadingSpinner, updateFileSizeDisplay } from './helpers.js';
 import { CONFIG } from './config.js';
 import { animateCamera } from './cameraControl.js';
+
+/**
+ * Gets file size from URL using HEAD request
+ * @param {string} url - The URL to get file size for
+ * @returns {Promise<number>} File size in bytes, or 0 if unavailable
+ */
+async function getFileSizeFromUrl(url) {
+    try {
+        const response = await fetch(url, { method: 'HEAD' });
+        const contentLength = response.headers.get('Content-Length');
+        return contentLength ? parseInt(contentLength, 10) : 0;
+    } catch (error) {
+        console.warn('Could not get file size from URL:', error);
+        return 0;
+    }
+}
 
 /**
  * Disposes the current model if any.
@@ -43,6 +59,10 @@ export function disposeCurrentModel(currentModel, currentModelType) {
         currentModel.dispose();
         console.log(`Disposed model of type: ${currentModelType}`);
     }
+    
+    // Reset file size display when disposing model
+    updateFileSizeDisplay(0);
+    
     return { currentModel: null, currentModelType: null };
 }
 
@@ -184,6 +204,12 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
     }
 
     console.log(`Attempting to load model with extension .${extension}`);
+
+    // Get and display file size for URL-loaded models
+    if (!isFile && url) {
+        const fileSize = await getFileSizeFromUrl(url);
+        updateFileSizeDisplay(fileSize);
+    }
 
     try {
         if (CONFIG.modelLoader.supportedFormats.includes(extension)) {
@@ -387,12 +413,14 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
             centerAndFitModel(currentModel, camera, scene);
         }
 
-        // Reset the UI scale slider to its default value for the new model
+        // Update the UI scale slider to reflect the actual normalized scale
         const modelScaleRange = document.getElementById('modelScaleRange');
-        const modelScaleDisplay = document.getElementById('modelScaleDisplay');
-        if (modelScaleRange && modelScaleDisplay) {
-            modelScaleRange.value = 1;
-            modelScaleDisplay.textContent = '1.0';
+        const modelScaleDisplay = document.getElementById('modelScaleRangeDisplay');
+        if (modelScaleRange && modelScaleDisplay && currentModel) {
+            const actualScale = currentModel.scaling.x; // All axes should be the same due to setAll()
+            modelScaleRange.value = actualScale;
+            modelScaleDisplay.textContent = actualScale.toFixed(1);
+            console.log(`Scale slider updated to: ${actualScale.toFixed(4)}`);
         }
 
         
@@ -404,6 +432,9 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
 
         currentModel = BABYLON.MeshBuilder.CreateBox("fallbackBox", { size: 2 }, scene);
         currentModelType = 'mesh';
+        
+        // Reset file size display for fallback model
+        updateFileSizeDisplay(0);
         
         applyDefaultScale(currentModel);
     } finally {
