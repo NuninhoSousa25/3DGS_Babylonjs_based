@@ -10,7 +10,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 [Violation] 'setTimeout' handler took 146ms
 babylon.js:1 [Violation] 'requestAnimationFrame' handler took 152ms
 
-- Model Scale is not being trasmited by the url
+- Model Scale when trasmited by the url does not update the slider on page load
 
 - ------
 - default cube after error in loading model is not cleared when a new model is loaded after
