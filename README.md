@@ -6,7 +6,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 
 ### 🔄 To Implement / Fix
 - Multiple resize callbacks instead of debounced single handler
-- refracture model loader funciton
+- FINALIZE refracture model loader funciton
 - - === DEVICE DETECTION DEBUG === messages 3 times on the console
 
 
