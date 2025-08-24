@@ -7,9 +7,6 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ### 🔄 To Implement / Fix
 - Sharpening Intensity is not being transmited by the url
 - Multiple resize callbacks instead of debounced single handler
-[Violation] 'setTimeout' handler took 146ms
-babylon.js:1 [Violation] 'requestAnimationFrame' handler took 152ms
-
 - Model Scale when trasmited by the url does not update the slider on page load
 
 - ------
@@ -26,6 +23,10 @@ babylon.js:1 [Violation] 'requestAnimationFrame' handler took 152ms
 - revise picking logic, its not consistent when trying to select 3dgs
 
 ### ✅ Recently Completed
+- **Background Color Picker** with full URL parameter support and real-time updates
+- **Model Scale Slider Fix** - now correctly updates when models are normalized during loading
+- **File Size Display Fix** - properly shows file sizes for both local files and URL-loaded models
+- **Shared URL Loading Feedback** - immediate loading spinner and messages when opening shared URLs
 - **Comprehensive URL sharing** with complete state preservation
 - **URL compression system** for shorter, cleaner shareable links
 - **Enhanced settings panel** with all options exportable via URL
