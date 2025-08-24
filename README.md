@@ -1,3 +1,4 @@
+
 # 3D Model Viewer
 
 A comprehensive 3D model viewer built with Babylon.js, specifically optimized for 3D Gaussian Splats and traditional mesh models. This viewer provides a consistent, high-performance experience across all devices, including desktop, mobile, and tablet, with advanced sharing capabilities and complete state preservation.
@@ -8,22 +9,6 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - Multiple resize callbacks instead of debounced single handler
 - FINALIZE refracture modelloader funciton  + urlmaneger- double check with opus
 - performance is worst when sharpness is disabled - why?
-
-Problem: FPS updates were running continuously even when the dev panel was closed, wasting CPU cycles.
-
-Before (Continuous Polling):
-FPS updates: Every 450ms continuously when dev panel open
-Device info: Every 450ms continuously
-Vertices count: Every 450ms continuously
-Resolution: Every 450ms continuously
-
-should be (Event-Based):
-
-Model Load: Vertices count updated once when model loads
-Window Resize: Resolution updated once when window resizes
-Dev Panel Open: Device info updated once when panel opens
-FPS: Only runs at 1Hz when dev panel visible, stops immediately when closed
-
 
 
 - default cube after error in loading model is not cleared when a new model is loaded after
