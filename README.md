@@ -8,8 +8,9 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ### 🔄 To Implement / Fix
 - Multiple resize callbacks instead of debounced single handler
 - FINALIZE refracture modelloader funciton  + urlmaneger- double check with opus
+- 
 - performance is worst when sharpness is disabled - why?
-
+- disable pan doesnt work on mobile
 
 - default cube after error in loading model is not cleared when a new model is loaded after
 - loading model pop up - usually doent apear centered
