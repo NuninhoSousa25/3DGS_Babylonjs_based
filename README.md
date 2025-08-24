@@ -8,6 +8,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - Sharpening Intensity is not being transmited by the url
 - Multiple resize callbacks instead of debounced single handler
 - Model Scale when trasmited by the url does not update the slider on page load
+- refracture model loader funciton
 
 - ------
 - default cube after error in loading model is not cleared when a new model is loaded after
