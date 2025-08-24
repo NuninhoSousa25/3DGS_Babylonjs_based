@@ -7,7 +7,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ### 🔄 To Implement / Fix
 - model file size not working
 - add picking bg color and implement it on the url properties
-  
+- Sharpening Intensity is not being transmited by the url
 - Multiple resize callbacks instead of debounced single handler
 [Violation] 'setTimeout' handler took 146ms
 babylon.js:1 [Violation] 'requestAnimationFrame' handler took 152ms
