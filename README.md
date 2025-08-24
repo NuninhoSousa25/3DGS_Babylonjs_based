@@ -9,8 +9,46 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - FINALIZE refracture modelloader funciton  + urlmaneger- double check with opus
 - performance is worst on mobile if sharpness is disabled
 
-make sure fps updates are not runing unless dev panel is opned
-- if theres still taa code, clean it up
+Problem: FPS updates were running continuously even when the dev panel was closed, wasting CPU cycles.
+
+Before (Continuous Polling):
+FPS updates: Every 450ms continuously when dev panel open
+Device info: Every 450ms continuously
+Vertices count: Every 450ms continuously
+Resolution: Every 450ms continuously
+
+should be (Event-Based):
+
+Model Load: Vertices count updated once when model loads
+Window Resize: Resolution updated once when window resizes
+Dev Panel Open: Device info updated once when panel opens
+FPS: Only runs at 1Hz when dev panel visible, stops immediately when closed
+
+-  clean up - taa code,
+js/config.js - antiAliasing: {
+    type: 'none',                   // 'none', 'fxaa'
+    taaEnabled: false,
+    taaSamples: 64
+}
+js/helpers.js - Line 54:
+TAA_SETUP_FAILED: 'Anti-aliasing setup encountered an issue',
+
+
+js/ui/panels/settingsPanel.js
+// Anti-aliasing
+if (settings.antiAliasing && settings.antiAliasing.type) {
+    const aaType = settings.antiAliasing.type;
+    if (aaType === 'fxaa') {
+        pipeline.fxaaEnabled = true;
+    } else if (aaType === 'none') {
+        pipeline.fxaaEnabled = false;
+    } else {
+        pipeline.fxaaEnabled = false;
+        // Note: TAA requires more complex setup in exported viewer
+        console.log('Exported viewer using FXAA fallback for ' + aaType);
+    }
+}
+
 
 - default cube after error in loading model is not cleared when a new model is loaded after
 - loading model pop up - usually doent apear centered
