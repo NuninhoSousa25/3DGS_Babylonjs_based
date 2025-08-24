@@ -5,11 +5,12 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ## 📋 Development Status
 
 ### 🔄 To Implement / Fix
-- model file size not working
 - Sharpening Intensity is not being transmited by the url
 - Multiple resize callbacks instead of debounced single handler
 [Violation] 'setTimeout' handler took 146ms
 babylon.js:1 [Violation] 'requestAnimationFrame' handler took 152ms
+
+- Model Scale is not being trasmited by the url
 
 - ------
 - default cube after error in loading model is not cleared when a new model is loaded after
