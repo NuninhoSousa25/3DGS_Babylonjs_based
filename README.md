@@ -7,6 +7,37 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 
 ### 🔄 To Implement / Fix
 - Multiple resize callbacks instead of debounced single handler
+⚡ Performance Optimizations
+1. Lazy Load Heavy Components
+javascript// Lazy load export functionality
+async function handleExport() {
+    const { ViewerExporter, showExportDialog } = await import('./export/ViewerExporter.js');
+    // ... rest of code
+}
+- 2. Remove Debug Console Logs
+Search and remove or wrap in a debug flag:
+javascript// Create a debug utility
+const DEBUG = localStorage.getItem('debug') === 'true';
+const debugLog = (...args) => DEBUG && console.log(...args);
+
+// Replace console.log with debugLog throughout
+3. Fix Double Resize Callbacks
+javascript// In helpers.js, add a Set to track unique callbacks
+export const WindowEvents = {
+    resizeCallbacks: new Set(), // Already using Set - good!
+    resizeDebounceTimer: null,
+    resizeDebounceDelay: 16,
+    
+    // Add duplicate check
+    addResizeCallback(callback) {
+        this.init();
+        // Check if already exists (by reference)
+        if (this.resizeCallbacks.has(callback)) {
+            console.warn('Duplicate resize callback prevented');
+            return;
+        }
+        this.resizeCallbacks.add(callback);
+    },
 - FINALIZE refracture modelloader funciton  + urlmaneger- double check with opus
 - screen size doent update when screen changes
 - performance is worst when sharpness is disabled - why?
