@@ -264,7 +264,6 @@ export const ErrorMessages = {
     // System Errors
     SYSTEM: {
         RESIZE_CALLBACK_ERROR: 'Error occurred during window resize',
-        TAA_SETUP_FAILED: 'Anti-aliasing setup encountered an issue',
         FULLSCREEN_FAILED: 'Fullscreen mode is not available. Check your browser settings',
         EXPORT_FAILED: (reason) => `Export failed${reason ? `: ${reason}` : ''}`
     },
@@ -284,8 +283,15 @@ export const ErrorMessages = {
 };
 
 /**
- * Sets all child meshes of a given mesh to be pickable.
- * @param {BABYLON.Mesh} mesh 
+ * Recursively enables picking/interaction for a mesh and all its child meshes
+ * @param {BABYLON.Mesh|BABYLON.AbstractMesh} mesh - Root mesh to make pickable
+ * @description Enables mouse/touch interaction for mesh hierarchy, allowing click detection,
+ *              camera focusing, and model inspection. Essential for proper 3D interaction.
+ * @returns {void}
+ * @example
+ * // Enable picking for loaded model
+ * const loadedModel = result.meshes[0];
+ * setMeshesPickable(loadedModel);
  */
 export function setMeshesPickable(mesh) {
     if (mesh instanceof BABYLON.Mesh) {
@@ -340,7 +346,10 @@ export function setupUIUpdates(scene, engine) {
             "deviceScreenSize"
         ],
         // Cache device detection result - only run once!
-        cachedDevice: detectDevice()
+        cachedDevice: detectDevice(),
+        // Track what has been initialized
+        deviceInfoInitialized: false,
+        verticesUpdatePending: false
     };
     
     uiUpdateScene = scene;
@@ -381,8 +390,18 @@ export function startUIUpdates() {
         return; // Already running or not properly initialized
     }
     
-    let lastUpdateTime = 0;
-    const updateFrequency = CONFIG.ui.updateFrequency;
+    let lastFpsUpdateTime = 0;
+    const fpsUpdateFrequency = 1000; // 1Hz for FPS updates
+    
+    // Initialize device info once when panel opens
+    if (!uiUpdateElements.deviceInfoInitialized) {
+        updateDeviceInfo();
+        uiUpdateElements.deviceInfoInitialized = true;
+    }
+    
+    // Initialize resolution and vertices immediately
+    updateResolutionDisplay();
+    updateVerticesDisplay();
     
     uiUpdateObserver = uiUpdateScene.onBeforeRenderObservable.add(() => {
         // Efficient visibility check - skip if panel is not visible
@@ -391,68 +410,104 @@ export function startUIUpdates() {
         }
         
         const now = performance.now();
-        if (now - lastUpdateTime > updateFrequency) {
-            lastUpdateTime = now;
+        
+        // Update FPS only at 1Hz when panel is visible
+        if (now - lastFpsUpdateTime > fpsUpdateFrequency) {
+            lastFpsUpdateTime = now;
             
-            // Perform UI updates with error handling
+            // Perform FPS update with error handling
             try {
                 const fps = uiUpdateEngine.getFps();
-                const width = uiUpdateEngine.getRenderWidth();
-                const height = uiUpdateEngine.getRenderHeight();
-                const totalVertices = getTotalVertices(uiUpdateScene);
-
-                // Query elements fresh each time to handle UI state changes
                 const newFps = fps.toFixed(2);
-                const newResolution = `${width} x ${height}`;
-                const newVertices = totalVertices.toString();
                 
-                // Get fresh element references from DOM
                 const fpsElement = DOM.get("controlPanelFps");
-                const resolutionElement = DOM.get("controlPanelResolution");
-                const verticesElement = DOM.get("controlPanelVertices");
-                
                 if (fpsElement && lastUIValues.fps !== newFps) {
                     fpsElement.textContent = newFps;
                     lastUIValues.fps = newFps;
                 }
-                if (resolutionElement && lastUIValues.resolution !== newResolution) {
-                    resolutionElement.textContent = newResolution;
-                    lastUIValues.resolution = newResolution;
-                }
-                if (verticesElement && lastUIValues.vertices !== newVertices) {
-                    verticesElement.textContent = newVertices;
-                    lastUIValues.vertices = newVertices;
-                }
-                
-                // Update device detection info (using cached result)
-                const { cachedDevice } = uiUpdateElements;
-                if (cachedDevice) {
-                    const deviceUpdates = [
-                        [DOM.get("deviceTouch"), cachedDevice.hasTouch ? 'YES' : 'NO'],
-                        [DOM.get("deviceMobile"), cachedDevice.isMobile ? 'YES' : 'NO'],
-                        [DOM.get("deviceTouchDevice"), cachedDevice.isTouchDevice ? 'YES' : 'NO'],
-                        [DOM.get("deviceType"), cachedDevice.type],
-                        [DOM.get("deviceMaxTouch"), navigator.maxTouchPoints || 0],
-                        [DOM.get("deviceScreenSize"), `${cachedDevice.screenWidth}×${cachedDevice.screenHeight}`]
-                    ];
-                    
-                    // Batch update device info elements
-                    deviceUpdates.forEach(([element, value]) => {
-                        if (element) element.textContent = value;
-                    });
-                }
             } catch (error) {
-                console.error('UI update failed:', error);
-                // Don't stop the observer, just skip this update
+                console.error('FPS update failed:', error);
             }
         }
+        
+        // Handle pending vertices update (triggered by model load events)
+        if (uiUpdateElements.verticesUpdatePending) {
+            updateVerticesDisplay();
+            uiUpdateElements.verticesUpdatePending = false;
+        }
     });
-    
 }
 
 /**
  * Stops UI update observer - called when panel becomes hidden
  */
+/**
+ * Update device info once when panel opens
+ */
+function updateDeviceInfo() {
+    const { cachedDevice } = uiUpdateElements;
+    if (!cachedDevice) return;
+    
+    try {
+        const deviceUpdates = [
+            [DOM.get("deviceTouch"), cachedDevice.hasTouch ? 'YES' : 'NO'],
+            [DOM.get("deviceMobile"), cachedDevice.isMobile ? 'YES' : 'NO'],
+            [DOM.get("deviceTouchDevice"), cachedDevice.isTouchDevice ? 'YES' : 'NO'],
+            [DOM.get("deviceType"), cachedDevice.type],
+            [DOM.get("deviceMaxTouch"), navigator.maxTouchPoints || 0],
+            [DOM.get("deviceScreenSize"), `${cachedDevice.screenWidth}×${cachedDevice.screenHeight}`]
+        ];
+        
+        // Batch update device info elements
+        deviceUpdates.forEach(([element, value]) => {
+            if (element) element.textContent = value;
+        });
+    } catch (error) {
+        console.error('Device info update failed:', error);
+    }
+}
+
+/**
+ * Update resolution display (called on window resize)
+ */
+function updateResolutionDisplay() {
+    if (!uiUpdateEngine) return;
+    
+    try {
+        const width = uiUpdateEngine.getRenderWidth();
+        const height = uiUpdateEngine.getRenderHeight();
+        const newResolution = `${width} x ${height}`;
+        
+        const resolutionElement = DOM.get("controlPanelResolution");
+        if (resolutionElement && lastUIValues.resolution !== newResolution) {
+            resolutionElement.textContent = newResolution;
+            lastUIValues.resolution = newResolution;
+        }
+    } catch (error) {
+        console.error('Resolution update failed:', error);
+    }
+}
+
+/**
+ * Update vertices display (called on model load)
+ */
+function updateVerticesDisplay() {
+    if (!uiUpdateScene) return;
+    
+    try {
+        const totalVertices = getTotalVertices(uiUpdateScene);
+        const newVertices = totalVertices.toString();
+        
+        const verticesElement = DOM.get("controlPanelVertices");
+        if (verticesElement && lastUIValues.vertices !== newVertices) {
+            verticesElement.textContent = newVertices;
+            lastUIValues.vertices = newVertices;
+        }
+    } catch (error) {
+        console.error('Vertices update failed:', error);
+    }
+}
+
 export function stopUIUpdates() {
     if (uiUpdateObserver && uiUpdateScene) {
         uiUpdateScene.onBeforeRenderObservable.remove(uiUpdateObserver);
@@ -466,8 +521,36 @@ export function stopUIUpdates() {
         isPanelVisible = false;
     }
     
-    // Reset cached values
+    // Reset cached values and initialization flags
     lastUIValues = {};
+    if (uiUpdateElements) {
+        uiUpdateElements.deviceInfoInitialized = false;
+        uiUpdateElements.verticesUpdatePending = false;
+    }
+}
+
+/**
+ * Public function to trigger vertices update (called when model loads)
+ */
+export function triggerVerticesUpdate() {
+    if (uiUpdateElements && isPanelVisible) {
+        if (uiUpdateObserver) {
+            // If updates are running, mark for next frame
+            uiUpdateElements.verticesUpdatePending = true;
+        } else {
+            // If updates not running, update immediately
+            updateVerticesDisplay();
+        }
+    }
+}
+
+/**
+ * Public function to trigger resolution update (called on window resize)
+ */
+export function triggerResolutionUpdate() {
+    if (isPanelVisible) {
+        updateResolutionDisplay();
+    }
 }
 
 /**
@@ -492,8 +575,18 @@ export function restartUIUpdates() {
 // In helpers.js, add a new function
 
 /**
- * Updates the file size display in the developer panel.
- * @param {number} bytes - The size of the model file in bytes.
+ * Updates the file size display in the developer panel with formatted size information
+ * @param {number} bytes - The size of the model file in bytes (0 for unavailable/unknown sizes)
+ * @description Formats file sizes into human-readable units (KB/MB) and updates the UI.
+ *              Handles edge cases like unavailable sizes for URL-loaded models.
+ *              Integrates with the performance monitoring system in the dev panel.
+ * @returns {void}
+ * @example
+ * // Update with actual file size
+ * updateFileSizeDisplay(1024000); // Shows "1000.00 KB"
+ * 
+ * // Handle unknown size
+ * updateFileSizeDisplay(0); // Shows "N/A"
  */
 export function updateFileSizeDisplay(bytes) {
     const fileSizeElement = DOM.get("controlPanelFileSize");

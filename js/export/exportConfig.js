@@ -419,21 +419,8 @@ async function initializeViewer() {
                 pipeline.sharpen.edgeAmount = settings.sharpenEdgeAmount;
             }
             
-            // Apply anti-aliasing based on exported settings
-            if (settings.antiAliasing && settings.antiAliasing.type) {
-                const aaType = settings.antiAliasing.type;
-                if (aaType === 'fxaa') {
-                    pipeline.fxaaEnabled = true;
-                } else if (aaType === 'none') {
-                    pipeline.fxaaEnabled = false;
-                } else {
-                    pipeline.fxaaEnabled = false;
-                    console.log('Exported viewer using FXAA fallback for ' + aaType);
-                }
-            } else {
-                // Legacy compatibility
-                pipeline.fxaaEnabled = settings.fxaaEnabled || false;
-            }
+            // Apply FXAA based on exported settings
+            pipeline.fxaaEnabled = settings.fxaaEnabled || false;
         }`,
 
     /**
@@ -454,7 +441,7 @@ async function initializeViewer() {
 ## Viewer Settings
 - **Auto Rotation**: ${exportData.settings.autoRotation ? 'Enabled' : 'Disabled'}
 - **Quality**: ${exportData.settings.quality}
-- **Post-Processing**: Sharpen: ${exportData.postProcessing?.sharpenEnabled ? 'On' : 'Off'}, Anti-Aliasing: ${exportData.postProcessing?.antiAliasing?.type || 'none'}
+- **Post-Processing**: Sharpen: ${exportData.postProcessing?.sharpenEnabled ? 'On' : 'Off'}, FXAA: ${exportData.postProcessing?.fxaaEnabled ? 'On' : 'Off'}
 
 ## How to Use
 1. Open index.html in a modern web browser

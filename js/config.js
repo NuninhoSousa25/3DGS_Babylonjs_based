@@ -26,7 +26,26 @@ export const CONFIG = {
         
         // Model processing constants
         defaultNormalizedSize: 2.0,         // Default size for model normalization
-        urlCleanupDelay: 1000               // Delay before cleaning up object URLs (ms)
+        urlCleanupDelay: 1000,              // Delay before cleaning up object URLs (ms)
+        
+        // Mobile-specific optimizations
+        mobile: {
+            maxFileSize: 50 * 1024 * 1024,      // 50MB limit for mobile
+            preferredFormats: ['splat', 'glb', 'gltf'],  // Optimized formats first
+            compressionEnabled: true,             // Enable texture compression
+            simplifyMeshes: true,                // Reduce mesh complexity
+            targetTriangleCount: 50000,          // Max triangles for mobile
+            textureMaxSize: 1024,                // Max texture resolution
+            enableLOD: true,                     // Level of detail optimization
+            preloadWarningSize: 20 * 1024 * 1024 // Warn user at 20MB+
+        },
+        
+        // Desktop settings (for comparison)
+        desktop: {
+            maxFileSize: 500 * 1024 * 1024,     // 500MB limit for desktop
+            targetTriangleCount: 500000,         // Higher poly count allowed
+            textureMaxSize: 2048                 // Higher texture resolution
+        }
     },
 
     /* ====================================================================
@@ -47,8 +66,36 @@ export const CONFIG = {
      * Rendering quality settings
      */
     pixelRatio: {
-        mobile: 0.8,                        // Lower for mobile performance
+        mobile: 0.7,                        // Lower for mobile performance
         pc: 1.2                             // Higher for desktop quality
+    },
+    
+    /**
+     * Performance optimization settings
+     */
+    performance: {
+        mobile: {
+            adaptiveScaling: true,              // Dynamic resolution scaling
+            minPixelRatio: 0.4,                 // Minimum quality under stress
+            maxPixelRatio: 0.8,                 // Maximum mobile quality
+            targetFPS: 30,                      // Target framerate for mobile
+            fpsCheckInterval: 1000,             // Check FPS every second
+            scalingThresholds: {
+                decrease: 25,                   // Decrease quality below 25 FPS
+                increase: 35                    // Increase quality above 35 FPS
+            },
+            memoryManagement: {
+                maxTextureMemory: 128 * 1024 * 1024,  // 128MB texture limit
+                garbageCollectInterval: 10000,         // GC every 10 seconds
+                disposeUnusedAfter: 30000             // Dispose unused after 30s
+            }
+        },
+        desktop: {
+            adaptiveScaling: false,             // Desktop has more power
+            minPixelRatio: 0.8,
+            maxPixelRatio: 2.0,
+            targetFPS: 60
+        }
     },
 
     /**
@@ -56,13 +103,8 @@ export const CONFIG = {
      */
     postProcessing: {
         sharpenEnabled: true,
-        sharpenEdgeAmount: 0.62,
-        fxaaEnabled: true,
-        antiAliasing: {
-            type: 'none',                   // 'none', 'fxaa'
-            taaEnabled: false,
-            taaSamples: 64
-        }
+        sharpenEdgeAmount: 0.3,
+        fxaaEnabled: true
     },
 
     /**
@@ -246,8 +288,20 @@ export const CONFIG = {
 };
 
 /**
- * Setup lighting for GLB/GLTF models
- * GLB models need proper lighting to be visible, unlike splat files which are self-illuminated
+ * Configures comprehensive lighting system for PBR materials and traditional 3D models
+ * @param {BABYLON.Scene} scene - Babylon.js scene to configure lighting for
+ * @returns {Promise<void>} Resolves when lighting setup is complete
+ * @description Sets up multi-layered lighting system including:
+ *              - HDR environment mapping for realistic reflections
+ *              - Image-Based Lighting (IBL) for ambient illumination  
+ *              - Directional light for primary illumination
+ *              - Optional hemisphere light for soft ambient fill
+ *              Essential for GLTF/GLB models which require proper lighting, 
+ *              unlike self-illuminated Gaussian Splatting models.
+ * @throws {Error} Throws if HDR texture fails to load
+ * @example
+ * await setupLighting(scene);
+ * // Scene now has proper lighting for PBR materials
  */
 export async function setupLighting(scene) {
     const lightConfig = CONFIG.lighting;

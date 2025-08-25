@@ -30,11 +30,19 @@ import { CONFIG } from './config.js';
 import { GestureControl } from './gestureControl.js';
 
 /**
- * Sets up the ArcRotateCamera with specified configurations.
- * @param {BABYLON.Scene} scene 
- * @param {HTMLCanvasElement} canvas 
- * @param {Object} config 
- * @returns {BABYLON.ArcRotateCamera}
+ * Creates and configures an ArcRotateCamera with optimized settings for 3D model viewing
+ * @param {BABYLON.Scene} scene - The Babylon.js scene to attach the camera to
+ * @param {HTMLCanvasElement} canvas - HTML canvas element for camera controls
+ * @param {Object} config - Configuration object containing camera settings
+ * @param {Object} config.camera - Camera-specific configuration
+ * @param {number} config.camera.alpha - Initial horizontal rotation angle (radians)
+ * @param {number} config.camera.beta - Initial vertical rotation angle (radians) 
+ * @param {number} config.camera.radius - Initial distance from target
+ * @param {number} config.camera.minZ - Near clipping plane
+ * @param {boolean} config.camera.useAutoRotationBehavior - Enable auto-rotation when idle
+ * @returns {BABYLON.ArcRotateCamera} Configured camera ready for 3D model viewing
+ * @description Sets up camera with mobile-optimized controls, auto-rotation, wheel precision,
+ *              and integrates with camera limits system for restricted viewing areas
  */
 export function setupCamera(scene, canvas, config) {
     const cam = new BABYLON.ArcRotateCamera(
@@ -59,9 +67,9 @@ export function setupCamera(scene, canvas, config) {
 
     if (cam.useAutoRotationBehavior) {
         const autoRotationBehavior = cam.autoRotationBehavior;
-        autoRotationBehavior.idleRotationWaitTime = 5000;
-        autoRotationBehavior.idleRotationSpeed = 0.01;
-        autoRotationBehavior.idleRotationSpinUpTime = 3000;
+        autoRotationBehavior.idleRotationWaitTime = CONFIG.camera.autoRotation.idleRotationWaitTime;
+        autoRotationBehavior.idleRotationSpeed = CONFIG.camera.autoRotation.idleRotationSpeed;
+        autoRotationBehavior.idleRotationSpinUpTime = CONFIG.camera.autoRotation.idleRotationSpinUpTime;
     }
 
     // Camera constraints are now handled by the CameraLimits system
@@ -78,13 +86,18 @@ export function setupCamera(scene, canvas, config) {
 }
 
 /**
- * Animates the camera to a new target and radius.
- * @param {BABYLON.ArcRotateCamera} camera 
- * @param {BABYLON.Vector3} newTarget 
- * @param {number} newRadius 
- * @param {number} duration 
- * @param {Function} onAnimationEnd 
- * @returns {BABYLON.AnimationGroup}
+ * Smoothly animates camera to focus on a new target position with specified zoom level
+ * @param {BABYLON.ArcRotateCamera} camera - The camera to animate
+ * @param {BABYLON.Vector3} newTarget - 3D coordinates to focus camera on
+ * @param {number} newRadius - New distance from target after animation
+ * @param {number} [duration=30] - Animation duration in frames (30 = ~0.5s at 60fps)
+ * @param {Function} [onAnimationEnd] - Optional callback function when animation completes
+ * @returns {BABYLON.AnimationGroup} Animation group that can be controlled or disposed
+ * @description Creates smooth camera transitions for model inspection, picking interactions,
+ *              and view resets. Respects camera limits and integrates with the CameraLimits system.
+ * @example
+ * // Animate to picked point
+ * const animation = animateCamera(camera, pickedPoint, 5, 30, () => console.log('Done'));
  */
 export function animateCamera(camera, newTarget, newRadius, duration = 30, onAnimationEnd) {
     // Camera limits will be enforced by the CameraLimits system

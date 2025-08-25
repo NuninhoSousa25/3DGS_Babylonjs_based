@@ -6,7 +6,8 @@ import { ICONS } from '../components/icons.js';
 import { createElement } from '../components/controls.js';
 import { showToast } from '../components/toast.js';
 import { loadModel } from '../../modelLoader.js';
-import { setupUIUpdates, startUIUpdates, updateFileSizeDisplay,  stopUIUpdates, restartUIUpdates, DOM, Events, ErrorMessages, LoadingSpinner } from '../../helpers.js';
+import { applyModelScaleFromUrl } from '../../urlManager.js';
+import { setupUIUpdates, startUIUpdates, updateFileSizeDisplay,  stopUIUpdates, restartUIUpdates, triggerVerticesUpdate, DOM, Events, ErrorMessages, LoadingSpinner } from '../../helpers.js';
 import { CONFIG } from '../../config.js';
 
 /**
@@ -113,22 +114,14 @@ export function createDevSection() {
  * Setup model loading functionality
  */
 export function setupModelLoading(scene) {
-    console.log("setupModelLoading called");
     const fileButton = document.getElementById("loadModelFileButton");
     const urlButton = document.getElementById("loadModelUrlButton");
     
-    console.log("Elements found:");
-    console.log("- fileButton:", fileButton);
-    console.log("- urlButton:", urlButton);
-    
     // File loading handler
     if (fileButton) {
-        console.log("Setting up file loading button");
         fileButton.addEventListener("click", () => {
-            console.log("File loading button clicked");
             triggerFileLoad(scene);
         });
-        console.log("File loading button event listener attached");
     } else {
         console.error("File loading button not found!");
     }
@@ -163,6 +156,9 @@ async function loadModelWithSpinner(scene, source, type) {
         // The block that set scene.currentModelUrl and scene.currentModelType has been removed.
         // loadModel from modelLoader.js already handles this correctly.
         
+        // Trigger vertices update for dev panel
+        triggerVerticesUpdate();
+        
         const fileName = type === 'file' ? source.name : 'URL';
         showToast(`Model "${fileName}" loaded successfully`);
         
@@ -180,8 +176,6 @@ async function loadModelWithSpinner(scene, source, type) {
  * Trigger file loading dialog and handle file selection
  */
 function triggerFileLoad(scene) {
-    console.log("File open button clicked");
-    
     // Create a hidden file input element using utility
     const fileInput = createElement('input', {
         type: 'file',
@@ -192,13 +186,9 @@ function triggerFileLoad(scene) {
     // Handle file selection
     fileInput.addEventListener('change', async (event) => {
         const file = event.target.files[0];
-        if (!file) {
-            console.log("No file selected");
-            return;
-        }
+        if (!file) return;
+        
         updateFileSizeDisplay(file.size);
-
-        console.log("File selected:", file.name, "Size:", file.size);
         
         // Validate file extension
         const extension = file.name.split('.').pop().toLowerCase();
@@ -210,15 +200,15 @@ function triggerFileLoad(scene) {
         // Load the model
         try {
             LoadingSpinner.show("flex");
-            
-            console.log("Starting model loading...");
             const result = await loadModel(scene, file, CONFIG.modelLoader.defaultFallbackModel);
-            console.log("Model loaded successfully:", result);
             
             // Store model URL for sharing
             if (result && result.currentModel) {
                 scene.currentModelUrl = URL.createObjectURL(file);
             }
+            
+            // Trigger vertices update for dev panel
+            triggerVerticesUpdate();
             
             showToast(`Model "${file.name}" loaded successfully`);
             
@@ -236,33 +226,7 @@ function triggerFileLoad(scene) {
     
     // Trigger the file dialog
     document.body.appendChild(fileInput);
-    console.log("File input created and added to DOM, triggering click...");
     fileInput.click();
-    console.log("File dialog should now be open");
-}
-
-// Helper functions that need to be imported or defined locally
-function applyModelScaleFromUrl(scene) {
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    if (urlParams.has('scale') && scene.currentModel) {
-        const scale = parseFloat(urlParams.get('scale'));
-        
-        if (!isNaN(scale) && scale > 0) {
-            // Apply the scale to the model
-            scene.currentModel.scaling.setAll(scale);
-            
-            // Update the UI slider to reflect the loaded scale
-            const modelScaleRange = document.getElementById('modelScaleRange');
-            const modelScaleDisplay = document.getElementById('modelScaleRangeDisplay');
-            if (modelScaleRange && modelScaleDisplay) {
-                modelScaleRange.value = scale;
-                modelScaleDisplay.textContent = scale.toFixed(1);
-            }
-            
-            console.log(`Applied model scale from URL: ${scale}`);
-        }
-    }
 }
 
 function closeAllPanels() {

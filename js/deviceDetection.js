@@ -46,6 +46,10 @@ export function isMobileDevice() {
            (navigator.maxTouchPoints > 0);
 }
 
+// Cache the device detection result to avoid multiple debug outputs
+let cachedDeviceInfo = null;
+let lastScreenSize = null;
+
 /**
  * Simple and reliable device detection - user-agent only
  * @returns {Object} Device information object
@@ -56,7 +60,15 @@ export function detectDevice() {
     const userAgent = navigator.userAgent;
     const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     
-    // Debug: Log the actual user-agent string
+    // Create a screen size key for cache invalidation
+    const screenSizeKey = `${width}x${height}`;
+    
+    // Return cached result if screen size hasn't changed and we have a cached result
+    if (cachedDeviceInfo && lastScreenSize === screenSizeKey) {
+        return cachedDeviceInfo;
+    }
+    
+    // Debug: Log the actual user-agent string (only on first call or screen size change)
     console.log('=== DEVICE DETECTION DEBUG ===');
     console.log('Full User Agent:', userAgent);
     console.log('Width x Height:', width, 'x', height);
@@ -85,7 +97,7 @@ export function detectDevice() {
     // Touch device classification (for UI behavior, not sizing)
     const isTouchDevice = isMobileDevice || isTabletDevice || hasTouch;
     
-    return {
+    const deviceInfo = {
         // Simple flags
         isMobile: isMobileDevice,
         isTablet: isTabletDevice,
@@ -117,6 +129,22 @@ export function detectDevice() {
         isMediumScreen: width > 480 && width <= 1024,
         isLargeScreen: width > 1024
     };
+    
+    // Cache the result and screen size
+    cachedDeviceInfo = deviceInfo;
+    lastScreenSize = screenSizeKey;
+    
+    return deviceInfo;
+}
+
+/**
+ * Force refresh the device detection cache (useful for testing)
+ * @returns {Object} Fresh device information object
+ */
+export function refreshDeviceDetection() {
+    cachedDeviceInfo = null;
+    lastScreenSize = null;
+    return detectDevice();
 }
 
 /**

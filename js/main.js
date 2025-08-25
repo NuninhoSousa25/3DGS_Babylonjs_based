@@ -21,14 +21,16 @@
 
 import { setupCamera, animateCamera } from './cameraControl.js';
 import { loadModel, disposeCurrentModel } from './modelLoader.js';
-import { setupUI, applyCameraParametersFromUrl, applyModelScaleFromUrl, applySettingsPanelFromUrl } from './ui.js';
+import { setupUI } from './ui.js';
+import { decompressUrlParameters, applyCameraParametersFromUrl, applyModelScaleFromUrl, applySettingsPanelFromUrl } from './urlManager.js';
 import { addPostEffects } from './postProcessing.js';
 import { getPickResult } from './picking.js';
+import { disposePickingHelpers } from './picking.js';
 import { CONFIG, setupLighting } from './config.js';  // Import the centralized configuration and lighting
 import { setupMobileControls } from './mobileControl.js';
 import { detectDevice } from './deviceDetection.js';
 import { CameraLimits } from './cameraLimits.js';
-import { WindowEvents, ErrorMessages } from './helpers.js';
+import { WindowEvents, ErrorMessages, triggerVerticesUpdate, triggerResolutionUpdate } from './helpers.js';
 
 /**
  * Global Variables
@@ -289,6 +291,8 @@ function cleanup(scene, engine) {
     if (engine) {
         engine.dispose();
     }
+    disposePickingHelpers();
+
 }
 
 /**
@@ -363,14 +367,12 @@ async function createScene() {
         pipeline = addPostEffects(scene, camera);
         
         // Initial anti-aliasing will be applied through the post-processing pipeline
-        // TAA mode can be selected in the UI settings
+        // FXAA can be toggled in the UI settings
 
         // UI
         setupUI(camera, scene, engine, initialPixelRatio);
 
         // Attempt to load a model from URL param or default
-        // Import the decompression function
-        const { decompressUrlParameters } = await import('./ui.js');
         const urlParams = decompressUrlParameters();
         const modelUrl = urlParams.get('model');
 
@@ -391,6 +393,9 @@ async function createScene() {
         
         // Apply model scale from URL if present (must be after model loading)
         applyModelScaleFromUrl(scene);
+        
+        // Trigger vertices update for dev panel after initial model load
+        triggerVerticesUpdate();
         
         // Apply camera limits from URL if present
         if (cameraLimits && urlParams.toString()) {
@@ -416,6 +421,11 @@ async function createScene() {
 
         // Handle window resize using centralized handler
         WindowEvents.addResizeCallback(WindowEvents.createEngineResizeHandler(engine));
+        
+        // Add resolution update trigger for dev panel
+        WindowEvents.addResizeCallback(() => {
+            triggerResolutionUpdate();
+        });
 
         // Handle scene disposal for cleanup
         scene.onDisposeObservable.add(() => {
@@ -464,6 +474,8 @@ function setupDragAndDrop(canvas, scene) {
                 await loadModel(scene, files[0], CONFIG.modelLoader.defaultFallbackModel);
                 // Apply model scale from URL if present (for shared URLs)
                 applyModelScaleFromUrl(scene);
+                // Trigger vertices update for dev panel
+                triggerVerticesUpdate();
             } catch (error) {
                 console.error('Error loading dropped file:', error);
             }

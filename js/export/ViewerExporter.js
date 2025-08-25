@@ -45,8 +45,22 @@ export class ViewerExporter {
     }
 
     /**
-     * Main export function - creates downloadable package
-     * @param {string} format - 'html' for single file, 'zip' for full package
+     * Exports the current 3D viewer as a standalone package with complete state preservation
+     * @param {string} [format='html'] - Export format: 'html' for single file or 'zip' for package
+     * @returns {Promise<void>} Resolves when export is complete and download initiated
+     * @description Creates self-contained viewer packages that preserve:
+     *              - Complete 3D model data (embedded or referenced)
+     *              - Current camera position, zoom, and orientation
+     *              - All UI settings (quality, post-processing, auto-rotation)
+     *              - Camera movement limits and restrictions
+     *              - Background color and visual customizations
+     *              HTML format: Single file with embedded assets (~2-10MB)
+     *              ZIP format: Organized file structure for editing and hosting
+     * @throws {Error} Throws if export data gathering or file creation fails
+     * @example
+     * const exporter = new ViewerExporter();
+     * await exporter.exportViewer('html'); // Single file download
+     * await exporter.exportViewer('zip');  // ZIP package download
      */
     async exportViewer(format = 'html') {
         try {
@@ -132,7 +146,7 @@ export class ViewerExporter {
                 enabled: this.scene.pipeline?.sharpenEnabled || false,
                 intensity: this.scene.pipeline?.sharpen?.edgeAmount || 1.0
             },
-            antiAliasing: document.getElementById('antiAliasingSelect')?.value || 'none',
+            fxaa: document.getElementById('fxaaToggle')?.checked || false,
             touchSensitivity: document.getElementById('touchSensitivityRange')?.value || '5'
         };
     }
@@ -206,11 +220,7 @@ export class ViewerExporter {
         return {
             sharpenEnabled: this.scene.pipeline.sharpenEnabled,
             sharpenEdgeAmount: this.scene.pipeline.sharpen?.edgeAmount,
-            fxaaEnabled: this.scene.pipeline.fxaaEnabled, // Legacy compatibility
-            antiAliasing: {
-                type: CONFIG.postProcessing.antiAliasing.type,
-                taaSamples: CONFIG.postProcessing.antiAliasing.taaSamples
-            }
+            fxaaEnabled: this.scene.pipeline.fxaaEnabled
         };
     }
 
@@ -475,22 +485,8 @@ export class ViewerExporter {
                 pipeline.sharpen.edgeAmount = settings.sharpenEdgeAmount;
             }
             
-            // Apply anti-aliasing based on exported settings
-            if (settings.antiAliasing && settings.antiAliasing.type) {
-                const aaType = settings.antiAliasing.type;
-                if (aaType === 'fxaa') {
-                    pipeline.fxaaEnabled = true;
-                } else if (aaType === 'none') {
-                    pipeline.fxaaEnabled = false;
-                } else {
-                    pipeline.fxaaEnabled = false;
-                    // Note: TAA requires more complex setup in exported viewer
-                    console.log('Exported viewer using FXAA fallback for ' + aaType);
-                }
-            } else {
-                // Legacy compatibility
-                pipeline.fxaaEnabled = settings.fxaaEnabled || false;
-            }
+            // Apply FXAA based on exported settings
+            pipeline.fxaaEnabled = settings.fxaaEnabled || false;
         }
     </script>
 </body>

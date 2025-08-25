@@ -199,11 +199,11 @@ function createPostProcessingSection() {
                 </div>
             </div>
             <div class="control-group">
-                <label for="antiAliasingSelect">Anti-Aliasing</label>
-                <select id="antiAliasingSelect" class="settings-select">
-                    <option value="none" ${CONFIG.postProcessing.antiAliasing.type === 'none' ? 'selected' : ''}>None</option>
-                    <option value="fxaa" ${CONFIG.postProcessing.antiAliasing.type === 'fxaa' ? 'selected' : ''}>FXAA (Fast)</option>
-                </select>
+                <label for="fxaaToggle">Anti-Aliasing (FXAA)</label>
+                <label class="switch">
+                    <input type="checkbox" id="fxaaToggle" ${CONFIG.postProcessing.fxaaEnabled ? 'checked' : ''}>
+                    <span class="slider round"></span>
+                </label>
             </div>
         </div>
         </div>
@@ -266,24 +266,30 @@ export function setupSettingsControls(camera, scene) {
         }, sharpenIntensityDisplay);
     }
 
-    // Anti-aliasing selector
-    const antiAliasingSelect = document.getElementById('antiAliasingSelect');
     
-    // Load saved anti-aliasing setting from localStorage
-    const savedAAType = localStorage.getItem('babylonjs_antialiasing_type');
+    // Load saved FXAA setting from localStorage
+    const fxaaToggle = document.getElementById('fxaaToggle');
+    const savedFXAA = localStorage.getItem('babylonjs_fxaa_enabled');
     
-    if (savedAAType && antiAliasingSelect) {
-        antiAliasingSelect.value = savedAAType;
-        CONFIG.postProcessing.antiAliasing.type = savedAAType;
+    if (savedFXAA && fxaaToggle) {
+        fxaaToggle.checked = savedFXAA === 'true';
+        CONFIG.postProcessing.fxaaEnabled = fxaaToggle.checked;
         
         // Apply the saved setting
-        updateAntiAliasing(savedAAType, scene, camera);
+        if (scene.pipeline) {
+            scene.pipeline.fxaaEnabled = fxaaToggle.checked;
+        }
     }
     
-    if (antiAliasingSelect) {
-        antiAliasingSelect.addEventListener('change', (e) => {
-            const aaType = e.target.value;
-            updateAntiAliasing(aaType, scene, camera);
+    if (fxaaToggle) {
+        fxaaToggle.addEventListener('change', (e) => {
+            const enabled = e.target.checked;
+            CONFIG.postProcessing.fxaaEnabled = enabled;
+            localStorage.setItem('babylonjs_fxaa_enabled', enabled);
+            
+            if (scene.pipeline) {
+                scene.pipeline.fxaaEnabled = enabled;
+            }
         });
     }
     
@@ -665,7 +671,7 @@ export function updateQualitySettings(quality, scene) {
     const engine = scene.getEngine();
     
     const qualitySettings = {
-        low: { scaling: 1.5, fxaa: false, sharpen: false },
+        low: { scaling: 1.5, fxaa: false, sharpen: true },
         medium: { scaling: 1.0, fxaa: false, sharpen: true },
         high: { scaling: 0.70, fxaa: false, sharpen: true }
     };
@@ -684,7 +690,7 @@ export function updateQualitySettings(quality, scene) {
         const sharpenToggle = document.getElementById('sharpenToggle');
         const sharpenIntensityRange = document.getElementById('sharpenIntensityRange');
         const sharpenIntensityDisplay = document.getElementById('sharpenIntensityDisplay');
-        const antiAliasingSelect = document.getElementById('antiAliasingSelect');
+        const fxaaToggle = document.getElementById('fxaaToggle');
         
         if (sharpenToggle) sharpenToggle.checked = settings.sharpen;
         if (sharpenIntensityRange && settings.sharpen) {
@@ -693,8 +699,8 @@ export function updateQualitySettings(quality, scene) {
                 sharpenIntensityDisplay.textContent = scene.pipeline.sharpen.edgeAmount;
             }
         }
-        if (antiAliasingSelect) {
-            antiAliasingSelect.value = settings.fxaa ? 'fxaa' : 'none';
+        if (fxaaToggle) {
+            fxaaToggle.checked = settings.fxaa;
         }
     }
 }
@@ -718,43 +724,3 @@ function updateTouchSensitivity(sensitivity, camera) {
     }
 }
 
-/**
- * Update anti-aliasing method
- */
-export function updateAntiAliasing(type, scene, camera) {
-    console.log('Switching anti-aliasing to:', type);
-    
-    // Store settings
-    CONFIG.postProcessing.antiAliasing.type = type;
-    localStorage.setItem('babylonjs_antialiasing_type', type);
-    
-    // Clean up any existing effects
-    if (scene._customAAPostProcess) {
-        scene._customAAPostProcess.dispose();
-        scene._customAAPostProcess = null;
-    }
-    
-    if (!scene.pipeline) {
-        console.warn('No rendering pipeline available');
-        return;
-    }
-    
-    switch (type) {
-        case 'none':
-            scene.pipeline.fxaaEnabled = false;
-            scene.pipeline.samples = 1;
-            console.log('Anti-aliasing disabled');
-            break;
-            
-        case 'fxaa':
-            scene.pipeline.fxaaEnabled = true;
-            scene.pipeline.samples = 1;
-            console.log('FXAA enabled');
-            break;
-            
-        default:
-            console.warn('Unknown anti-aliasing type:', type);
-            scene.pipeline.fxaaEnabled = false;
-            scene.pipeline.samples = 1;
-    }
-}
