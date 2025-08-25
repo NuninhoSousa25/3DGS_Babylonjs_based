@@ -8,7 +8,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ### 🔄 To Implement / Fix
 - Multiple resize callbacks instead of debounced single handler
 - FINALIZE refracture modelloader funciton  + urlmaneger- double check with opus
-- 
+- screen size doent update when screen changes
 - performance is worst when sharpness is disabled - why?
 - disable pan doesnt work on mobile
 
