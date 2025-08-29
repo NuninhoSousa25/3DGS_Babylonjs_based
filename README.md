@@ -6,6 +6,8 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ## 📋 Development Status
 
 ### 🔄 To Implement / Fix
+-obj import not working with materials / textures
+add compatibility with ply pointclouds + color info
 - Multiple resize callbacks instead of debounced single handler
 ⚡ Performance Optimizations
 1. Lazy Load Heavy Components
