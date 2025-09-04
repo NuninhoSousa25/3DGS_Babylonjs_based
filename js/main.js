@@ -27,6 +27,9 @@ import { addPostEffects } from './postProcessing.js';
 import { getPickResult } from './picking.js';
 import { disposePickingHelpers } from './picking.js';
 import { CONFIG, setupLighting } from './config.js';  // Import the centralized configuration and lighting
+
+// Make CONFIG globally available
+window.CONFIG = CONFIG;
 import { setupMobileControls } from './mobileControl.js';
 import { detectDevice } from './deviceDetection.js';
 import { CameraLimits } from './cameraLimits.js';

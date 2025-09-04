@@ -522,7 +522,9 @@ export function applySettingsPanelFromUrl(camera, scene) {
         // FXAA
         if (urlParams.has('fxaa')) {
             const fxaa = urlParams.get('fxaa') === '1';
-            CONFIG.postProcessing.fxaaEnabled = fxaa;
+            if (window.CONFIG) {
+                window.CONFIG.postProcessing.fxaaEnabled = fxaa;
+            }
             
             if (scene.pipeline) {
                 scene.pipeline.fxaaEnabled = fxaa;
