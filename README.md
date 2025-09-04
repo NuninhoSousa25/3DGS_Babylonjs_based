@@ -16,13 +16,6 @@ async function handleExport() {
     const { ViewerExporter, showExportDialog } = await import('./export/ViewerExporter.js');
     // ... rest of code
 }
-- 2. Remove Debug Console Logs
-Search and remove or wrap in a debug flag:
-javascript// Create a debug utility
-const DEBUG = localStorage.getItem('debug') === 'true';
-const debugLog = (...args) => DEBUG && console.log(...args);
-
-// Replace console.log with debugLog throughout
 
 
 3. Fix Double Resize Callbacks
