@@ -9,13 +9,6 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 -obj import not working with materials / textures
 add compatibility with ply pointclouds + color info
 
-⚡ Performance Optimizations
-1. Lazy Load Heavy Components
-javascript// Lazy load export functionality
-async function handleExport() {
-    const { ViewerExporter, showExportDialog } = await import('./export/ViewerExporter.js');
-    // ... rest of code
-}
 
 
 - performance is worst when sharpness is disabled - why?
