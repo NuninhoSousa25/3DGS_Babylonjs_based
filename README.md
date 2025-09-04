@@ -18,23 +18,6 @@ async function handleExport() {
 }
 
 
-3. Fix Double Resize Callbacks
-javascript// In helpers.js, add a Set to track unique callbacks
-export const WindowEvents = {
-    resizeCallbacks: new Set(), // Already using Set - good!
-    resizeDebounceTimer: null,
-    resizeDebounceDelay: 16,
-    
-    // Add duplicate check
-    addResizeCallback(callback) {
-        this.init();
-        // Check if already exists (by reference)
-        if (this.resizeCallbacks.has(callback)) {
-            console.warn('Duplicate resize callback prevented');
-            return;
-        }
-        this.resizeCallbacks.add(callback);
-    },
 - performance is worst when sharpness is disabled - why?
 - disable pan doesnt work on mobile
 
