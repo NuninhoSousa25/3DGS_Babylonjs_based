@@ -8,7 +8,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ### 🔄 To Implement / Fix
 -obj import not working with materials / textures
 add compatibility with ply pointclouds + color info
-- Multiple resize callbacks instead of debounced single handler
+
 ⚡ Performance Optimizations
 1. Lazy Load Heavy Components
 javascript// Lazy load export functionality
@@ -23,6 +23,8 @@ const DEBUG = localStorage.getItem('debug') === 'true';
 const debugLog = (...args) => DEBUG && console.log(...args);
 
 // Replace console.log with debugLog throughout
+
+
 3. Fix Double Resize Callbacks
 javascript// In helpers.js, add a Set to track unique callbacks
 export const WindowEvents = {
@@ -40,7 +42,6 @@ export const WindowEvents = {
         }
         this.resizeCallbacks.add(callback);
     },
-- screen size doent update when screen changes
 - performance is worst when sharpness is disabled - why?
 - disable pan doesnt work on mobile
 
