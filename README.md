@@ -8,6 +8,9 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ### 🔄 To Implement / Fix
 -obj import not working with materials / textures
 
+- simpkify ui for shared links should have "info", full screen, and reset viewer, maybe with quality settings,
+- low performance should be set to lower res just o make sure
+
 - performance is worst when sharpness is disabled - why?
 - disable pan doesnt work on mobile
 
