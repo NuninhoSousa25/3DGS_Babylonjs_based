@@ -7,9 +7,6 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 
 ### 🔄 To Implement / Fix
 -obj import not working with materials / textures
-add compatibility with ply pointclouds + color info
-
-
 
 - performance is worst when sharpness is disabled - why?
 - disable pan doesnt work on mobile
