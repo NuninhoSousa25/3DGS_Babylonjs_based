@@ -11,16 +11,15 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - simpkify ui for shared links should have "info", full screen, and reset viewer, maybe with quality settings,
 - low performance should be set to lower res just o make sure
 
+
+
 - performance is worst when sharpness is disabled - why?
 - disable pan doesnt work on mobile
 
 - default cube after error in loading model is not cleared when a new model is loaded after
 - loading model pop up - usually doent apear centered
-
 - Loading optimization for large 3D models
-
 - GLTF culling / occlusion verification
-  
 - Better UI layout for smaller mobile screens
 - - if its better for performance and easly implemented, shared urls dont need the dev panel, 
 
