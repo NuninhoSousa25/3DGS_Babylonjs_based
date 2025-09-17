@@ -2,7 +2,7 @@
    SETTINGS PANEL COMPONENT
    ======================================================================== */
 
-import { createToggleSwitch, createRangeControl, createColorControl, getCameraLimitsElements, createElement } from '../components/controls.js';
+import { createToggleSwitch, createRangeControl, createColorControl, getCameraLimitsElements, createElement, setupEnhancedRangeControl } from '../components/controls.js';
 import { showToast } from '../components/toast.js';
 import { setupUIUpdates, startUIUpdates, stopUIUpdates, restartUIUpdates, DOM, Events, ErrorMessages, LoadingSpinner } from '../../helpers.js';
 import { CONFIG } from '../../config.js';
@@ -53,13 +53,7 @@ function createVisualizationSection() {
                 </select>
             </div>
             
-            <div class="control-group">
-                <label for="fovRange">Field of View</label>
-                <div class="range-container">
-                    <input type="range" id="fovRange" min="0.4" max="2.0" value="0.8" step="0.05" class="slider-range">
-                    <span id="fovDisplay" class="range-value">46°</span>
-                </div>
-            </div>
+            ${createRangeControl('fovRange', 'Field of View', 0.4, 2.0, 0.8, 0.05, ' rad')}
                 ${createRangeControl('modelScaleRange', 'Model Scale', 0.1, 5, 1, 0.1)}
                 ${createColorControl('backgroundColorPicker', 'Background Color', '#191919')}
             </div>
@@ -93,21 +87,8 @@ function createCameraLimitsSection() {
                 </label>
             </div>
             
-            <div class="control-group">
-                <label for="minDistanceRange">Min Distance</label>
-                <div class="range-container">
-                    <input type="range" id="minDistanceRange" min="0.1" max="30" value="1.0" step="0.1" class="slider-range">
-                    <span id="minDistanceDisplay" class="range-value">1.0</span>
-                </div>
-            </div>
-            
-            <div class="control-group">
-                <label for="maxDistanceRange">Max Distance</label>
-                <div class="range-container">
-                    <input type="range" id="maxDistanceRange" min="1" max="50" value="15" step="0.5" class="slider-range">
-                    <span id="maxDistanceDisplay" class="range-value">15.0</span>
-                </div>
-            </div>
+            ${createRangeControl('minDistanceRange', 'Min Distance', 0.1, 30, 1.0, 0.1)}
+            ${createRangeControl('maxDistanceRange', 'Max Distance', 1, 50, 15, 0.5)}
             
             <div class="control-group">
                 <label for="limitVerticalToggle">Limit Vertical Rotation</label>
@@ -117,21 +98,8 @@ function createCameraLimitsSection() {
                 </label>
             </div>
             
-            <div class="control-group">
-                <label for="verticalUpRange">Up Angle Limit</label>
-                <div class="range-container">
-                    <input type="range" id="verticalUpRange" min="-90" max="90" value="-80" step="5" class="slider-range">
-                    <span id="verticalUpDisplay" class="range-value">-80°</span>
-                </div>
-            </div>
-            
-            <div class="control-group">
-                <label for="verticalDownRange">Down Angle Limit</label>
-                <div class="range-container">
-                    <input type="range" id="verticalDownRange" min="-90" max="90" value="5" step="5" class="slider-range">
-                    <span id="verticalDownDisplay" class="range-value">5°</span>
-                </div>
-            </div>
+            ${createRangeControl('verticalUpRange', 'Up Angle Limit', -90, 90, -80, 5, '°')}
+            ${createRangeControl('verticalDownRange', 'Down Angle Limit', -90, 90, 5, 5, '°')}
             
             <div class="control-group">
                 <label for="limitHorizontalToggle">Limit Horizontal Rotation</label>
@@ -141,21 +109,8 @@ function createCameraLimitsSection() {
                 </label>
             </div>
             
-            <div class="control-group">
-                <label for="horizontalAngleRange">Horizontal Total Angle</label>
-                <div class="range-container">
-                    <input type="range" id="horizontalAngleRange" min="30" max="360" value="360" step="15" class="slider-range">
-                    <span id="horizontalAngleDisplay" class="range-value">360°</span>
-                </div>
-            </div>
-            
-            <div class="control-group">
-                <label for="horizontalOffsetRange">Horizontal Offset</label>
-                <div class="range-container">
-                    <input type="range" id="horizontalOffsetRange" min="-180" max="180" value="0" step="15" class="slider-range">
-                    <span id="horizontalOffsetDisplay" class="range-value">0°</span>
-                </div>
-            </div>
+            ${createRangeControl('horizontalAngleRange', 'Horizontal Total Angle', 30, 360, 360, 15, '°')}
+            ${createRangeControl('horizontalOffsetRange', 'Horizontal Offset', -180, 180, 0, 15, '°')}
             
             <div class="control-group">
                 <label for="limitPanToggle">Enable Panning</label>
@@ -301,32 +256,19 @@ export function setupSettingsControls(camera, scene) {
         });
     }
     
-    // FOV range control
-    const fovRange = document.getElementById('fovRange');
-    const fovDisplay = document.getElementById('fovDisplay');
-    if (fovRange && fovDisplay) {
-        // Initialize display with current FOV
-        const currentFovDegrees = Math.round(camera.fov * 180 / Math.PI);
-        fovDisplay.textContent = currentFovDegrees + '°';
-        fovRange.value = camera.fov;
-        
-        Events.addRangeListener(fovRange, (value) => {
-            camera.fov = value;
-            const degrees = Math.round(value * 180 / Math.PI);
-            fovDisplay.textContent = degrees + '°';
-            console.log('FOV updated to:', degrees + '° (' + value.toFixed(2) + ' radians)');
-        }, fovDisplay);
-    }
+    // FOV range control - Enhanced
+    setupEnhancedRangeControl('fovRange', (value) => {
+        camera.fov = value;
+        console.log('FOV updated to:', Math.round(value * 180 / Math.PI) + '° (' + value.toFixed(2) + ' radians)');
+    });
 
-    const modelScaleRange = document.getElementById('modelScaleRange');
-    const modelScaleDisplay = document.getElementById('modelScaleRangeDisplay');
-    if (modelScaleRange && modelScaleDisplay) {
-        Events.addRangeListener(modelScaleRange, (value) => {
-            if (scene.currentModel) {
-                scene.currentModel.scaling.setAll(value);
-            }
-        }, modelScaleDisplay);
-    }
+    // Model scale range control - Enhanced
+    setupEnhancedRangeControl('modelScaleRange', (value) => {
+        if (scene.currentModel) {
+            scene.currentModel.scaling.setAll(value);
+        }
+        console.log('Model scale updated to:', value);
+    });
 
     // Background color picker
     const backgroundColorPicker = document.getElementById('backgroundColorPicker');
@@ -353,6 +295,47 @@ export function setupSettingsControls(camera, scene) {
             updateTouchSensitivity(sensitivity, camera);
         });
     }
+    
+    // Enhanced camera limits range controls
+    setupEnhancedRangeControl('minDistanceRange', (value) => {
+        if (scene.cameraLimits) {
+            scene.cameraLimits.setDistanceLimits(true, value, scene.cameraLimits.getCurrentLimits().radiusMax);
+        }
+    });
+    
+    setupEnhancedRangeControl('maxDistanceRange', (value) => {
+        if (scene.cameraLimits) {
+            scene.cameraLimits.setDistanceLimits(true, scene.cameraLimits.getCurrentLimits().radiusMin, value);
+        }
+    });
+    
+    setupEnhancedRangeControl('verticalUpRange', (value) => {
+        if (scene.cameraLimits) {
+            const downValue = document.getElementById('verticalDownRangeInput').value;
+            scene.cameraLimits.setVerticalLimitsUpDown(true, value, parseFloat(downValue));
+        }
+    });
+    
+    setupEnhancedRangeControl('verticalDownRange', (value) => {
+        if (scene.cameraLimits) {
+            const upValue = document.getElementById('verticalUpRangeInput').value;
+            scene.cameraLimits.setVerticalLimitsUpDown(true, parseFloat(upValue), value);
+        }
+    });
+    
+    setupEnhancedRangeControl('horizontalAngleRange', (value) => {
+        if (scene.cameraLimits) {
+            const offsetValue = document.getElementById('horizontalOffsetRangeInput').value;
+            scene.cameraLimits.setHorizontalLimitsAngleOffset(true, value, parseFloat(offsetValue));
+        }
+    });
+    
+    setupEnhancedRangeControl('horizontalOffsetRange', (value) => {
+        if (scene.cameraLimits) {
+            const angleValue = document.getElementById('horizontalAngleRangeInput').value;
+            scene.cameraLimits.setHorizontalLimitsAngleOffset(true, parseFloat(angleValue), value);
+        }
+    });
     
     // Camera Limits Controls
     setupCameraLimitsControls(camera, scene);

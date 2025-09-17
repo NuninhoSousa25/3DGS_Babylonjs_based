@@ -26,6 +26,7 @@ export const CONFIG = {
         
         // Model processing constants
         defaultNormalizedSize: 2.0,         // Default size for model normalization
+        defaultModelScale: 1.0,             // Default scale for fallback models
         urlCleanupDelay: 1000,              // Delay before cleaning up object URLs (ms)
         
         // Mobile-specific optimizations

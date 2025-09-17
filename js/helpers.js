@@ -30,6 +30,16 @@ import { detectDevice } from './deviceDetection.js';
 import { CONFIG } from './config.js';
 
 /**
+ * Debug logging utility - only logs when debug is enabled
+ * Enable with: localStorage.setItem('debug', 'true') in browser console
+ * Disable with: localStorage.removeItem('debug') in browser console
+ */
+export const DEBUG = localStorage.getItem('debug') === 'true';
+export const debugLog = (...args) => DEBUG && console.log('[DEBUG]', ...args);
+export const debugWarn = (...args) => DEBUG && console.warn('[DEBUG]', ...args);
+export const debugError = (...args) => DEBUG && console.error('[DEBUG]', ...args);
+
+/**
  * DOM Utility Functions for efficient element access and caching
  */
 export const DOM = {
@@ -220,6 +230,13 @@ export const WindowEvents = {
      */
     addResizeCallback(callback) {
         this.init(); // Ensure listener is initialized
+        
+        // Check if callback already exists (for debugging)
+        if (this.resizeCallbacks.has(callback)) {
+            debugLog('Duplicate resize callback prevented:', callback.name || 'anonymous');
+            return;
+        }
+        
         this.resizeCallbacks.add(callback);
     },
 

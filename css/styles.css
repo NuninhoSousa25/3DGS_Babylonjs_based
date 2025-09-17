@@ -387,12 +387,22 @@ input:checked + .slider:before {
   background: var(--color-bg-tertiary);
   outline: none;
   opacity: 0.8;
-  transition: opacity var(--transition-fast);
+  transition: all var(--transition-fast);
   cursor: pointer;
 }
 
-.slider-range:hover {
+.slider-range.enhanced {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--color-bg-secondary) 0%, var(--color-accent-light) 100%);
+  opacity: 0.9;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.slider-range:hover,
+.slider-range.enhanced:hover {
   opacity: 1;
+  background: linear-gradient(to right, var(--color-bg-tertiary) 0%, var(--color-accent) 100%);
 }
 
 /* Slider Thumb - Shared Styles */
@@ -421,6 +431,12 @@ input:checked + .slider:before {
   background: var(--color-accent-hover);
   transform: scale(1.1);
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.slider-range::-webkit-slider-thumb:active,
+.slider-range::-moz-range-thumb:active {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 /* Select Dropdowns */
@@ -594,8 +610,67 @@ input[type="file"] {
   flex-wrap: wrap;
 }
 
+.range-container.enhanced {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: var(--spacing-sm);
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
 .range-container:last-child {
   margin-bottom: 0;
+}
+
+/* Range Input Field */
+.range-input {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text-primary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 0.85rem;
+  width: 75px;
+  text-align: center;
+  transition: all var(--transition-fast);
+  font-family: monospace;
+}
+
+.range-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-light);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+.range-input:hover:not(:focus) {
+  border-color: var(--color-accent-light);
+  background: var(--color-bg-tertiary);
+}
+
+/* Fix for number input steppers */
+.range-input::-webkit-outer-spin-button,
+.range-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.range-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Range Unit Display */
+.range-unit {
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  min-width: 20px;
+  text-align: left;
+}
+
+/* Enhanced slider styling */
+.range-container.enhanced .slider-range {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Color Picker Styles */
@@ -1326,5 +1401,180 @@ input[type="file"] {
   
   .toast-message {
     transition: none;
+  }
+}
+
+/* ========================================================================
+   8. SHARED LINKS UI - SIMPLIFIED MODE
+   ======================================================================== */
+
+/* Hamburger menu for shared links */
+.icon-bar.shared-mode.hamburger-style {
+  background: var(--color-bg-primary);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--color-border);
+  position: relative;
+  max-width: 64px; /* Just enough for hamburger button */
+}
+
+/* Hamburger button */
+.hamburger-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-md);
+  transition: background-color var(--transition-fast);
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hamburger-button:hover {
+  background: var(--color-bg-secondary);
+}
+
+.hamburger-button.active {
+  background: var(--color-accent-light);
+}
+
+/* Hamburger icon animation */
+.hamburger-icon {
+  width: 24px;
+  height: 18px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.hamburger-icon span {
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: var(--color-text-primary);
+  border-radius: 1px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-button.active .hamburger-icon span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger-button.active .hamburger-icon span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-button.active .hamburger-icon span:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -6px);
+}
+
+/* Hamburger menu dropdown */
+.hamburger-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--spacing-sm);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  min-width: 180px;
+  z-index: 1001;
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 0.3s ease;
+}
+
+.hamburger-menu.hidden {
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+}
+
+/* Menu items */
+.menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: var(--spacing-md);
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  border-radius: 0;
+  font-size: 0.9rem;
+  gap: var(--spacing-sm);
+}
+
+.menu-item:hover {
+  background: var(--color-bg-secondary);
+}
+
+.menu-item:first-child {
+  border-top-left-radius: var(--border-radius-md);
+  border-top-right-radius: var(--border-radius-md);
+}
+
+.menu-item:last-child {
+  border-bottom-left-radius: var(--border-radius-md);
+  border-bottom-right-radius: var(--border-radius-md);
+}
+
+.menu-item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.menu-item span {
+  font-weight: 500;
+}
+
+/* Quality menu item styling */
+.quality-menu-item #qualityDisplay {
+  font-weight: 600;
+  color: var(--color-accent);
+  margin-left: var(--spacing-xs);
+}
+
+/* Removed unused quality content styling - using direct toggle now */
+
+/* Simplified control panel for shared mode */
+.control-panel:has(.icon-bar.shared-mode.hamburger-style) {
+  position: fixed;
+  top: var(--spacing-lg);
+  right: var(--spacing-lg);
+  bottom: auto;
+  left: auto;
+  transform: none;
+  z-index: 999;
+}
+
+/* No content panels needed for shared mode - using direct controls */
+
+/* Removed unused quality select styling - using toggle button instead */
+
+/* Removed shared mode badge to clean up the interface */
+
+/* Responsive adjustments for shared mode */
+@media (max-width: 768px) {
+  .icon-bar.shared-mode.hamburger-style {
+    max-width: 60px;
+    padding: var(--spacing-xs);
+  }
+  
+  .hamburger-button {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .control-panel:has(.icon-bar.shared-mode.hamburger-style) {
+    top: var(--spacing-md);
+    right: var(--spacing-md);
   }
 }

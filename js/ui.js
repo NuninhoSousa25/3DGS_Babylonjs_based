@@ -19,6 +19,22 @@ import { CONFIG } from './config.js';
 import { detectDevice } from './deviceDetection.js';
 import { decompressUrlParameters, compressUrlParameters, createShareUrl, addSettingsPanelToUrl, shareCompleteViewerState } from './urlManager.js';
 
+/**
+ * Check if URL contains parameters indicating a shared scene
+ */
+function isSharedURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Check for compressed URL (shared URLs are usually compressed)
+    if (urlParams.has('c')) {
+        return true;
+    }
+    
+    // Check for common shared URL parameters
+    const sharedParams = ['model', 'm', 'alpha', 'a', 'beta', 'b', 'radius', 'r'];
+    return sharedParams.some(param => urlParams.has(param));
+}
+
 /* ========================================================================
    MAIN UI SETUP FUNCTION
    ======================================================================== */
@@ -62,7 +78,11 @@ export function setupUI(camera, scene, engine, initialPixelRatio) {
     
     // Setup event handlers
     setupIconButtonHandlers(camera, scene, engine);
-    setupSettingsControls(camera, scene);
+    
+    // Setup settings controls (only for non-shared)
+    if (!isSharedURL()) {
+        setupSettingsControls(camera, scene);
+    }
     
     // Delay model loading setup to ensure DOM is ready
     setTimeout(() => {
@@ -139,25 +159,62 @@ function createControlPanel() {
 }
 
 /**
- * Create the unified 6-icon bar
+ * Create the unified icon bar (hamburger menu for shared URLs)
  */
 function createIconBar() {
-    return createElement("div", {
-        id: "iconBar",
-        className: "icon-bar",
-        innerHTML: `
-            <button id="settingsButton" class="icon-button" title="Settings">${ICONS.settings}</button>
-            <button id="infoButton" class="icon-button" title="Controls Info">${ICONS.info}</button>
-            <button id="resetViewButton" class="icon-button" title="Reset View">${ICONS.reset_view}</button>
-            <button id="fullscreenButton" class="icon-button" title="Toggle Fullscreen">${ICONS.fullscreen}</button>
-            <button id="devButton" class="icon-button" title="Developer Tools">${ICONS.dev}</button>
-            <button id="shareButton" class="icon-button" title="Share View">${ICONS.share}</button>
-        `
-    });
+    const isShared = isSharedURL();
+    
+    if (isShared) {
+        // Hamburger menu for shared links with quality toggle
+        const device = detectDevice();
+        const defaultQuality = device.isDesktop ? 'High' : 'Medium';
+        
+        return createElement("div", {
+            id: "iconBar",
+            className: "icon-bar shared-mode hamburger-style",
+            innerHTML: `
+                <button id="hamburgerButton" class="hamburger-button" title="Menu">
+                    <div class="hamburger-icon">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </button>
+                <div id="hamburgerMenu" class="hamburger-menu hidden">
+                    <button id="resetViewButton" class="menu-item" title="Reset View">
+                        ${ICONS.reset_view}
+                        <span>Reset</span>
+                    </button>
+                    <button id="fullscreenButton" class="menu-item" title="Toggle Fullscreen">
+                        ${ICONS.fullscreen}
+                        <span>Fullscreen</span>
+                    </button>
+                    <button id="qualityToggle" class="menu-item quality-menu-item" title="Click to change quality">
+                        ${ICONS.settings}
+                        <span>Quality: <span id="qualityDisplay">${defaultQuality}</span></span>
+                    </button>
+                </div>
+            `
+        });
+    } else {
+        // Full UI for non-shared usage
+        return createElement("div", {
+            id: "iconBar",
+            className: "icon-bar",
+            innerHTML: `
+                <button id="settingsButton" class="icon-button" title="Settings">${ICONS.settings}</button>
+                <button id="infoButton" class="icon-button" title="Controls Info">${ICONS.info}</button>
+                <button id="resetViewButton" class="icon-button" title="Reset View">${ICONS.reset_view}</button>
+                <button id="fullscreenButton" class="icon-button" title="Toggle Fullscreen">${ICONS.fullscreen}</button>
+                <button id="devButton" class="icon-button" title="Developer Tools">${ICONS.dev}</button>
+                <button id="shareButton" class="icon-button" title="Share View">${ICONS.share}</button>
+            `
+        });
+    }
 }
 
 /**
- * Create the content area with all sections
+ * Create the content area with all sections (simplified for shared URLs)
  */
 function createContentArea(hasTouch) {
     const contentArea = createElement("div", {
@@ -166,36 +223,79 @@ function createContentArea(hasTouch) {
     });
     contentArea.style.display = "none";
     
-    // Get the HTML for each section
-    const settingsHTML = createSettingsSection(hasTouch);
-    const infoHTML = createInfoSection(hasTouch);
-    const devHTML = createDevSection();
+    const isShared = isSharedURL();
     
-    contentArea.innerHTML = `
-        <button id="closePanelButton" class="close-panel-button" title="Close Panel">×</button>
+    if (isShared) {
+        // No content panels needed for shared URLs - using direct quality toggle
+        contentArea.innerHTML = ``;
+        contentArea.style.display = "none"; // Always hidden for shared mode
+    } else {
+        // Full content for regular usage
+        const settingsHTML = createSettingsSection(hasTouch);
+        const infoHTML = createInfoSection(hasTouch);
+        const devHTML = createDevSection();
         
-        ${settingsHTML}
-        ${infoHTML}
-        ${devHTML}
-    `;
+        contentArea.innerHTML = `
+            <button id="closePanelButton" class="close-panel-button" title="Close Panel">×</button>
+            
+            ${settingsHTML}
+            ${infoHTML}
+            ${devHTML}
+        `;
+    }
     
     return contentArea;
+}
+
+/**
+ * Create simplified quality section for shared URLs
+ */
+function createSimplifiedQualitySection() {
+    const device = detectDevice();
+    const defaultQuality = device.isDesktop ? 'high' : 'medium';
+    
+    return `
+        <div id="qualityContent" class="content-section">
+            <h4>Quality Settings</h4>
+            <div class="control-group">
+                <label for="qualitySelect">Rendering Quality</label>
+                <select id="qualitySelect" class="settings-select">
+                    <option value="low">Low (Better Performance)</option>
+                    <option value="medium" ${defaultQuality === 'medium' ? 'selected' : ''}>Medium (Balanced)</option>
+                    <option value="high" ${defaultQuality === 'high' ? 'selected' : ''}>High (Better Quality)</option>
+                </select>
+            </div>
+            <div class="quality-description">
+                <small>Adjust rendering quality based on your device performance. Lower settings improve frame rate on slower devices.</small>
+            </div>
+        </div>
+    `;
 }
 
 /* ========================================================================
    EVENT HANDLERS
    ======================================================================== */
 /**
- * Setup all icon button event handlers
+ * Setup all icon button event handlers (adapted for simplified shared URL UI)
  */
 function setupIconButtonHandlers(camera, scene, engine) {
-    // Get button references using DOM utility
-    const buttons = DOM.getAll([
-        "settingsButton", "infoButton", "devButton", 
-        "resetViewButton", "fullscreenButton", "shareButton", "closePanelButton"
-    ]);
+    const isShared = isSharedURL();
+    
+    // Get button references - different buttons for shared vs full UI
+    let buttons;
+    if (isShared) {
+        buttons = DOM.getAll([
+            "hamburgerButton", "resetViewButton", "fullscreenButton", "qualityToggle"
+        ]);
+    } else {
+        buttons = DOM.getAll([
+            "settingsButton", "infoButton", "devButton", 
+            "resetViewButton", "fullscreenButton", "shareButton", "closePanelButton"
+        ]);
+    }
+    
     const { settingsButton, infoButton, devButton, resetViewButton, 
-            fullscreenButton, shareButton, closePanelButton } = buttons;
+            fullscreenButton, shareButton, closePanelButton, hamburgerButton, qualityToggle } = buttons;
 
     // Track currently open section
     let currentlyOpenSection = null;
@@ -213,10 +313,16 @@ function setupIconButtonHandlers(camera, scene, engine) {
         
         const controlPanelContent = DOM.get("controlPanelContent");
 
-        // Reset all button states
-        [settingsButton, infoButton, devButton].forEach(btn => {
-            if (btn) btn.classList.remove('active');
-        });
+        // Reset all button states (different for shared vs full UI)
+        if (isShared) {
+            [infoButton, qualityButton].forEach(btn => {
+                if (btn) btn.classList.remove('active');
+            });
+        } else {
+            [settingsButton, infoButton, devButton].forEach(btn => {
+                if (btn) btn.classList.remove('active');
+            });
+        }
 
         // If a new section is to be opened
         if (!isAlreadyOpen && sectionToShow) {
@@ -225,13 +331,21 @@ function setupIconButtonHandlers(camera, scene, engine) {
             sectionToShow.style.display = "block";
             currentlyOpenSection = sectionToShow;
 
-            // Set active button state
-            if (sectionToShow.id === 'settingsContent' && settingsButton) {
-                settingsButton.classList.add('active');
-            } else if (sectionToShow.id === 'infoContent' && infoButton) {
-                infoButton.classList.add('active');
-            } else if (sectionToShow.id === 'devContent' && devButton) {
-                devButton.classList.add('active');
+            // Set active button state (different for shared vs full UI)
+            if (isShared) {
+                if (sectionToShow.id === 'infoContent' && infoButton) {
+                    infoButton.classList.add('active');
+                } else if (sectionToShow.id === 'qualityContent' && qualityButton) {
+                    qualityButton.classList.add('active');
+                }
+            } else {
+                if (sectionToShow.id === 'settingsContent' && settingsButton) {
+                    settingsButton.classList.add('active');
+                } else if (sectionToShow.id === 'infoContent' && infoButton) {
+                    infoButton.classList.add('active');
+                } else if (sectionToShow.id === 'devContent' && devButton) {
+                    devButton.classList.add('active');
+                }
             }
 
             // Show close button and expand panel
@@ -262,33 +376,77 @@ function setupIconButtonHandlers(camera, scene, engine) {
         }
     }
     
-    // Setup button event listeners
-    if (settingsButton) {
-        Events.addClickListener(settingsButton, () => toggleContentSection(DOM.get("settingsContent")));
-    }
-    if (infoButton) {
-        Events.addClickListener(infoButton, () => toggleContentSection(DOM.get("infoContent")));
-    }
-    if (devButton) {
-        Events.addClickListener(devButton, () => toggleContentSection(DOM.get("devContent")));
-    }
-    if (resetViewButton) {
-        Events.addClickListener(resetViewButton, () => resetCameraView(camera, scene));
-    }
-    if (fullscreenButton) {
-        Events.addClickListener(fullscreenButton, () => toggleFullscreen(fullscreenButton));
-    }
-    if (shareButton) {
-        Events.addClickListener(shareButton, () => shareCompleteViewerState(camera, scene));
-    }
-    if (closePanelButton) {
-        Events.addClickListener(closePanelButton, () => toggleContentSection(null));
+    // Setup button event listeners (different for shared vs full UI)
+    if (isShared) {
+        // Hamburger menu toggle for shared URLs
+        if (hamburgerButton) {
+            Events.addClickListener(hamburgerButton, () => toggleHamburgerMenu());
+        }
+        
+        // Menu items for shared URLs - simplified to just reset and fullscreen
+        if (resetViewButton) {
+            Events.addClickListener(resetViewButton, () => {
+                resetCameraView(camera, scene);
+                toggleHamburgerMenu(false); // Close menu after action
+            });
+        }
+        if (fullscreenButton) {
+            Events.addClickListener(fullscreenButton, () => {
+                toggleFullscreen(fullscreenButton);
+                toggleHamburgerMenu(false); // Close menu after action
+            });
+        }
+        
+        // Quality toggle button - cycles through High -> Medium -> Low -> High
+        if (qualityToggle) {
+            Events.addClickListener(qualityToggle, () => {
+                cycleQuality(scene);
+                toggleHamburgerMenu(false); // Close menu after quality change
+            });
+        }
+    } else {
+        // Full UI for regular usage
+        if (settingsButton) {
+            Events.addClickListener(settingsButton, () => toggleContentSection(DOM.get("settingsContent")));
+        }
+        if (infoButton) {
+            Events.addClickListener(infoButton, () => toggleContentSection(DOM.get("infoContent")));
+        }
+        if (devButton) {
+            Events.addClickListener(devButton, () => toggleContentSection(DOM.get("devContent")));
+        }
+        if (resetViewButton) {
+            Events.addClickListener(resetViewButton, () => resetCameraView(camera, scene));
+        }
+        if (fullscreenButton) {
+            Events.addClickListener(fullscreenButton, () => toggleFullscreen(fullscreenButton));
+        }
+        if (shareButton) {
+            Events.addClickListener(shareButton, () => shareCompleteViewerState(camera, scene));
+        }
+        if (closePanelButton) {
+            Events.addClickListener(closePanelButton, () => toggleContentSection(null));
+        }
     }
 
     // Update fullscreen icon on ESC key
     document.addEventListener('fullscreenchange', () => {
         updateFullscreenButton(fullscreenButton);
     });
+    
+    // Close hamburger menu when clicking outside (for shared UI)
+    if (isShared) {
+        document.addEventListener('click', (e) => {
+            const hamburgerMenu = DOM.get("hamburgerMenu");
+            const hamburgerButton = DOM.get("hamburgerButton");
+            
+            if (hamburgerMenu && hamburgerButton && 
+                !hamburgerMenu.contains(e.target) && 
+                !hamburgerButton.contains(e.target)) {
+                toggleHamburgerMenu(true); // Force close
+            }
+        });
+    }
 }
 
 /* ========================================================================
@@ -458,6 +616,61 @@ function updateTouchSensitivity(sensitivity, camera) {
         thresholds.pinchSensitivity = CONFIG.gesture.pinchSensitivity * sensitivity;
         thresholds.panSensitivity = (CONFIG.mobile.panningSensibility / 1000) * sensitivity;
     }
+}
+
+/**
+ * Toggle hamburger menu visibility for shared URLs
+ */
+function toggleHamburgerMenu(forceClose = null) {
+    const hamburgerMenu = DOM.get("hamburgerMenu");
+    const hamburgerButton = DOM.get("hamburgerButton");
+    
+    if (!hamburgerMenu || !hamburgerButton) return;
+    
+    const isOpen = !hamburgerMenu.classList.contains('hidden');
+    const shouldClose = forceClose === true || (forceClose === null && isOpen);
+    
+    if (shouldClose) {
+        hamburgerMenu.classList.add('hidden');
+        hamburgerButton.classList.remove('active');
+    } else {
+        hamburgerMenu.classList.remove('hidden');
+        hamburgerButton.classList.add('active');
+    }
+}
+
+/**
+ * Cycle through quality settings: High -> Medium -> Low -> High
+ */
+function cycleQuality(scene) {
+    const qualityDisplay = DOM.get("qualityDisplay");
+    if (!qualityDisplay) return;
+    
+    const currentQuality = qualityDisplay.textContent;
+    let nextQuality;
+    
+    switch (currentQuality) {
+        case 'High':
+            nextQuality = 'Medium';
+            break;
+        case 'Medium':
+            nextQuality = 'Low';
+            break;
+        case 'Low':
+            nextQuality = 'High';
+            break;
+        default:
+            nextQuality = 'Medium';
+    }
+    
+    // Update display
+    qualityDisplay.textContent = nextQuality;
+    
+    // Apply quality settings
+    updateQualitySettings(nextQuality.toLowerCase(), scene);
+    
+    // Show feedback
+    showToast(`Quality: ${nextQuality}`);
 }
 
 /**

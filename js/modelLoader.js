@@ -29,7 +29,7 @@
    
    ======================================================================== */
 
-import { setMeshesPickable, ErrorMessages, LoadingSpinner, updateFileSizeDisplay } from './helpers.js';
+import { setMeshesPickable, ErrorMessages, LoadingSpinner, updateFileSizeDisplay, debugLog } from './helpers.js';
 import { CONFIG } from './config.js';
 import { detectDevice } from './deviceDetection.js';
 import { setupPickingHelpers } from './picking.js';
@@ -61,9 +61,9 @@ async function getFileSizeFromUrl(url) {
 export function disposeCurrentModel(currentModel, currentModelType) {
     if (!currentModel) return { currentModel, currentModelType };
 
-    if (currentModelType === 'splat' || currentModelType === 'mesh') {
+    if (currentModelType === 'splat' || currentModelType === 'mesh' || currentModelType === 'pointcloud') {
         currentModel.dispose();
-        console.log(`Disposed model of type: ${currentModelType}`);
+        debugLog(`Disposed model of type: ${currentModelType}`);
     }
     
     // Reset file size display when disposing model
@@ -73,15 +73,15 @@ export function disposeCurrentModel(currentModel, currentModelType) {
 }
 
 /**
- * Loads 3D Gaussian Splatting models (.splat/.ply files) using Babylon.js GaussianSplattingMesh
+ * Loads 3D Gaussian Splatting models (.splat files) using Babylon.js GaussianSplattingMesh
  * @param {BABYLON.Scene} scene - The Babylon.js scene to load the model into
- * @param {string} url - URL or path to the .splat or .ply file
+ * @param {string} url - URL or path to the .splat file
  * @returns {Promise<BABYLON.GaussianSplattingMesh>} The loaded Gaussian Splatting mesh
  * @throws {Error} Throws error if GaussianSplattingMesh plugin is not available
- * @description Specialized loader for 3D Gaussian Splatting point cloud models with validation
+ * @description Specialized loader for 3D Gaussian Splatting models with validation
  */
 export async function loadSplatModel(scene, url) {
-    console.log(`Loading .splat/.ply model from URL: ${url}`);
+    debugLog(`Loading .splat model from URL: ${url}`);
 
     if (!BABYLON.GaussianSplattingMesh) {
         throw new Error(ErrorMessages.MODEL.SPLAT_PLUGIN_MISSING);
@@ -92,6 +92,134 @@ export async function loadSplatModel(scene, url) {
     await splatMesh.loadFileAsync(url);
 
     return splatMesh;
+}
+
+/**
+ * Fast PLY type detection using filename and first attempt loading
+ * @param {string|File} source - URL string or File object for the .ply file
+ * @param {boolean} isFile - Whether source is a File object
+ * @returns {Promise<boolean>} True if Gaussian splat, false if regular pointcloud
+ */
+async function detectPlyType(source, isFile) {
+    try {
+        // Fast heuristic: Check filename first
+        const filename = isFile ? source.name : source.split('/').pop();
+        const lowerName = filename.toLowerCase();
+        
+        // Common Gaussian splat naming patterns
+        if (lowerName.includes('splat') || lowerName.includes('gaussian') || 
+            lowerName.includes('3dgs') || lowerName.includes('nerf')) {
+            console.log(`[PLY DETECTION] Filename suggests Gaussian splat: ${filename}`);
+            return true;
+        }
+        
+        // Common pointcloud naming patterns  
+        if (lowerName.includes('pointcloud') || lowerName.includes('points') || 
+            lowerName.includes('scan') || lowerName.includes('lidar')) {
+            console.log(`[PLY DETECTION] Filename suggests pointcloud: ${filename}`);
+            return false;
+        }
+        
+        // For ambiguous names, do quick content check with timeout
+        console.log(`[PLY DETECTION] Ambiguous filename, checking content: ${filename}`);
+        
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Detection timeout')), 1000); // 1 second timeout
+        });
+        
+        const detectionPromise = (async () => {
+            if (isFile) {
+                // Read just first 1KB for speed
+                const blob = source.slice(0, 1024);
+                const content = await blob.text();
+                return content.includes('f_dc_0') || content.includes('scale_0') || content.includes('opacity');
+            } else {
+                // For URLs, default to pointcloud to avoid fetch delays
+                return false;
+            }
+        })();
+        
+        const hasGaussianProperties = await Promise.race([detectionPromise, timeoutPromise]);
+        console.log(`[PLY DETECTION] Content check result: ${hasGaussianProperties ? 'GAUSSIAN SPLAT' : 'POINTCLOUD'}`);
+        return hasGaussianProperties;
+        
+    } catch (error) {
+        console.log(`[PLY DETECTION] Detection failed/timeout, defaulting to pointcloud:`, error.message);
+        return false; // Safe default: treat as pointcloud
+    }
+}
+
+/**
+ * Loads PLY pointcloud models with color information support
+ * @param {BABYLON.Scene} scene - The Babylon.js scene to load the model into
+ * @param {string|File} source - URL string or File object for the .ply file
+ * @param {boolean} [isFile=false] - Whether source is a File object
+ * @returns {Promise<BABYLON.AbstractMesh>} The loaded pointcloud mesh with materials
+ * @description Specialized loader for PLY pointclouds with vertex color support
+ */
+export async function loadPlyPointcloud(scene, source, isFile = false) {
+    debugLog(`Loading .ply pointcloud from ${isFile ? 'file' : 'URL'}: ${isFile ? source.name : source}`);
+
+    let result;
+    
+    if (isFile) {
+        // Load directly from File object to avoid blob URL extension issues
+        result = await BABYLON.SceneLoader.ImportMeshAsync("", "", source, scene);
+    } else {
+        // Load PLY using standard Babylon.js loader from URL
+        result = await BABYLON.SceneLoader.ImportMeshAsync("", source, "", scene);
+    }
+    
+    if (!result.meshes || result.meshes.length === 0) {
+        throw new Error('PLY file loaded but no meshes found');
+    }
+
+    const pointcloudMesh = result.meshes[0];
+    
+    // Create simple point cloud using basic mesh with POINTS primitive
+    if (pointcloudMesh) {
+        // Extract data from loaded mesh
+        const positions = pointcloudMesh.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+        const colors = pointcloudMesh.getVerticesData(BABYLON.VertexBuffer.ColorKind);
+        
+        console.log(`[PLY DEBUG] Original mesh - Positions: ${positions ? positions.length/3 : 0} vertices`);
+        console.log(`[PLY DEBUG] Original mesh - Colors: ${colors ? colors.length/4 : 0} color values`);
+        console.log(`[PLY DEBUG] Has vertex colors: ${colors && colors.length > 0 ? 'YES' : 'NO'}`);
+        
+        // Keep original mesh but modify its rendering
+        if (!positions || positions.length === 0) {
+            throw new Error('PLY has no position data');
+        }
+        
+        // Create simple point cloud material
+        let material;
+        if (colors && colors.length > 0) {
+            material = new BABYLON.StandardMaterial("plyPointMaterial", scene);
+            material.useVertexColors = true;
+            material.disableLighting = true;
+            material.pointSize = 3;
+            console.log(`[PLY DEBUG] Using vertex colors`);
+        } else {
+            material = new BABYLON.StandardMaterial("plyPointMaterial", scene);
+            material.disableLighting = true;
+            material.emissiveColor = new BABYLON.Color3(0.8, 0.8, 0.8);
+            material.pointSize = 3;
+            console.log(`[PLY DEBUG] Using default gray color`);
+        }
+        
+        // Apply material to original mesh
+        pointcloudMesh.material = material;
+        
+        // Set wireframe mode instead of point mode (more compatible)
+        material.wireframe = true;
+        
+        console.log(`[PLY DEBUG] Applied wireframe material to show point structure`);
+        
+        return pointcloudMesh;
+    }
+
+    // This should never be reached since we return from the if block above
+    throw new Error('PLY pointcloud creation failed');
 }
 
 /**
@@ -163,7 +291,7 @@ export function normalizeModelScale(model, targetSize = 2.0) {
         // setAll is used to ensure the scale is uniform.
         model.scaling.setAll(scaleFactor);
 
-        console.log(`Model normalized with a scale factor of: ${scaleFactor.toFixed(4)}`);
+        debugLog(`Model normalized with a scale factor of: ${scaleFactor.toFixed(4)}`);
 
     } catch (error) {
         console.warn("Could not normalize model scale:", error);
@@ -190,10 +318,11 @@ function parseModelSource(modelSource, defaultModelUrl) {
             throw new Error('File has no extension');
         }
         
-        // Create object URL for splat/ply files
-        if (extension === 'splat' || extension === 'ply') {
+        // Create object URL only for splat files (ply files handled directly)
+        if (extension === 'splat') {
             url = URL.createObjectURL(modelSource);
         }
+        // PLY files will be passed directly to the loader
     } else if (typeof modelSource === 'string') {
         if (!modelSource.trim()) {
             throw new Error('URL cannot be empty');
@@ -269,7 +398,7 @@ function applyMobileOptimizations(result, scene, isMobile) {
             // Check triangle count
             const vertices = mesh.getTotalVertices();
             if (vertices > mobileConfig.targetTriangleCount * 3) {
-                console.log(`Mesh ${index} has high vertex count (${vertices}), consider simplifying`);
+                debugLog(`Mesh ${index} has high vertex count (${vertices}), consider simplifying`);
                 
                 // Enable LOD if available
                 if (mobileConfig.enableLOD && mesh.setLOD) {
@@ -277,7 +406,7 @@ function applyMobileOptimizations(result, scene, isMobile) {
                         const simplifiedMesh = mesh.clone(`${mesh.name}_LOD`);
                         simplifiedMesh.scaling.setAll(0.8);
                         mesh.setLOD(10, simplifiedMesh);
-                        console.log(`Applied LOD to mesh ${index}`);
+                        debugLog(`Applied LOD to mesh ${index}`);
                     } catch (error) {
                         console.warn(`Failed to apply LOD to mesh ${index}:`, error);
                     }
@@ -315,7 +444,7 @@ function optimizeMaterialForMobile(material, scene) {
     
     // Reduce material complexity
     if (material.metallicTexture && material.roughnessTexture) {
-        console.log('Mobile: Using separate metallic/roughness textures may impact performance');
+        debugLog('Mobile: Using separate metallic/roughness textures may impact performance');
     }
 }
 
@@ -330,7 +459,7 @@ function optimizeTexture(texture, maxSize) {
     try {
         const size = texture.getSize();
         if (size.width > maxSize || size.height > maxSize) {
-            console.log(`Texture ${texture.name} is large (${size.width}x${size.height}), consider reducing to ${maxSize}x${maxSize} for mobile`);
+            debugLog(`Texture ${texture.name} is large (${size.width}x${size.height}), consider reducing to ${maxSize}x${maxSize} for mobile`);
             // Note: Actual texture compression would require external tools or server-side processing
         }
     } catch (error) {
@@ -417,7 +546,7 @@ function makeResultMeshesPickable(result) {
  * @returns {Promise<{model: BABYLON.AbstractMesh, type: string}>} Loaded model info
  */
 async function loadSpzModel(scene, { modelSource, url, isFile }) {
-    console.log(`Loading SPZ model`);
+    debugLog(`Loading SPZ model`);
     const result = await loadMeshFromSource(scene, modelSource, url, isFile, { useNullMeshName: true });
     const model = result.meshes[0];
     if (model) model.position.y = 0;
@@ -431,7 +560,7 @@ async function loadSpzModel(scene, { modelSource, url, isFile }) {
  * @returns {Promise<{model: BABYLON.AbstractMesh, type: string}>} Loaded model info
  */
 async function loadGltfModel(scene, { modelSource, url, isFile }) {
-    console.log(`Loading GLTF/GLB model`);
+    debugLog(`Loading GLTF/GLB model`);
     const result = await loadMeshFromSource(scene, modelSource, url, isFile);
     const model = result.meshes[0];
     makeResultMeshesPickable(result);
@@ -446,19 +575,19 @@ async function loadGltfModel(scene, { modelSource, url, isFile }) {
  * @description Automatically applies default materials if none are found
  */
 async function loadObjModel(scene, { modelSource, url, isFile }) {
-    console.log(`Loading OBJ model`);
+    debugLog(`Loading OBJ model`);
     const result = await loadMeshFromSource(scene, modelSource, url, isFile, { useBaseUrl: !isFile });
     const model = result.meshes.length > 0 ? result.meshes[0] : null;
     makeResultMeshesPickable(result);
     
     // Apply materials if none exist
     if (!result.materials || result.materials.length === 0) {
-        console.log("Applying default materials to OBJ model");
+        debugLog("Applying default materials to OBJ model");
         result.meshes.forEach((mesh, index) => {
             mesh.material = createDefaultPBRMaterial(`objPBRMaterial_${index}`, scene);
         });
     } else {
-        console.log(`OBJ model loaded with ${result.materials.length} materials`);
+        debugLog(`OBJ model loaded with ${result.materials.length} materials`);
     }
     
     return { model, type: 'mesh', result };
@@ -472,7 +601,7 @@ async function loadObjModel(scene, { modelSource, url, isFile }) {
  * @description STL files have no materials, so gray PBR materials are applied
  */
 async function loadStlModel(scene, { modelSource, url, isFile }) {
-    console.log(`Loading STL model`);
+    debugLog(`Loading STL model`);
     const result = await loadMeshFromSource(scene, modelSource, url, isFile);
     const model = result.meshes[0];
     
@@ -487,7 +616,7 @@ async function loadStlModel(scene, { modelSource, url, isFile }) {
         );
     });
     
-    console.log("STL model loaded with materials");
+    debugLog("STL model loaded with materials");
     return { model, type: 'mesh', result };
 }
 
@@ -499,13 +628,13 @@ async function loadStlModel(scene, { modelSource, url, isFile }) {
  * @description Logs animation groups if present in the FBX file
  */
 async function loadFbxModel(scene, { modelSource, url, isFile }) {
-    console.log(`Loading FBX model`);
+    debugLog(`Loading FBX model`);
     const result = await loadMeshFromSource(scene, modelSource, url, isFile);
     const model = result.meshes[0];
     makeResultMeshesPickable(result);
     
     if (result.animationGroups && result.animationGroups.length > 0) {
-        console.log(`Loaded with ${result.animationGroups.length} animations`);
+        debugLog(`Loaded with ${result.animationGroups.length} animations`);
     }
     
     return { model, type: 'mesh', result };
@@ -538,10 +667,34 @@ async function loadModelByFormat(scene, loadContext) {
         case 'fbx':
             return await loadFbxModel(scene, loadContext);
         case 'splat':
+            debugLog(`Loading .${extension} using GaussianSplattingMesh`);
+            const splatModel = await loadSplatModel(scene, url);
+            return { model: splatModel, type: 'splat' };
         case 'ply':
-            console.log(`Loading .${extension} using GaussianSplattingMesh`);
-            const model = await loadSplatModel(scene, url);
-            return { model, type: 'splat' };
+            // Fast PLY type detection with timeout protection
+            let isGaussianSplat = false;
+            try {
+                // Add timeout wrapper around detection
+                isGaussianSplat = await Promise.race([
+                    detectPlyType(isFile ? modelSource : url, isFile),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Detection timeout')), 2000))
+                ]);
+            } catch (error) {
+                console.log(`[PLY LOADING] Detection failed, defaulting to pointcloud:`, error.message);
+                isGaussianSplat = false;
+            }
+            
+            if (isGaussianSplat) {
+                debugLog(`Loading .${extension} as Gaussian splat`);
+                // Gaussian splat PLY files need blob URL if from file
+                const splatUrl = isFile ? URL.createObjectURL(modelSource) : url;
+                const gaussianModel = await loadSplatModel(scene, splatUrl);
+                return { model: gaussianModel, type: 'splat' };
+            } else {
+                debugLog(`Loading .${extension} as pointcloud`);
+                const plyModel = await loadPlyPointcloud(scene, isFile ? modelSource : url, isFile);
+                return { model: plyModel, type: 'pointcloud' };
+            }
         default:
             throw new Error(ErrorMessages.MODEL.UNSUPPORTED_FORMAT(extension));
     }
@@ -573,7 +726,7 @@ function postProcessModel(currentModel, scene) {
         const actualScale = currentModel.scaling.x; // All axes should be the same due to setAll()
         modelScaleRange.value = actualScale;
         modelScaleDisplay.textContent = actualScale.toFixed(1);
-        console.log(`Scale slider updated to: ${actualScale.toFixed(4)}`);
+        debugLog(`Scale slider updated to: ${actualScale.toFixed(4)}`);
     }
 }
 
@@ -590,29 +743,16 @@ function createFallbackModel(scene) {
     // Reset file size display for fallback model
     updateFileSizeDisplay(0);
     
-    applyDefaultScale(currentModel);
+    // Apply default scale directly
+    if (currentModel && currentModel.scaling) {
+        const defaultScale = CONFIG.modelLoader.defaultModelScale;
+        currentModel.scaling.set(defaultScale, defaultScale, defaultScale);
+        debugLog(`Fallback model scaled to: ${defaultScale}`);
+    }
     
     return { currentModel, currentModelType };
 }
 
-/**
- * Applies the default scale from config to the model
- * @param {BABYLON.AbstractMesh} model - The model to scale
- * @description Uses CONFIG.modelLoader.defaultModelScale for consistent sizing
- */
-function applyDefaultScale(model) {
-    if (!model) return;
-    
-    const defaultScale = CONFIG.modelLoader.defaultModelScale;
-    try {
-        if (model.scaling) {
-            model.scaling.set(defaultScale, defaultScale, defaultScale);
-            console.log(`Model scaled to fixed default scale: ${defaultScale}`);
-        }
-    } catch (error) {
-        console.error("Error applying default scale to model:", error);
-    }
-}
 
 /**
  * Universal 3D model loader supporting multiple formats with automatic format detection
@@ -662,7 +802,7 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
     try {
         // Parse model source to get URL, extension, and file type
         ({ url, extension, isFile } = parseModelSource(modelSource, defaultModelUrl));
-        console.log(`Loading .${extension} model`);
+        debugLog(`Loading .${extension} model`);
 
         // Detect device for mobile optimizations
         const device = detectDevice();
@@ -709,7 +849,7 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
 
         // Apply mobile-specific optimizations if loading succeeded
         if (result && isMobile) {
-            console.log('Applying mobile optimizations...');
+            debugLog('Applying mobile optimizations...');
             applyMobileOptimizations(result, scene, isMobile);
         }
 
@@ -724,7 +864,7 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
         
         // Try fallback to default model if not already using it
         if (modelSource !== defaultModelUrl && defaultModelUrl) {
-            console.log("Attempting to load fallback model");
+            debugLog("Attempting to load fallback model");
             try {
                 ({ url, extension, isFile } = parseModelSource(defaultModelUrl, defaultModelUrl));
                 const fallbackContext = { extension, modelSource: defaultModelUrl, url, isFile: false };
@@ -740,9 +880,13 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
             ({ currentModel, currentModelType } = createFallbackModel(scene));
         }
     } finally {
-        // Clean up object URL if created
-        if (isFile && url && (extension === 'splat' || extension === 'ply')) {
+        // Clean up object URLs if created
+        if (isFile && extension === 'splat') {
+            // Clean up SPLAT file URLs
             setTimeout(() => URL.revokeObjectURL(url), CONFIG.modelLoader.urlCleanupDelay);
+        } else if (isFile && extension === 'ply' && currentModelType === 'splat') {
+            // Clean up PLY Gaussian splat URLs (splatUrl was created in loadModelByFormat)
+            // Note: This cleanup happens in the loadModelByFormat function scope
         }
         
         // Clear progress callback

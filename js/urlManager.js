@@ -35,6 +35,7 @@
 // Import necessary UI functions for state restoration
 import { updateQualitySettings } from './ui/panels/settingsPanel.js';
 import { showToast } from './ui/components/toast.js';
+import { debugLog } from './helpers.js';
 
 /**
  * Maps full parameter names to short codes for more compact URLs
@@ -404,7 +405,7 @@ export function applyCameraParametersFromUrl(camera) {
             }
         }
         
-        console.log("Applied camera parameters from URL");
+        debugLog("Applied camera parameters from URL");
     }
 }
 
@@ -436,7 +437,7 @@ export function applyModelScaleFromUrl(scene) {
                 modelScaleDisplay.textContent = scale.toFixed(1);
             }
             
-            console.log(`Applied model scale from URL: ${scale}`);
+            debugLog(`Applied model scale from URL: ${scale}`);
         }
     }
 }
@@ -707,7 +708,7 @@ export function applySettingsPanelFromUrl(camera, scene) {
         }
     }
     
-    console.log("Applied settings panel state from URL");
+    debugLog("Applied settings panel state from URL");
 }
 
 /**
@@ -758,7 +759,7 @@ export function shareCompleteViewerState(camera, scene) {
     
     const shareUrl = createShareUrl(params);
     
-    console.log(`URL compression active. Final URL: ${shareUrl}`);
+    debugLog(`URL compression active. Final URL: ${shareUrl}`);
     
     // Copy to clipboard with fallback support
     navigator.clipboard.writeText(shareUrl).then(() => {
