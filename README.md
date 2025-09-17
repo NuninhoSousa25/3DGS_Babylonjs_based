@@ -10,7 +10,8 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - simplify ui for shared links should have "info", full screen, and reset viewer, maybe with quality settings,
 - low performance should be set to lower res just o make sure
 -
--
+-sliders are awfull, should be smother with not giter, and also let me input the values directly
+
 -
 - performance is worst when sharpness is disabled - why?
 - disable pan doesnt work on mobile
