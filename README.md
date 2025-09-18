@@ -8,7 +8,10 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ### 🔄 To Implement / Fix
 
 - low performance should be set to lower res just o make sure
--
+-currently background collor is not passing to the url link
+
+also, is there a way to over ride the controls? i have this embeded in a web page and when i use scrool to zoom it also scrolls the enterire page hosting this, 
+also full screen is not working when hosted in wordpress, it must have to do with permitions, could we go around that? maybe pop up a new window if clicked on fullscren?
 
 -
 - performance is worst when sharpness is disabled - why?
