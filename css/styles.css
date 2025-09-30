@@ -87,6 +87,8 @@
 /* ========================================================================
    2. BASE & RESET STYLES
    ======================================================================== */
+
+/* WordPress iframe embedding fix - ensure consistent background */
 html, body {
   margin: 0;
   padding: 0;
@@ -94,13 +96,31 @@ html, body {
   width: 100%;
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* Force specific background color to prevent WordPress/iframe inheritance issues */
+  background-color: #191919 !important;
+  background: #191919 !important;
 }
 
 #renderCanvas {
   width: 100%;
   height: 100%;
+  /* Ensure canvas has consistent background color */
+  background-color: #191919 !important;
+  background: #191919 !important;
   touch-action: none;
   outline: none;
+}
+
+/* Additional iframe embedding support */
+body {
+  /* Override any WordPress/parent page styles */
+  color: #ffffff !important;
+}
+
+/* Ensure consistent styling when embedded */
+html[style*="background"], body[style*="background"] {
+  background: #191919 !important;
+  background-color: #191919 !important;
 }
 
 /* ========================================================================
