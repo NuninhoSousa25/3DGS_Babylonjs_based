@@ -36,6 +36,8 @@
 import { updateQualitySettings } from './ui/panels/settingsPanel.js';
 import { showToast } from './ui/components/toast.js';
 import { debugLog } from './helpers.js';
+import { CONFIG } from './config.js';
+import { getCurrentUrlParams, getBaseUrl } from './utils/urlUtils.js';
 
 /**
  * Maps full parameter names to short codes for more compact URLs
@@ -164,7 +166,7 @@ function compressUrlParameters(params) {
  * console.log(params.get('model')); // 'https://example.com'
  */
 export function decompressUrlParameters() {
-    const urlParams = new URLSearchParams(window.location.search);
+    const urlParams = getCurrentUrlParams();
     
     // Check if URL is base64 compressed
     if (urlParams.has('c')) {
@@ -220,12 +222,39 @@ export function decompressUrlParameters() {
  */
 export function createShareUrl(params) {
     const compressedParams = compressUrlParameters(params);
-    const baseUrl = window.location.href.split('?')[0];
+    const baseUrl = getBaseUrl();
     return `${baseUrl}?${compressedParams}`;
 }
 
 // Export the internal compression function for advanced use cases
 export { compressUrlParameters };
+
+/**
+ * Get background color from URL parameters for early scene initialization
+ * @returns {BABYLON.Color3|null} Background color or null if not specified
+ */
+export function getBackgroundColorFromUrl() {
+    const urlParams = decompressUrlParameters();
+
+    if (urlParams.has('backgroundColor')) {
+        const bgColor = urlParams.get('backgroundColor');
+        // Validate hex color format
+        if (/^#[0-9A-F]{6}$/i.test(bgColor)) {
+            // Convert hex to RGB values (0-1 range for Babylon.js)
+            const r = parseInt(bgColor.substr(1, 2), 16) / 255;
+            const g = parseInt(bgColor.substr(3, 2), 16) / 255;
+            const b = parseInt(bgColor.substr(5, 2), 16) / 255;
+
+            // Access BABYLON from window
+            const BABYLON = window.BABYLON;
+            if (BABYLON) {
+                return new BABYLON.Color3(r, g, b);
+            }
+        }
+    }
+
+    return null;
+}
 
 /* ========================================================================
    URL STATE MANAGEMENT FUNCTIONS
@@ -251,15 +280,7 @@ export { compressUrlParameters };
  * const shareUrl = createShareUrl(params);
  */
 export function addSettingsPanelToUrl(params, camera, scene) {
-    // Access CONFIG from window if available, or use defaults
-    const CONFIG = window.CONFIG || {
-        camera: { useAutoRotationBehavior: false },
-        postProcessing: { 
-            sharpenEnabled: false,
-            sharpenEdgeAmount: 1.0,
-            fxaaEnabled: false
-        }
-    };
+    // Use imported CONFIG
     
     // Auto rotation setting
     if (camera.useAutoRotationBehavior !== CONFIG.camera.useAutoRotationBehavior) {
@@ -295,9 +316,9 @@ export function addSettingsPanelToUrl(params, camera, scene) {
         params.set('touchSensitivity', touchSensitivityRange.value);
     }
     
-    // Background color (if different from default)
+    // Background color (always include)
     const backgroundColorPicker = document.getElementById('backgroundColorPicker');
-    if (backgroundColorPicker && backgroundColorPicker.value !== '#191919') {
+    if (backgroundColorPicker) {
         params.set('backgroundColor', backgroundColorPicker.value);
     }
     
@@ -506,10 +527,8 @@ export function applySettingsPanelFromUrl(camera, scene) {
             const intensity = parseFloat(urlParams.get('sharpenIntensity'));
             if (!isNaN(intensity) && intensity >= 0 && intensity <= 2) {
                 scene.pipeline.sharpen.edgeAmount = intensity;
-                // Update CONFIG if available
-                if (window.CONFIG) {
-                    window.CONFIG.postProcessing.sharpenEdgeAmount = intensity;
-                }
+                // Update CONFIG
+                CONFIG.postProcessing.sharpenEdgeAmount = intensity;
                 
                 const sharpenIntensityRange = document.getElementById('sharpenIntensityRange');
                 const sharpenIntensityDisplay = document.getElementById('sharpenIntensityDisplay');
@@ -523,9 +542,7 @@ export function applySettingsPanelFromUrl(camera, scene) {
         // FXAA
         if (urlParams.has('fxaa')) {
             const fxaa = urlParams.get('fxaa') === '1';
-            if (window.CONFIG) {
-                window.CONFIG.postProcessing.fxaaEnabled = fxaa;
-            }
+            CONFIG.postProcessing.fxaaEnabled = fxaa;
             
             if (scene.pipeline) {
                 scene.pipeline.fxaaEnabled = fxaa;
@@ -561,20 +578,21 @@ export function applySettingsPanelFromUrl(camera, scene) {
         if (/^#[0-9A-F]{6}$/i.test(bgColor)) {
             const backgroundColorPicker = document.getElementById('backgroundColorPicker');
             const backgroundColorDisplay = document.getElementById('backgroundColorPickerDisplay');
-            
-            if (backgroundColorPicker && backgroundColorDisplay) {
-                backgroundColorPicker.value = bgColor;
-                backgroundColorDisplay.textContent = bgColor.toUpperCase();
-                
-                // Convert hex to RGB values (0-1 range for Babylon.js)
-                const r = parseInt(bgColor.substr(1, 2), 16) / 255;
-                const g = parseInt(bgColor.substr(3, 2), 16) / 255;
-                const b = parseInt(bgColor.substr(5, 2), 16) / 255;
-                
-                // Access BABYLON from window
-                const BABYLON = window.BABYLON;
-                if (BABYLON) {
-                    scene.clearColor = new BABYLON.Color3(r, g, b);
+
+            // Convert hex to RGB values (0-1 range for Babylon.js)
+            const r = parseInt(bgColor.substr(1, 2), 16) / 255;
+            const g = parseInt(bgColor.substr(3, 2), 16) / 255;
+            const b = parseInt(bgColor.substr(5, 2), 16) / 255;
+
+            // Access BABYLON from window
+            const BABYLON = window.BABYLON;
+            if (BABYLON && scene) {
+                scene.clearColor = new BABYLON.Color3(r, g, b);
+
+                // Also update UI elements if they exist (for non-shared mode)
+                if (backgroundColorPicker && backgroundColorDisplay) {
+                    backgroundColorPicker.value = bgColor;
+                    backgroundColorDisplay.textContent = bgColor.toUpperCase();
                 }
             }
         }
@@ -726,8 +744,7 @@ export function applySettingsPanelFromUrl(camera, scene) {
 export function shareCompleteViewerState(camera, scene) {
     if (!camera) return;
     
-    // Import CONFIG dynamically to avoid circular dependencies
-    const CONFIG = window.CONFIG || { defaultModelUrl: '' };
+    // Use imported CONFIG
     
     const currentModelUrl = scene.currentModelUrl || CONFIG.defaultModelUrl;
     

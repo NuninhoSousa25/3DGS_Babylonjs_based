@@ -6,7 +6,7 @@ import { createToggleSwitch, createRangeControl, createColorControl, getCameraLi
 import { showToast } from '../components/toast.js';
 import { setupUIUpdates, startUIUpdates, stopUIUpdates, restartUIUpdates, DOM, Events, ErrorMessages, LoadingSpinner } from '../../helpers.js';
 import { CONFIG } from '../../config.js';
-import { detectDevice } from '../../deviceDetection.js';
+import { getDeviceInfo } from '../../utils/deviceManager.js';
 import { ICONS } from '../components/icons.js';
 
 /**
@@ -29,7 +29,7 @@ export function createSettingsSection(hasTouch) {
  * Create visualization settings section HTML
  */
 function createVisualizationSection() {
-    const device = detectDevice();
+    const device = getDeviceInfo();
     const defaultQuality = device.isDesktop ? 'high' : 'medium';
     
     return `
@@ -74,7 +74,7 @@ function createCameraLimitsSection() {
                 <div class="control-group">
                 <label for="cameraLimitsToggle">Enable Camera Limits</label>
                 <label class="switch">
-                    <input type="checkbox" id="cameraLimitsToggle" checked>
+                    <input type="checkbox" id="cameraLimitsToggle" ${CONFIG.cameraLimits.enabled ? 'checked' : ''}>
                     <span class="slider round"></span>
                 </label>
             </div>
@@ -82,7 +82,7 @@ function createCameraLimitsSection() {
             <div class="control-group">
                 <label for="limitZoomToggle">Limit Zoom</label>
                 <label class="switch">
-                    <input type="checkbox" id="limitZoomToggle" checked>
+                    <input type="checkbox" id="limitZoomToggle" ${CONFIG.cameraLimits.defaultRestrictions.zoom ? 'checked' : ''}>
                     <span class="slider round"></span>
                 </label>
             </div>
@@ -93,7 +93,7 @@ function createCameraLimitsSection() {
             <div class="control-group">
                 <label for="limitVerticalToggle">Limit Vertical Rotation</label>
                 <label class="switch">
-                    <input type="checkbox" id="limitVerticalToggle" checked>
+                    <input type="checkbox" id="limitVerticalToggle" ${CONFIG.cameraLimits.defaultRestrictions.vertical ? 'checked' : ''}>
                     <span class="slider round"></span>
                 </label>
             </div>
@@ -104,7 +104,7 @@ function createCameraLimitsSection() {
             <div class="control-group">
                 <label for="limitHorizontalToggle">Limit Horizontal Rotation</label>
                 <label class="switch">
-                    <input type="checkbox" id="limitHorizontalToggle">
+                    <input type="checkbox" id="limitHorizontalToggle" ${CONFIG.cameraLimits.defaultRestrictions.horizontal ? 'checked' : ''}>
                     <span class="slider round"></span>
                 </label>
             </div>
@@ -115,7 +115,7 @@ function createCameraLimitsSection() {
             <div class="control-group">
                 <label for="limitPanToggle">Enable Panning</label>
                 <label class="switch">
-                    <input type="checkbox" id="limitPanToggle" checked>
+                    <input type="checkbox" id="limitPanToggle" ${CONFIG.cameraLimits.defaultRestrictions.panning ? 'checked' : ''}>
                     <span class="slider round"></span>
                 </label>
             </div>
@@ -217,7 +217,6 @@ export function setupSettingsControls(camera, scene) {
         Events.addRangeListener(sharpenIntensityRange, (value) => {
             scene.pipeline.sharpen.edgeAmount = value;
             CONFIG.postProcessing.sharpenEdgeAmount = value;
-            console.log('Sharpening intensity updated to:', value);
         }, sharpenIntensityDisplay);
     }
 
@@ -259,7 +258,6 @@ export function setupSettingsControls(camera, scene) {
     // FOV range control - Enhanced
     setupEnhancedRangeControl('fovRange', (value) => {
         camera.fov = value;
-        console.log('FOV updated to:', Math.round(value * 180 / Math.PI) + '° (' + value.toFixed(2) + ' radians)');
     });
 
     // Model scale range control - Enhanced
@@ -267,7 +265,6 @@ export function setupSettingsControls(camera, scene) {
         if (scene.currentModel) {
             scene.currentModel.scaling.setAll(value);
         }
-        console.log('Model scale updated to:', value);
     });
 
     // Background color picker

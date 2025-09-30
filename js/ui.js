@@ -16,24 +16,10 @@ import { createInfoSection } from './ui/panels/infoPanel.js';
 import { setupUIUpdates, stopUIUpdates, restartUIUpdates, DOM, Events, ErrorMessages, LoadingSpinner } from './helpers.js';
 import { loadModel } from './modelLoader.js';
 import { CONFIG } from './config.js';
-import { detectDevice } from './deviceDetection.js';
+import { getDeviceInfo } from './utils/deviceManager.js';
 import { decompressUrlParameters, compressUrlParameters, createShareUrl, addSettingsPanelToUrl, shareCompleteViewerState } from './urlManager.js';
+import { isSharedURL } from './utils/urlUtils.js';
 
-/**
- * Check if URL contains parameters indicating a shared scene
- */
-function isSharedURL() {
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    // Check for compressed URL (shared URLs are usually compressed)
-    if (urlParams.has('c')) {
-        return true;
-    }
-    
-    // Check for common shared URL parameters
-    const sharedParams = ['model', 'm', 'alpha', 'a', 'beta', 'b', 'radius', 'r'];
-    return sharedParams.some(param => urlParams.has(param));
-}
 
 /* ========================================================================
    MAIN UI SETUP FUNCTION
@@ -166,7 +152,7 @@ function createIconBar() {
     
     if (isShared) {
         // Hamburger menu for shared links with quality toggle
-        const device = detectDevice();
+        const device = getDeviceInfo();
         const defaultQuality = device.isDesktop ? 'High' : 'Medium';
         
         return createElement("div", {
@@ -289,12 +275,12 @@ function setupIconButtonHandlers(camera, scene, engine) {
         ]);
     } else {
         buttons = DOM.getAll([
-            "settingsButton", "infoButton", "devButton", 
+            "settingsButton", "infoButton", "devButton",
             "resetViewButton", "fullscreenButton", "shareButton", "closePanelButton"
         ]);
     }
     
-    const { settingsButton, infoButton, devButton, resetViewButton, 
+    const { settingsButton, infoButton, devButton, resetViewButton,
             fullscreenButton, shareButton, closePanelButton, hamburgerButton, qualityToggle } = buttons;
 
     // Track currently open section

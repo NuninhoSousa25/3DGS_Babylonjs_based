@@ -22,18 +22,18 @@
 import { setupCamera, animateCamera } from './cameraControl.js';
 import { loadModel, disposeCurrentModel } from './modelLoader.js';
 import { setupUI } from './ui.js';
-import { decompressUrlParameters, applyCameraParametersFromUrl, applyModelScaleFromUrl, applySettingsPanelFromUrl } from './urlManager.js';
+import { decompressUrlParameters, applyCameraParametersFromUrl, applyModelScaleFromUrl, applySettingsPanelFromUrl, getBackgroundColorFromUrl } from './urlManager.js';
 import { addPostEffects } from './postProcessing.js';
 import { getPickResult } from './picking.js';
 import { disposePickingHelpers } from './picking.js';
 import { CONFIG, setupLighting } from './config.js';  // Import the centralized configuration and lighting
 
-// Make CONFIG globally available
-window.CONFIG = CONFIG;
+// CONFIG is now properly imported in each module that needs it
 import { setupMobileControls } from './mobileControl.js';
-import { detectDevice } from './deviceDetection.js';
+import { getDeviceInfo } from './utils/deviceManager.js';
 import { CameraLimits } from './cameraLimits.js';
 import { WindowEvents, ErrorMessages, triggerVerticesUpdate, triggerResolutionUpdate } from './helpers.js';
+import { isSharedURL } from './utils/urlUtils.js';
 
 /**
  * Global Variables
@@ -43,21 +43,6 @@ let pipeline = null; // For post-process reuse
 let gestureController = null; // For mobile gesture control
 let cameraLimits = null; // For camera movement limitations
 
-/**
- * Check if URL contains parameters indicating a shared scene
- */
-function isSharedURL() {
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    // Check for compressed URL (shared URLs are usually compressed)
-    if (urlParams.has('c')) {
-        return true;
-    }
-    
-    // Check for common shared URL parameters
-    const sharedParams = ['model', 'm', 'alpha', 'a', 'beta', 'b', 'radius', 'r'];
-    return sharedParams.some(param => urlParams.has(param));
-}
 
 /**
  * Show early loading feedback for shared URLs
@@ -164,7 +149,10 @@ async function initializeEngineAndScene() {
         antialias: CONFIG.engine.antialias
     });
     scene = new BABYLON.Scene(engine);
-    scene.clearColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+
+    // Set background color from URL if specified, otherwise use default
+    const urlBackgroundColor = getBackgroundColorFromUrl();
+    scene.clearColor = urlBackgroundColor || new BABYLON.Color3(0.1, 0.1, 0.1);
 
     // Setup lighting for GLB models (async for HDR loading)
     await setupLighting(scene);
@@ -174,6 +162,49 @@ async function initializeEngineAndScene() {
     scene.currentModelType = null;
 
     return { engine, scene, canvas };
+}
+
+/**
+ * Setup wheel event prevention to stop parent page scrolling
+ * When mouse wheel is used over the viewer canvas
+ */
+function setupWheelEventPrevention(canvas) {
+    // Simple and effective approach: prevent wheel events directly on canvas
+    canvas.addEventListener('wheel', (e) => {
+        // Stop the event from bubbling to parent elements (like iframe parent)
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Create a new wheel event for Babylon.js to handle
+        const newEvent = new WheelEvent('wheel', {
+            deltaX: e.deltaX,
+            deltaY: e.deltaY,
+            deltaZ: e.deltaZ,
+            deltaMode: e.deltaMode,
+            clientX: e.clientX,
+            clientY: e.clientY,
+            button: e.button,
+            buttons: e.buttons,
+            bubbles: false  // Don't let it bubble
+        });
+
+        // Dispatch the new event to the camera input system
+        if (camera && camera.inputs && camera.inputs.attached.mousewheel) {
+            // Use the camera's internal wheel handling
+            const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
+            camera.radius *= zoomFactor;
+
+            // Apply camera limits if they exist
+            if (camera.lowerRadiusLimit !== null) {
+                camera.radius = Math.max(camera.lowerRadiusLimit, camera.radius);
+            }
+            if (camera.upperRadiusLimit !== null) {
+                camera.radius = Math.min(camera.upperRadiusLimit, camera.radius);
+            }
+        }
+    }, { passive: false });
+
+    console.log('Direct wheel event prevention setup - parent page scrolling disabled over viewer area');
 }
 
 /**
@@ -313,8 +344,11 @@ async function createScene() {
         engine = eng;
         scene = scn;
 
+        // Setup wheel event prevention to stop parent page scrolling
+        setupWheelEventPrevention(canvas);
+
         // Detect device using consolidated detection system
-        const device = detectDevice();
+        const device = getDeviceInfo();
         const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0); // ADD THIS LINE
         const isMobile = device.isMobile; // Keep existing
 

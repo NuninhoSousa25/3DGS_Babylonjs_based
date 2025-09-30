@@ -59,7 +59,7 @@ export class CameraLimits {
             enablePanning: true,        // Enable/disable panning functionality
         };
         
-        this.isEnabled = true;
+        this.isEnabled = CONFIG.cameraLimits.enabled;
         this.isDirty = false;  // Track when constraints need checking
         this.constraintObserver = null;  // Store observer reference for cleanup
         
@@ -138,7 +138,19 @@ export class CameraLimits {
      * Update camera's built-in constraints to match our limits
      */
     updateCameraConstraints() {
-        // Apply distance limits only if enabled
+        // If master toggle is disabled, remove all constraints
+        if (!this.isEnabled) {
+            this.camera.lowerRadiusLimit = null;
+            this.camera.upperRadiusLimit = null;
+            this.camera.lowerBetaLimit = null;
+            this.camera.upperBetaLimit = null;
+            this.camera.lowerAlphaLimit = null;
+            this.camera.upperAlphaLimit = null;
+            this.camera.panningSensibility = CONFIG.camera.panningSensibility;
+            return;
+        }
+
+        // Apply distance limits only if master enabled and individual restriction enabled
         if (this.limits.restrictDistance) {
             this.camera.lowerRadiusLimit = this.limits.radiusMin;
             this.camera.upperRadiusLimit = this.limits.radiusMax;
@@ -146,8 +158,8 @@ export class CameraLimits {
             this.camera.lowerRadiusLimit = null;
             this.camera.upperRadiusLimit = null;
         }
-        
-        // Apply vertical limits only if enabled
+
+        // Apply vertical limits only if master enabled and individual restriction enabled
         if (this.limits.restrictVertical) {
             this.camera.lowerBetaLimit = this.limits.betaMin;
             this.camera.upperBetaLimit = this.limits.betaMax;
@@ -155,7 +167,8 @@ export class CameraLimits {
             this.camera.lowerBetaLimit = null;
             this.camera.upperBetaLimit = null;
         }
-        
+
+        // Apply horizontal limits only if master enabled and individual restriction enabled
         if (this.limits.restrictHorizontal) {
             this.camera.lowerAlphaLimit = this.limits.alphaMin;
             this.camera.upperAlphaLimit = this.limits.alphaMax;
@@ -163,7 +176,7 @@ export class CameraLimits {
             this.camera.lowerAlphaLimit = null;
             this.camera.upperAlphaLimit = null;
         }
-        
+
         // Control panning by setting panningSensibility
         if (this.limits.enablePanning) {
             this.camera.panningSensibility = CONFIG.camera.panningSensibility;
@@ -281,12 +294,24 @@ export class CameraLimits {
      */
     setEnabled(enabled) {
         this.isEnabled = enabled;
-        
-        // Immediately check constraints when re-enabling
+
+        // Update camera constraints based on enabled state
         if (enabled) {
+            // Re-enable constraints based on current restriction settings
+            this.updateCameraConstraints();
             this.enforceConstraints();
+        } else {
+            // Disable all camera constraints when master toggle is off
+            this.camera.lowerRadiusLimit = null;
+            this.camera.upperRadiusLimit = null;
+            this.camera.lowerBetaLimit = null;
+            this.camera.upperBetaLimit = null;
+            this.camera.lowerAlphaLimit = null;
+            this.camera.upperAlphaLimit = null;
+            // Keep panning enabled when camera limits are disabled
+            this.camera.panningSensibility = CONFIG.camera.panningSensibility;
         }
-        
+
         console.log(`Camera limits ${enabled ? 'enabled' : 'disabled'}`);
     }
 
