@@ -52,7 +52,17 @@ export function setupUI(camera, scene, engine, initialPixelRatio) {
     controlPanel.appendChild(iconBar);
     controlPanel.appendChild(contentArea);
     document.body.appendChild(controlPanel);
-    
+
+    // Create and append loading spinner (outside control panel so it's always visible)
+    const loadingSpinner = document.createElement('div');
+    loadingSpinner.id = 'loadingSpinner';
+    loadingSpinner.className = 'loading-spinner';
+    loadingSpinner.innerHTML = `
+        <div class="spinner-animation"></div>
+        <div class="spinner-text">Loading Model...</div>
+    `;
+    document.body.appendChild(loadingSpinner);
+
     // Initially hide all content sections
     const sections = contentArea.querySelectorAll('.content-section');
     sections.forEach(section => {

@@ -1039,7 +1039,7 @@ input[type="file"] {
 /* === LOADING STATES === */
 
 .loading-spinner {
-  position: absolute;
+  position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -1051,6 +1051,7 @@ input[type="file"] {
   padding: var(--spacing-xl);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-lg);
+  pointer-events: none; /* Allow interaction with elements below */
 }
 
 .spinner-animation {

@@ -45,12 +45,15 @@ function createVisualizationSection() {
             </div>
             
             <div class="control-group">
-                 <label for="qualitySelect">Quality</label>
+                 <label for="qualitySelect">Quality Preset</label>
                 <select id="qualitySelect" class="settings-select">
-                    <option value="low">Low (Better Performance)</option>
-                    <option value="medium" ${defaultQuality === 'medium' ? 'selected' : ''}>Medium</option>
-                    <option value="high" ${defaultQuality === 'high' ? 'selected' : ''}>High (Better Quality)</option>
+                    <option value="low">Low - No Post-Processing (Best Performance)</option>
+                    <option value="medium" ${defaultQuality === 'medium' ? 'selected' : ''}>Medium - Sharpening Only (Balanced)</option>
+                    <option value="high" ${defaultQuality === 'high' ? 'selected' : ''}>High - Full Effects (Best Quality)</option>
                 </select>
+            </div>
+            <div class="quality-hint">
+                <small>💡 Tip: If experiencing lag when sharpening is OFF, try switching to Low quality preset instead.</small>
             </div>
             
             ${createRangeControl('fovRange', 'Field of View', 0.4, 2.0, 0.8, 0.05, ' rad')}
@@ -207,6 +210,11 @@ export function setupSettingsControls(camera, scene) {
     if (sharpenToggle && scene.pipeline) {
         Events.addToggleListener(sharpenToggle, (checked) => {
             scene.pipeline.sharpenEnabled = checked;
+
+            // Provide performance hint when disabling
+            if (!checked) {
+                console.log('💡 Performance Tip: If experiencing lag with sharpening OFF, try using the "Low" quality preset for better optimization.');
+            }
         });
     }
 
@@ -649,19 +657,19 @@ async function handleExport(camera, scene, engine) {
  */
 export function updateQualitySettings(quality, scene) {
     const engine = scene.getEngine();
-    
+
     const qualitySettings = {
-        low: { scaling: 1.5, fxaa: false, sharpen: true },
-        medium: { scaling: 1.0, fxaa: false, sharpen: true },
-        high: { scaling: 0.70, fxaa: false, sharpen: true }
+        low: { scaling: 1.5, fxaa: false, sharpen: false },      // Low: Disable sharpen for better performance
+        medium: { scaling: 1.0, fxaa: false, sharpen: true },    // Medium: Enable sharpen, no FXAA
+        high: { scaling: 0.70, fxaa: true, sharpen: true }       // High: Enable both sharpen and FXAA
     };
-    
+
     const settings = qualitySettings[quality];
     if (!settings) return;
-    
+
     // Apply settings
     engine.setHardwareScalingLevel(settings.scaling);
-    
+
     if (scene.pipeline) {
         scene.pipeline.fxaaEnabled = settings.fxaa;
         scene.pipeline.sharpenEnabled = settings.sharpen;

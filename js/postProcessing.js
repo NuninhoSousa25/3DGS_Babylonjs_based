@@ -77,7 +77,11 @@ export function addPostEffects(scene, camera) {
 
         // Apply FXAA from CONFIG
         pipeline.fxaaEnabled = CONFIG.postProcessing.fxaaEnabled;
-        
+
+        // Note: Disabling individual effects after pipeline creation can sometimes cause
+        // performance overhead due to shader checks and allocated resources.
+        // For best performance, use quality presets (Low/Medium/High) instead of
+        // manually toggling effects on/off.
         console.log(`Desktop post-processing: Sharpen enabled: ${pipeline.sharpenEnabled}, Edge amount: ${pipeline.sharpen?.edgeAmount || 'N/A'}`);
     }
 

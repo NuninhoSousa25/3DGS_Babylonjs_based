@@ -91,12 +91,7 @@ export function createDevSection() {
                     </button>
                 </div>
             </div>
-            
-            <div id="loadingSpinner" class="loading-spinner">
-                <div class="spinner-animation"></div>
-                <div class="spinner-text">Loading Model...</div>
-            </div>
-            
+
             <div class="settings-separator"></div>
             
             <div class="dev-section">

@@ -16,11 +16,12 @@
    
    SUPPORTED FORMATS:
    - .gltf/.glb - PBR models with materials and textures
-   - .obj - Mesh models with optional .mtl materials  
+   - .obj - Mesh models with optional .mtl materials
    - .stl - STL models with auto-applied PBR materials
    - .fbx - FBX models with animations
    - .spz - Compressed models
-   - .splat/.ply - Gaussian Splatting point clouds
+   - .splat - Gaussian Splatting models (3DGS)
+   - .ply - 3D Gaussian Splatting ONLY (not regular pointclouds)
    
    DEPENDENCIES:
    - Babylon.js scene loader and mesh utilities
@@ -95,132 +96,12 @@ export async function loadSplatModel(scene, url) {
 }
 
 /**
- * Fast PLY type detection using filename and first attempt loading
- * @param {string|File} source - URL string or File object for the .ply file
- * @param {boolean} isFile - Whether source is a File object
- * @returns {Promise<boolean>} True if Gaussian splat, false if regular pointcloud
+ * NOTE: PLY files are now ONLY supported for 3D Gaussian Splatting (3DGS) format.
+ * Regular pointcloud PLY files are NOT supported to avoid format detection complexity.
+ *
+ * If you need to support regular pointcloud PLY files, implement a separate
+ * format or use a different file extension.
  */
-async function detectPlyType(source, isFile) {
-    try {
-        // Fast heuristic: Check filename first
-        const filename = isFile ? source.name : source.split('/').pop();
-        const lowerName = filename.toLowerCase();
-        
-        // Common Gaussian splat naming patterns
-        if (lowerName.includes('splat') || lowerName.includes('gaussian') || 
-            lowerName.includes('3dgs') || lowerName.includes('nerf')) {
-            console.log(`[PLY DETECTION] Filename suggests Gaussian splat: ${filename}`);
-            return true;
-        }
-        
-        // Common pointcloud naming patterns  
-        if (lowerName.includes('pointcloud') || lowerName.includes('points') || 
-            lowerName.includes('scan') || lowerName.includes('lidar')) {
-            console.log(`[PLY DETECTION] Filename suggests pointcloud: ${filename}`);
-            return false;
-        }
-        
-        // For ambiguous names, do quick content check with timeout
-        console.log(`[PLY DETECTION] Ambiguous filename, checking content: ${filename}`);
-        
-        const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Detection timeout')), 1000); // 1 second timeout
-        });
-        
-        const detectionPromise = (async () => {
-            if (isFile) {
-                // Read just first 1KB for speed
-                const blob = source.slice(0, 1024);
-                const content = await blob.text();
-                return content.includes('f_dc_0') || content.includes('scale_0') || content.includes('opacity');
-            } else {
-                // For URLs, default to pointcloud to avoid fetch delays
-                return false;
-            }
-        })();
-        
-        const hasGaussianProperties = await Promise.race([detectionPromise, timeoutPromise]);
-        console.log(`[PLY DETECTION] Content check result: ${hasGaussianProperties ? 'GAUSSIAN SPLAT' : 'POINTCLOUD'}`);
-        return hasGaussianProperties;
-        
-    } catch (error) {
-        console.log(`[PLY DETECTION] Detection failed/timeout, defaulting to pointcloud:`, error.message);
-        return false; // Safe default: treat as pointcloud
-    }
-}
-
-/**
- * Loads PLY pointcloud models with color information support
- * @param {BABYLON.Scene} scene - The Babylon.js scene to load the model into
- * @param {string|File} source - URL string or File object for the .ply file
- * @param {boolean} [isFile=false] - Whether source is a File object
- * @returns {Promise<BABYLON.AbstractMesh>} The loaded pointcloud mesh with materials
- * @description Specialized loader for PLY pointclouds with vertex color support
- */
-export async function loadPlyPointcloud(scene, source, isFile = false) {
-    debugLog(`Loading .ply pointcloud from ${isFile ? 'file' : 'URL'}: ${isFile ? source.name : source}`);
-
-    let result;
-    
-    if (isFile) {
-        // Load directly from File object to avoid blob URL extension issues
-        result = await BABYLON.SceneLoader.ImportMeshAsync("", "", source, scene);
-    } else {
-        // Load PLY using standard Babylon.js loader from URL
-        result = await BABYLON.SceneLoader.ImportMeshAsync("", source, "", scene);
-    }
-    
-    if (!result.meshes || result.meshes.length === 0) {
-        throw new Error('PLY file loaded but no meshes found');
-    }
-
-    const pointcloudMesh = result.meshes[0];
-    
-    // Create simple point cloud using basic mesh with POINTS primitive
-    if (pointcloudMesh) {
-        // Extract data from loaded mesh
-        const positions = pointcloudMesh.getVerticesData(BABYLON.VertexBuffer.PositionKind);
-        const colors = pointcloudMesh.getVerticesData(BABYLON.VertexBuffer.ColorKind);
-        
-        console.log(`[PLY DEBUG] Original mesh - Positions: ${positions ? positions.length/3 : 0} vertices`);
-        console.log(`[PLY DEBUG] Original mesh - Colors: ${colors ? colors.length/4 : 0} color values`);
-        console.log(`[PLY DEBUG] Has vertex colors: ${colors && colors.length > 0 ? 'YES' : 'NO'}`);
-        
-        // Keep original mesh but modify its rendering
-        if (!positions || positions.length === 0) {
-            throw new Error('PLY has no position data');
-        }
-        
-        // Create simple point cloud material
-        let material;
-        if (colors && colors.length > 0) {
-            material = new BABYLON.StandardMaterial("plyPointMaterial", scene);
-            material.useVertexColors = true;
-            material.disableLighting = true;
-            material.pointSize = 3;
-            console.log(`[PLY DEBUG] Using vertex colors`);
-        } else {
-            material = new BABYLON.StandardMaterial("plyPointMaterial", scene);
-            material.disableLighting = true;
-            material.emissiveColor = new BABYLON.Color3(0.8, 0.8, 0.8);
-            material.pointSize = 3;
-            console.log(`[PLY DEBUG] Using default gray color`);
-        }
-        
-        // Apply material to original mesh
-        pointcloudMesh.material = material;
-        
-        // Set wireframe mode instead of point mode (more compatible)
-        material.wireframe = true;
-        
-        console.log(`[PLY DEBUG] Applied wireframe material to show point structure`);
-        
-        return pointcloudMesh;
-    }
-
-    // This should never be reached since we return from the if block above
-    throw new Error('PLY pointcloud creation failed');
-}
 
 /**
  * Centers a 3D model in the scene and adjusts camera to fit the entire model in view
@@ -671,30 +552,19 @@ async function loadModelByFormat(scene, loadContext) {
             const splatModel = await loadSplatModel(scene, url);
             return { model: splatModel, type: 'splat' };
         case 'ply':
-            // Fast PLY type detection with timeout protection
-            let isGaussianSplat = false;
-            try {
-                // Add timeout wrapper around detection
-                isGaussianSplat = await Promise.race([
-                    detectPlyType(isFile ? modelSource : url, isFile),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Detection timeout')), 2000))
-                ]);
-            } catch (error) {
-                console.log(`[PLY LOADING] Detection failed, defaulting to pointcloud:`, error.message);
-                isGaussianSplat = false;
+            // PLY files are treated as Gaussian Splat (3DGS) format only
+            debugLog(`Loading .${extension} as Gaussian splat (3DGS)`);
+
+            // Gaussian splat PLY files need blob URL if from file
+            const splatUrl = isFile ? URL.createObjectURL(modelSource) : url;
+            const gaussianModel = await loadSplatModel(scene, splatUrl);
+
+            // Clean up blob URL if created from file
+            if (isFile) {
+                setTimeout(() => URL.revokeObjectURL(splatUrl), 1000);
             }
-            
-            if (isGaussianSplat) {
-                debugLog(`Loading .${extension} as Gaussian splat`);
-                // Gaussian splat PLY files need blob URL if from file
-                const splatUrl = isFile ? URL.createObjectURL(modelSource) : url;
-                const gaussianModel = await loadSplatModel(scene, splatUrl);
-                return { model: gaussianModel, type: 'splat' };
-            } else {
-                debugLog(`Loading .${extension} as pointcloud`);
-                const plyModel = await loadPlyPointcloud(scene, isFile ? modelSource : url, isFile);
-                return { model: plyModel, type: 'pointcloud' };
-            }
+
+            return { model: gaussianModel, type: 'splat' };
         default:
             throw new Error(ErrorMessages.MODEL.UNSUPPORTED_FORMAT(extension));
     }
@@ -734,22 +604,30 @@ function postProcessModel(currentModel, scene) {
  * Creates a simple fallback box model when primary loading fails
  * @param {BABYLON.Scene} scene - The scene to create the fallback model in
  * @returns {{currentModel: BABYLON.Mesh, currentModelType: string}} Fallback model info
- * @description Creates a 2x2x2 box with default scaling as emergency fallback
+ * @description Creates a 2x2x2 box with default scaling as emergency fallback.
+ *              Properly disposes any existing fallback models to prevent accumulation.
  */
 function createFallbackModel(scene) {
+    // Dispose any existing fallback box before creating a new one
+    const existingFallback = scene.getMeshByName("fallbackBox");
+    if (existingFallback) {
+        existingFallback.dispose();
+        debugLog('Disposed existing fallback model');
+    }
+
     const currentModel = BABYLON.MeshBuilder.CreateBox("fallbackBox", { size: 2 }, scene);
     const currentModelType = 'mesh';
-    
+
     // Reset file size display for fallback model
     updateFileSizeDisplay(0);
-    
+
     // Apply default scale directly
     if (currentModel && currentModel.scaling) {
         const defaultScale = CONFIG.modelLoader.defaultModelScale;
         currentModel.scaling.set(defaultScale, defaultScale, defaultScale);
         debugLog(`Fallback model scaled to: ${defaultScale}`);
     }
-    
+
     return { currentModel, currentModelType };
 }
 
