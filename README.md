@@ -12,7 +12,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - issue - the loading model pop up apears if im with the side panel opened, but if i drag and drop an model to the viewer i should see that loading pop up even if the side panel is closed
 
 - performance is worst when sharpness is disabled - why?
-- 
+- URGENT - ply upload is broken, due to trying to add compatibility to non 3dgs .ply format, lets go back to using this format just for 3dgs
 - disable pan doesnt work on mobile
 - obj import not working with materials / textures
 - loading model pop up - usually doent apear centered
