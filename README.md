@@ -9,18 +9,14 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 
 - low performance should be set to lower res just o make sure
 
-also, is there a way to over ride the controls? i have this embeded in a web page and when i use scrool to zoom it also scrolls the enterire page hosting this, 
-also full screen is not working when hosted in wordpress, it must have to do with permitions, could we go around that? maybe pop up a new window if clicked on fullscren?
 
--
 - performance is worst when sharpness is disabled - why?
+- 
 - disable pan doesnt work on mobile
 - obj import not working with materials / textures
-- default cube after error in loading model is not cleared when a new model is loaded after
 - loading model pop up - usually doent apear centered
 - Loading optimization for large 3D models
 - GLTF culling / occlusion verification
-- - if its better for performance and easly implemented, shared urls dont need the dev panel, 
 
 
 ### ✅ Recently Completed
