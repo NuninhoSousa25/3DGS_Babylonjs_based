@@ -9,6 +9,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 
 - low performance should be set to lower res just o make sure
 
+- issue - the loading model pop up apears if im with the side panel opened, but if i drag and drop an model to the viewer i should see that loading pop up even if the side panel is closed
 
 - performance is worst when sharpness is disabled - why?
 - 
