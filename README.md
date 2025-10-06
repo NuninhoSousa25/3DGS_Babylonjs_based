@@ -8,8 +8,6 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ### 🔄 To Implement / Fix
 
 
-1 priority, finish webgpu integration
-
 2, implementing sog input.(wait for oficila release) - https://playground.babylonjs.com/#QA2662#12
 
 - low performance should be set to lower res just o make sure
