@@ -7,7 +7,8 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 
 ### 🔄 To Implement / Fix
 
-
+1. I tried to load the same splat cloud into the viewer in different formats - ply, compressed ply, and splat (the latter two after conversion to Super Splat). I noticed that the ply format model rotates much smoother than the compressed versions. Can you suggest why this might be the case? Intuitively, I expected the opposite to be true.
+   
 2, implementing sog input.(wait for oficila release) - https://playground.babylonjs.com/#QA2662#12
 
 ping pong auto rotate with horizontal rotation limit
