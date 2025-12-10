@@ -200,7 +200,7 @@ function parseModelSource(modelSource, defaultModelUrl) {
         }
         
         // Create object URL only for splat files (ply files handled directly)
-        if (extension === 'splat') {
+        if (extension === 'splat' || extension === 'sog') {
             url = URL.createObjectURL(modelSource);
         }
         // PLY files will be passed directly to the loader
@@ -522,6 +522,20 @@ async function loadFbxModel(scene, { modelSource, url, isFile }) {
 }
 
 /**
+ * Loads .sog format models.
+ * @param {BABYLON.Scene} scene - The scene to load into
+ * @param {Object} loadContext - Loading context with modelSource, url, isFile
+ * @returns {Promise<{model: BABYLON.AbstractMesh, type: string}>} Loaded model info
+ */
+async function loadSogModel(scene, { modelSource, url, isFile }) {
+    debugLog(`Loading .sog model`);
+    const result = await loadMeshFromSource(scene, modelSource, url, isFile);
+    const model = result.meshes[0];
+    makeResultMeshesPickable(result);
+    return { model, type: 'mesh', result };
+}
+
+/**
  * Routes model loading to appropriate format-specific loader
  * @param {BABYLON.Scene} scene - The scene to load into
  * @param {Object} loadContext - Loading context information
@@ -547,6 +561,8 @@ async function loadModelByFormat(scene, loadContext) {
             return await loadStlModel(scene, loadContext);
         case 'fbx':
             return await loadFbxModel(scene, loadContext);
+        case 'sog':
+            return await loadSogModel(scene, loadContext);
         case 'splat':
             debugLog(`Loading .${extension} using GaussianSplattingMesh`);
             const splatModel = await loadSplatModel(scene, url);
@@ -759,7 +775,7 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
         }
     } finally {
         // Clean up object URLs if created
-        if (isFile && extension === 'splat') {
+        if (isFile && (extension === 'splat' || extension === 'sog')) {
             // Clean up SPLAT file URLs
             setTimeout(() => URL.revokeObjectURL(url), CONFIG.modelLoader.urlCleanupDelay);
         } else if (isFile && extension === 'ply' && currentModelType === 'splat') {

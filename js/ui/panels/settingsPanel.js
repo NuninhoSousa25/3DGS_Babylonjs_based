@@ -8,6 +8,11 @@ import { setupUIUpdates, startUIUpdates, stopUIUpdates, restartUIUpdates, DOM, E
 import { CONFIG } from '../../config.js';
 import { getDeviceInfo } from '../../utils/deviceManager.js';
 import { ICONS } from '../components/icons.js';
+import { switchRenderer } from '../../main.js';
+
+/**
+ * Create complete settings section HTML using smaller components
+ */
 
 /**
  * Create complete settings section HTML using smaller components
@@ -47,13 +52,19 @@ function createVisualizationSection() {
             <div class="control-group">
                  <label for="qualitySelect">Quality Preset</label>
                 <select id="qualitySelect" class="settings-select">
-                    <option value="low">Low - No Post-Processing (Best Performance)</option>
-                    <option value="medium" ${defaultQuality === 'medium' ? 'selected' : ''}>Medium - Sharpening Only (Balanced)</option>
-                    <option value="high" ${defaultQuality === 'high' ? 'selected' : ''}>High - Full Effects (Best Quality)</option>
+                    <option value="low">Low</option>
+                    <option value="medium" ${defaultQuality === 'medium' ? 'selected' : ''}>Medium</option>
+                    <option value="high" ${defaultQuality === 'high' ? 'selected' : ''}>High</option>
                 </select>
             </div>
-            <div class="quality-hint">
-                <small>💡 Tip: If experiencing lag when sharpening is OFF, try switching to Low quality preset instead.</small>
+
+            <div class="control-group">
+                <label for="rendererSelect">Renderer</label>
+                <select id="rendererSelect" class="settings-select">
+                    <option value="auto">Auto (WebGPU preferred)</option>
+                    <option value="webgpu">WebGPU only</option>
+                    <option value="webgl">WebGL only</option>
+                </select>
             </div>
             
             ${createRangeControl('fovRange', 'Field of View', 0.4, 2.0, 0.8, 0.05, ' rad')}
@@ -263,6 +274,15 @@ export function setupSettingsControls(camera, scene) {
         });
     }
     
+    // Renderer selector
+    const rendererSelect = document.getElementById('rendererSelect');
+    if (rendererSelect) {
+        rendererSelect.addEventListener('change', (e) => {
+            localStorage.setItem('rendererPreference', e.target.value);
+            switchRenderer(e.target.value);
+        });
+    }
+
     // FOV range control - Enhanced
     setupEnhancedRangeControl('fovRange', (value) => {
         camera.fov = value;

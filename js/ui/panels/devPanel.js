@@ -9,6 +9,12 @@ import { loadModel } from '../../modelLoader.js';
 import { applyModelScaleFromUrl } from '../../urlManager.js';
 import { setupUIUpdates, startUIUpdates, updateFileSizeDisplay,  stopUIUpdates, restartUIUpdates, triggerVerticesUpdate, DOM, Events, ErrorMessages, LoadingSpinner } from '../../helpers.js';
 import { CONFIG } from '../../config.js';
+import { switchRenderer } from '../../main.js';
+import { detectWebGPU } from '../../webgpu-detector.js';
+
+/**
+ * Create developer tools section HTML
+ */
 
 /**
  * Create developer tools section HTML
@@ -35,13 +41,17 @@ export function createDevSection() {
                     </div>
                     <div class="info-row">
                         <span class="info-label">File Size:</span>
-                        <span id="controlPanelFileSize" class="info-value">0 KB</span>
+                        <span id="controlPanelFileSize" class="info-value">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Renderer:</span>
+                        <span id="controlPanelRenderer" class="info-value">-</span>
                     </div>
                 </div>
             </div>
-            
+
             <div class="settings-separator"></div>
-            
+
             <div class="dev-section">
                 <div class="dev-title">Device Detection</div>
                 <div class="scene-info">
@@ -68,6 +78,10 @@ export function createDevSection() {
                     <div class="info-row">
                         <span class="info-label">Screen Size:</span>
                         <span id="deviceScreenSize" class="info-value">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">WebGPU Available:</span>
+                        <span id="deviceWebGPU" class="info-value">-</span>
                     </div>
                 </div>
             </div>
@@ -133,6 +147,21 @@ export function setupModelLoading(scene) {
             await loadModelWithSpinner(scene, urlInput.value.trim(), "url");
         });
     }
+
+    setupDevPanel(scene.getEngine());
+}
+
+async function setupDevPanel(engine) {
+    const webGpuAvailable = await detectWebGPU();
+    const deviceWebGPU = document.getElementById('deviceWebGPU');
+    if (deviceWebGPU) {
+        deviceWebGPU.textContent = webGpuAvailable.available ? 'Yes' : 'No';
+    }
+
+    const controlPanelRenderer = document.getElementById('controlPanelRenderer');
+    if (controlPanelRenderer) {
+        controlPanelRenderer.textContent = engine.engineType;
+    }
 }
 
 /**
@@ -174,7 +203,7 @@ function triggerFileLoad(scene) {
     // Create a hidden file input element using utility
     const fileInput = createElement('input', {
         type: 'file',
-        accept: '.splat,.ply,.spz,.gltf,.glb,.obj'
+        accept: '.splat,.ply,.spz,.gltf,.glb,.obj,.sog'
     });
     fileInput.style.display = 'none';
     

@@ -42,6 +42,7 @@ let engine, scene, camera;
 let pipeline = null; // For post-process reuse
 let gestureController = null; // For mobile gesture control
 let cameraLimits = null; // For camera movement limitations
+let resizeHandlers = []; // Track resize handlers for cleanup
 
 
 /**
@@ -137,17 +138,61 @@ function removeSharedURLLoadingFeedback() {
 /**
  * Initialize Engine and Scene
  */
-async function initializeEngineAndScene() {
+async function initializeEngineAndScene(rendererType) {
     const canvas = document.getElementById("renderCanvas");
     
-    
-    // Using config to fine-tune engine
-    engine = new BABYLON.Engine(canvas, true, {
-        preserveDrawingBuffer: CONFIG.engine.preserveDrawingBuffer,
-        stencil: CONFIG.engine.stencil,
-        disableWebGL2Support: CONFIG.engine.disableWebGL2Support,
-        antialias: CONFIG.engine.antialias
-    });
+    let engine;
+    let engineType = "WebGL";
+
+    // Warn if WebGPU is preferred but we're in an insecure context
+    if ((rendererType === 'webgpu' || (rendererType === 'auto' && CONFIG.engine.preferWebGPU)) && !window.isSecureContext) {
+        console.warn("⚠️ WebGPU requires a Secure Context (HTTPS or localhost). WebGL will be used as fallback.");
+    }
+
+    const webGPUSupported = await BABYLON.WebGPUEngine.IsSupportedAsync;
+
+    if (rendererType === 'webgpu' && webGPUSupported) {
+        try {
+            engine = new BABYLON.WebGPUEngine(canvas, {
+                adaptToDeviceRatio: true,
+                antialias: false
+            });
+            await engine.initAsync();
+            engineType = "WebGPU";
+            console.log("✓ WebGPU renderer initialized");
+        } catch (error) {
+            console.warn("WebGPU failed, falling back to WebGL:", error);
+            if (CONFIG.engine.fallbackToWebGL) {
+                engine = new BABYLON.Engine(canvas, true, CONFIG.engine);
+            } else {
+                throw new Error("WebGPU initialization failed and fallback to WebGL is disabled.");
+            }
+        }
+    } else if (rendererType === 'auto' && CONFIG.engine.preferWebGPU && webGPUSupported) {
+        try {
+            engine = new BABYLON.WebGPUEngine(canvas, {
+                adaptToDeviceRatio: true,
+                antialias: false
+            });
+            await engine.initAsync();
+            engineType = "WebGPU";
+            console.log("✓ WebGPU renderer initialized");
+        } catch (error) {
+            console.warn("WebGPU failed, falling back to WebGL:", error);
+            if (CONFIG.engine.fallbackToWebGL) {
+                engine = new BABYLON.Engine(canvas, true, CONFIG.engine);
+            } else {
+                throw new Error("WebGPU initialization failed and fallback to WebGL is disabled.");
+            }
+        }
+    } else {
+        // WebGL fallback
+        engine = new BABYLON.Engine(canvas, true, CONFIG.engine);
+    }
+
+    // Store renderer type for UI display
+    engine.engineType = engineType;
+
     scene = new BABYLON.Scene(engine);
 
     // Set background color from URL if specified, otherwise use default
@@ -284,6 +329,12 @@ function configureAutoRotation(camera) {
  * Cleanup Resources
  */
 function cleanup(scene, engine) {
+    // Remove resize handlers
+    if (resizeHandlers.length > 0) {
+        resizeHandlers.forEach(handler => WindowEvents.removeResizeCallback(handler));
+        resizeHandlers = [];
+    }
+
     // Dispose gesture controller if it exists
     if (gestureController) {
         try {
@@ -312,9 +363,11 @@ function cleanup(scene, engine) {
     }
 
     // Dispose current model
-    disposeCurrentModel(scene.currentModel, scene.currentModelType);
-    scene.currentModel = null;
-    scene.currentModelType = null;
+    if (scene && scene.currentModel) {
+        disposeCurrentModel(scene.currentModel, scene.currentModelType);
+        scene.currentModel = null;
+        scene.currentModelType = null;
+    }
 
     // Dispose scene
     if (scene) {
@@ -323,6 +376,7 @@ function cleanup(scene, engine) {
 
     // Dispose engine
     if (engine) {
+        engine.stopRenderLoop();
         engine.dispose();
     }
     disposePickingHelpers();
@@ -335,12 +389,12 @@ function cleanup(scene, engine) {
 
 
 
-async function createScene() {
+async function setupScene(rendererType = 'WebGL') {
     // Show early loading feedback for shared URLs
     const isLoadingSharedURL = showSharedURLLoadingFeedback();
     
     try {
-        const { engine: eng, scene: scn, canvas } = await initializeEngineAndScene();
+        const { engine: eng, scene: scn, canvas } = await initializeEngineAndScene(rendererType);
         engine = eng;
         scene = scn;
 
@@ -361,6 +415,7 @@ async function createScene() {
 
         // Setup camera
         camera = setupCamera(scene, canvas, CONFIG);
+        scene.activeCamera = camera;
         
         // Apply camera parameters from URL (position, FOV, etc.)
         applyCameraParametersFromUrl(camera);
@@ -457,12 +512,16 @@ async function createScene() {
         });
 
         // Handle window resize using centralized handler
-        WindowEvents.addResizeCallback(WindowEvents.createEngineResizeHandler(engine));
+        const engineResizeHandler = WindowEvents.createEngineResizeHandler(engine);
+        WindowEvents.addResizeCallback(engineResizeHandler);
+        resizeHandlers.push(engineResizeHandler);
         
         // Add resolution update trigger for dev panel
-        WindowEvents.addResizeCallback(() => {
+        const resolutionUpdateHandler = () => {
             triggerResolutionUpdate();
-        });
+        };
+        WindowEvents.addResizeCallback(resolutionUpdateHandler);
+        resizeHandlers.push(resolutionUpdateHandler);
 
         // Handle scene disposal for cleanup
         scene.onDisposeObservable.add(() => {
@@ -479,6 +538,33 @@ async function createScene() {
         
         cleanup(scene, engine);
     }
+}
+
+export async function switchRenderer(rendererType) {
+    const currentModelUrl = scene.currentModelUrl;
+
+    // Clean up the existing scene and engine
+    cleanup(scene, engine);
+
+    // Re-create the canvas to avoid context issues
+    const oldCanvas = document.getElementById('renderCanvas');
+    const newCanvas = document.createElement('canvas');
+    newCanvas.id = 'renderCanvas';
+    newCanvas.style.cssText = oldCanvas.style.cssText; // Persist styles
+    oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
+
+    // Re-initialize the scene with the new renderer
+    await setupScene(rendererType);
+
+    // Reload the model
+    if (currentModelUrl) {
+        await loadModel(scene, currentModelUrl, CONFIG.modelLoader.defaultFallbackModel);
+    }
+}
+
+async function createScene() {
+    const rendererPreference = localStorage.getItem('rendererPreference') || 'auto';
+    await setupScene(rendererPreference);
 }
 
 /**

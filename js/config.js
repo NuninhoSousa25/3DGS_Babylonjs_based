@@ -20,7 +20,7 @@ export const CONFIG = {
      * Model loader settings
      */
     modelLoader: {
-        supportedFormats: ['splat', 'ply', 'spz', 'gltf', 'glb', 'obj', 'stl', 'fbx'],
+        supportedFormats: ['sog', 'splat', 'ply', 'spz', 'gltf', 'glb', 'obj', 'stl', 'fbx'],
         
         defaultFallbackModel: "https://raw.githubusercontent.com/CedricGuillemet/dump/master/Halo_Believe.splat",
         
@@ -57,6 +57,8 @@ export const CONFIG = {
      * Babylon.js engine configuration
      */
     engine: {
+        preferWebGPU: true,  // Try WebGPU first
+        fallbackToWebGL: true,  // Graceful degradation
         preserveDrawingBuffer: true,
         stencil: true,
         disableWebGL2Support: false,

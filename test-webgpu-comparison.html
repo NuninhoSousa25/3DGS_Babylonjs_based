@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>WebGPU vs WebGL Performance Comparison Lab</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+            background: #1a1a1a;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            touch-action: none;
+        }
+
+        /* Control Panel */
+        #controlPanel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(30, 30, 30, 0.95);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 320px;
+            max-height: 90vh;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+        }
+
+        #controlPanel h2 {
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            color: #2196f3;
+            border-bottom: 2px solid #2196f3;
+            padding-bottom: 8px;
+        }
+
+        .control-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(60, 60, 60, 0.5);
+            border-radius: 8px;
+        }
+
+        .control-section h3 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            color: #64B5F6;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .control-row {
+            margin: 10px 0;
+        }
+
+        .control-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #90CAF9;
+        }
+
+        .toggle-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #555;
+            background: #2a2a2a;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .toggle-btn:hover {
+            background: #3a3a3a;
+        }
+
+        .toggle-btn.active {
+            background: #2196f3;
+            border-color: #2196f3;
+            box-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+        }
+
+        .toggle-btn.webgpu.active {
+            background: #4CAF50;
+            border-color: #4CAF50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+
+        .toggle-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin: 8px 0;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: #555;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #2196f3;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #2196f3;
+            cursor: pointer;
+            border: none;
+        }
+
+        .value-display {
+            display: inline-block;
+            background: #1a1a1a;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #4CAF50;
+        }
+
+        /* Stats Panel */
+        #statsPanel {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(30, 30, 30, 0.95);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+        }
+
+        #statsPanel h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #2196f3;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 6px 0;
+            font-size: 13px;
+        }
+
+        .stat-label {
+            color: #90CAF9;
+            margin-right: 15px;
+        }
+
+        .stat-value {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #E0E0E0;
+        }
+
+        .renderer-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .renderer-webgpu {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .renderer-webgl {
+            background: #2196f3;
+            color: white;
+        }
+
+        /* Drop Zone */
+        #dropZone {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(33, 150, 243, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            backdrop-filter: blur(5px);
+        }
+
+        #dropZone.active {
+            display: flex;
+        }
+
+        .drop-content {
+            text-align: center;
+            color: white;
+        }
+
+        .drop-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .drop-text {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .drop-subtext {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Loading Overlay */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        #loadingOverlay.hidden {
+            display: none;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid #2196f3;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .loading-subtext {
+            font-size: 14px;
+            color: #90CAF9;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #2196f3;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1976D2;
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #d32f2f;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: rgba(255, 152, 0, 0.2);
+            border-left: 3px solid #FF9800;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #FFE0B2;
+        }
+
+        /* Scrollbar */
+        #controlPanel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #controlPanel::-webkit-scrollbar-track {
+            background: rgba(60, 60, 60, 0.5);
+            border-radius: 4px;
+        }
+
+        #controlPanel::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+
+        #controlPanel::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+
+    <!-- Stats Panel -->
+    <div id="statsPanel">
+        <h3>📊 Performance Stats</h3>
+        <div class="stat-row">
+            <span class="stat-label">Renderer:</span>
+            <span id="currentRenderer" class="stat-value">-</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">FPS:</span>
+            <span id="fps" class="stat-value">0</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Frame Time:</span>
+            <span id="frameTime" class="stat-value">0ms</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Memory:</span>
+            <span id="memory" class="stat-value">0 MB</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Resolution:</span>
+            <span id="currentResolution" class="stat-value">-</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Vertices:</span>
+            <span id="vertices" class="stat-value">0</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Model:</span>
+            <span id="modelInfo" class="stat-value">-</span>
+        </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div id="controlPanel">
+        <h2>🎮 WebGPU vs WebGL Lab</h2>
+
+        <!-- Renderer Selection -->
+        <div class="control-section">
+            <h3>Renderer</h3>
+            <div class="toggle-buttons">
+                <button id="btnWebGL" class="toggle-btn active">WebGL</button>
+                <button id="btnWebGPU" class="toggle-btn webgpu" disabled>WebGPU</button>
+            </div>
+            <div class="info-box" id="rendererInfo" style="display: none;">
+                Switching renderer will reload the scene
+            </div>
+        </div>
+
+        <!-- Resolution Control -->
+        <div class="control-section">
+            <h3>Render Resolution</h3>
+            <div class="control-row">
+                <label class="control-label">
+                    Hardware Scaling: <span class="value-display" id="scalingDisplay">1.0x</span>
+                </label>
+                <input type="range" id="scalingSlider" min="0.3" max="3.0" step="0.1" value="1.0">
+                <div style="font-size: 11px; color: #888; margin-top: 5px;">
+                    Controls internal render resolution (0.3x - 3.0x)<br>
+                    Lower = Better Performance | Higher = Better Quality
+                </div>
+            </div>
+
+            <div class="control-row" style="margin-top: 15px;">
+                <label class="control-label">
+                    Device Pixel Ratio: <span class="value-display" id="pixelRatioDisplay">Auto</span>
+                </label>
+                <input type="range" id="pixelRatioSlider" min="0.5" max="3.0" step="0.1" value="0" disabled>
+                <div style="font-size: 11px; color: #888; margin-top: 5px;">
+                    Adapts to screen DPI (auto-detected)<br>
+                    1.0 = Standard, 2.0 = Retina/4K displays
+                </div>
+            </div>
+        </div>
+
+        <!-- Model Loading -->
+        <div class="control-section">
+            <h3>Model</h3>
+            <div class="control-row">
+                <button class="btn btn-primary" id="btnLoadDefault">Load Default Model</button>
+            </div>
+            <div class="control-row">
+                <button class="btn btn-primary" id="btnLoadHeavy">Load Heavy Model (10MB+)</button>
+            </div>
+            <div class="control-row">
+                <label for="fileInput" class="btn btn-primary" style="display: block; text-align: center; cursor: pointer;">
+                    📁 Load Custom Model
+                </label>
+                <input type="file" id="fileInput" accept=".splat,.ply,.spz,.glb,.gltf" style="display: none;">
+            </div>
+            <div class="info-box">
+                💡 Drag & drop .splat, .ply, .spz, .glb, or .gltf files onto the canvas
+            </div>
+        </div>
+
+        <!-- Performance Tools -->
+        <div class="control-section">
+            <h3>Performance Tools</h3>
+            <div class="control-row">
+                <button class="btn btn-primary" id="btnStressTest">🔥 Run Stress Test</button>
+            </div>
+            <div class="control-row">
+                <button class="btn btn-danger" id="btnClearModel">Clear Scene</button>
+            </div>
+        </div>
+
+        <!-- Info -->
+        <div class="control-section">
+            <h3>Info</h3>
+            <div style="font-size: 12px; line-height: 1.6; color: #aaa;">
+                <p><strong>Controls:</strong></p>
+                <p>• Left Mouse: Orbit</p>
+                <p>• Right Mouse: Pan</p>
+                <p>• Scroll: Zoom</p>
+
+                <p style="margin-top: 10px;"><strong>Resolution Explained:</strong></p>
+                <p>• <strong>Hardware Scaling:</strong> Changes the actual render resolution. 0.5x = half resolution (faster), 2.0x = double resolution (sharper)</p>
+                <p>• <strong>Device Pixel Ratio:</strong> Auto-matches your screen DPI. 1.0 for standard displays, 2.0+ for Retina/4K</p>
+
+                <p style="margin-top: 10px;"><strong>Tips:</strong></p>
+                <p>• Toggle renderers to compare performance</p>
+                <p>• Try 3.0x scaling for ultra-sharp rendering</p>
+                <p>• Monitor FPS and memory usage</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drop Zone -->
+    <div id="dropZone">
+        <div class="drop-content">
+            <div class="drop-icon">📦</div>
+            <div class="drop-text">Drop your 3D model here</div>
+            <div class="drop-subtext">Supports: .splat, .ply, .spz, .glb, .gltf</div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-text" id="loadingText">Initializing...</div>
+            <div class="loading-subtext" id="loadingSubtext"></div>
+        </div>
+    </div>
+
+    <!-- BabylonJS -->
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+
+    <script type="module">
+        import { detectWebGPU, logWebGPUInfo } from './js/webgpu-detector.js';
+
+        // Global state
+        let engine = null;
+        let scene = null;
+        let camera = null;
+        let currentModel = null;
+        let currentRendererType = 'WebGL';
+        let webGPUAvailable = false;
+
+        // UI Elements
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
+        const loadingSubtext = document.getElementById('loadingSubtext');
+        const dropZone = document.getElementById('dropZone');
+
+        // Initialize
+        async function init() {
+            showLoading('Detecting WebGPU...');
+
+            // Detect WebGPU
+            const gpuInfo = await detectWebGPU();
+            logWebGPUInfo(gpuInfo);
+            webGPUAvailable = gpuInfo.available;
+
+            // Enable/disable WebGPU button
+            const btnWebGPU = document.getElementById('btnWebGPU');
+            if (webGPUAvailable) {
+                btnWebGPU.disabled = false;
+                btnWebGPU.title = 'Switch to WebGPU renderer';
+            } else {
+                btnWebGPU.title = `WebGPU not available: ${gpuInfo.reason}`;
+            }
+
+            // Create initial engine (WebGL)
+            await createEngine('WebGL');
+
+            // Setup UI event listeners
+            setupEventListeners();
+
+            // Load default model
+            await loadDefaultModel();
+
+            hideLoading();
+        }
+
+        async function createEngine(rendererType) {
+            showLoading(`Initializing ${rendererType} engine...`);
+
+            const canvas = document.getElementById('renderCanvas');
+
+            // Dispose existing engine and clean up
+            if (engine) {
+                console.log('Disposing existing engine...');
+                if (scene) {
+                    scene.dispose();
+                    scene = null;
+                }
+                engine.dispose();
+                engine = null;
+                camera = null;
+                currentModel = null;
+
+                // Small delay to ensure cleanup
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            try {
+                if (rendererType === 'WebGPU' && webGPUAvailable) {
+                    // Create WebGPU engine with proper options
+                    engine = new BABYLON.WebGPUEngine(canvas, {
+                        deviceDescriptor: {
+                            requiredFeatures: [],
+                        },
+                        adaptToDeviceRatio: true,
+                        antialias: false,
+                        enableAllFeatures: false,
+                        setMaximumLimits: false
+                    });
+
+                    await engine.initAsync();
+                    currentRendererType = 'WebGPU';
+                    console.log('✅ WebGPU engine initialized');
+                } else {
+                    engine = new BABYLON.Engine(canvas, true, {
+                        preserveDrawingBuffer: true,
+                        stencil: true,
+                        antialias: false
+                    });
+                    currentRendererType = 'WebGL';
+                    console.log('✅ WebGL engine initialized');
+                }
+
+                // Update UI
+                updateRendererBadge();
+
+                // Create scene
+                createScene();
+
+                // Setup rendering
+                setupRendering();
+
+            } catch (error) {
+                console.error(`Failed to initialize ${rendererType}:`, error);
+                console.error('Full error details:', error.stack);
+
+                // Fallback to WebGL
+                if (rendererType === 'WebGPU') {
+                    console.warn('⚠️ WebGPU initialization failed, falling back to WebGL');
+                    console.warn('This may be due to:');
+                    console.warn('  - Browser WebGPU implementation issues');
+                    console.warn('  - GPU driver incompatibility');
+                    console.warn('  - Canvas context conflicts');
+
+                    // Disable WebGPU button
+                    const btnWebGPU = document.getElementById('btnWebGPU');
+                    btnWebGPU.disabled = true;
+                    btnWebGPU.title = 'WebGPU failed to initialize';
+                    webGPUAvailable = false;
+
+                    await createEngine('WebGL');
+                } else {
+                    throw error; // Re-throw if WebGL also fails
+                }
+            }
+        }
+
+        function createScene() {
+            scene = new BABYLON.Scene(engine);
+            scene.clearColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+
+            // Camera
+            camera = new BABYLON.ArcRotateCamera(
+                "Camera",
+                -Math.PI / 4,
+                Math.PI / 3,
+                4,
+                BABYLON.Vector3.Zero(),
+                scene
+            );
+            camera.attachControl(document.getElementById('renderCanvas'), true);
+            camera.minZ = 0.02;
+            camera.maxZ = 1000;
+
+            // Lighting
+            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+            light.intensity = 0.5;
+        }
+
+        function setupRendering() {
+            // Render loop
+            engine.runRenderLoop(() => {
+                if (scene) {
+                    scene.render();
+                }
+            });
+
+            // Handle resize
+            window.addEventListener('resize', () => {
+                engine.resize();
+            });
+
+            // Stats update
+            setInterval(updateStats, 1000);
+        }
+
+        function setupEventListeners() {
+            // Renderer toggle
+            document.getElementById('btnWebGL').addEventListener('click', () => {
+                if (currentRendererType !== 'WebGL') {
+                    switchRenderer('WebGL');
+                }
+            });
+
+            document.getElementById('btnWebGPU').addEventListener('click', () => {
+                if (currentRendererType !== 'WebGPU' && webGPUAvailable) {
+                    switchRenderer('WebGPU');
+                }
+            });
+
+            // Resolution controls
+            document.getElementById('scalingSlider').addEventListener('input', (e) => {
+                const value = parseFloat(e.target.value);
+                document.getElementById('scalingDisplay').textContent = value.toFixed(1) + 'x';
+                if (engine) {
+                    engine.setHardwareScalingLevel(1 / value);
+                    updateResolutionDisplay();
+                }
+            });
+
+            document.getElementById('pixelRatioSlider').addEventListener('input', (e) => {
+                const value = parseFloat(e.target.value);
+                document.getElementById('pixelRatioDisplay').textContent = value.toFixed(1) + 'x';
+                // Note: Pixel ratio is typically set at engine creation
+                // This is more for information/future implementation
+            });
+
+            // Model loading
+            document.getElementById('btnLoadDefault').addEventListener('click', loadDefaultModel);
+            document.getElementById('btnLoadHeavy').addEventListener('click', loadHeavyModel);
+            document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+            document.getElementById('btnClearModel').addEventListener('click', clearModel);
+            document.getElementById('btnStressTest').addEventListener('click', runStressTest);
+
+            // Setup drag and drop
+            setupDragAndDrop();
+        }
+
+        function setupDragAndDrop() {
+            // Drag and drop (needs to be re-attached when canvas is recreated)
+            const canvas = document.getElementById('renderCanvas');
+            canvas.addEventListener('dragover', handleDragOver);
+            canvas.addEventListener('dragleave', handleDragLeave);
+            canvas.addEventListener('drop', handleDrop);
+        }
+
+        async function switchRenderer(rendererType) {
+            const currentModelData = currentModel ? {
+                url: scene.currentModelUrl,
+                type: scene.currentModelType
+            } : null;
+
+            // WORKAROUND: Recreate canvas to avoid WebGPU context issues
+            const oldCanvas = document.getElementById('renderCanvas');
+            const newCanvas = document.createElement('canvas');
+            newCanvas.id = 'renderCanvas';
+            newCanvas.style.cssText = oldCanvas.style.cssText;
+            oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
+
+            console.log('Canvas recreated for renderer switch');
+
+            // Re-attach drag and drop listeners to new canvas
+            setupDragAndDrop();
+
+            await createEngine(rendererType);
+
+            // Reload model if one was loaded
+            if (currentModelData) {
+                if (currentModelData.url) {
+                    await loadModelFromUrl(currentModelData.url);
+                }
+            }
+        }
+
+        async function loadDefaultModel() {
+            const url = "https://raw.githubusercontent.com/CedricGuillemet/dump/master/Halo_Believe.splat";
+            await loadModelFromUrl(url);
+        }
+
+        async function loadHeavyModel() {
+            // Load a heavier model for stress testing
+            const url = "https://huggingface.co/cakewalk/splat-data/resolve/main/nike.splat";
+            await loadModelFromUrl(url);
+        }
+
+        async function loadModelFromUrl(url) {
+            showLoading('Loading model...', url);
+
+            try {
+                // Clear existing model
+                if (currentModel) {
+                    currentModel.dispose();
+                    currentModel = null;
+                }
+
+                // Determine file type
+                const extension = url.split('.').pop().toLowerCase().split('?')[0];
+
+                if (extension === 'splat' || extension === 'ply' || extension === 'spz') {
+                    // Gaussian Splatting
+                    const splatMesh = new BABYLON.GaussianSplattingMesh("model", null, scene);
+                    await splatMesh.loadFileAsync(url);
+                    currentModel = splatMesh;
+
+                    // Center model
+                    const boundingInfo = splatMesh.getBoundingInfo();
+                    const center = boundingInfo.boundingBox.centerWorld;
+                    splatMesh.position = center.negate();
+
+                    // Fit camera
+                    const size = boundingInfo.boundingBox.maximumWorld.subtract(boundingInfo.boundingBox.minimumWorld);
+                    const maxDimension = Math.max(size.x, size.y, size.z);
+                    camera.radius = maxDimension * 2;
+
+                } else if (extension === 'glb' || extension === 'gltf') {
+                    // Mesh model
+                    const result = await BABYLON.SceneLoader.ImportMeshAsync("", url, "", scene);
+                    currentModel = result.meshes[0];
+                }
+
+                // Store URL
+                scene.currentModelUrl = url;
+                scene.currentModelType = extension;
+
+                // Update UI
+                const modelName = url.split('/').pop().substring(0, 20);
+                document.getElementById('modelInfo').textContent = modelName;
+
+                console.log('✅ Model loaded:', url);
+                hideLoading();
+
+            } catch (error) {
+                console.error('Failed to load model:', error);
+                loadingSubtext.textContent = `Error: ${error.message}`;
+                setTimeout(hideLoading, 2000);
+            }
+        }
+
+        async function loadModelFromFile(file) {
+            showLoading('Loading file...', file.name);
+
+            try {
+                // Clear existing model
+                if (currentModel) {
+                    currentModel.dispose();
+                    currentModel = null;
+                }
+
+                const extension = file.name.split('.').pop().toLowerCase();
+
+                if (extension === 'splat' || extension === 'ply' || extension === 'spz') {
+                    const url = URL.createObjectURL(file);
+                    const splatMesh = new BABYLON.GaussianSplattingMesh("model", null, scene);
+                    await splatMesh.loadFileAsync(url);
+                    currentModel = splatMesh;
+
+                    // Center model
+                    const boundingInfo = splatMesh.getBoundingInfo();
+                    const center = boundingInfo.boundingBox.centerWorld;
+                    splatMesh.position = center.negate();
+
+                    // Cleanup
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+                } else if (extension === 'glb' || extension === 'gltf') {
+                    const result = await BABYLON.SceneLoader.ImportMeshAsync("", "", file, scene);
+                    currentModel = result.meshes[0];
+                }
+
+                document.getElementById('modelInfo').textContent = file.name.substring(0, 20);
+                console.log('✅ File loaded:', file.name);
+                hideLoading();
+
+            } catch (error) {
+                console.error('Failed to load file:', error);
+                loadingSubtext.textContent = `Error: ${error.message}`;
+                setTimeout(hideLoading, 2000);
+            }
+        }
+
+        function clearModel() {
+            if (currentModel) {
+                currentModel.dispose();
+                currentModel = null;
+                document.getElementById('modelInfo').textContent = '-';
+                console.log('Model cleared');
+            }
+        }
+
+        function runStressTest() {
+            // Rapidly rotate camera for stress testing
+            let rotations = 0;
+            const maxRotations = 100;
+
+            const interval = setInterval(() => {
+                camera.alpha += 0.1;
+                rotations++;
+
+                if (rotations >= maxRotations) {
+                    clearInterval(interval);
+                    console.log('Stress test complete');
+                }
+            }, 16); // ~60fps
+        }
+
+        function updateStats() {
+            if (!engine) return;
+
+            const fps = Math.round(engine.getFps());
+            document.getElementById('fps').textContent = fps;
+
+            const frameTime = (1000 / fps).toFixed(1);
+            document.getElementById('frameTime').textContent = frameTime + 'ms';
+
+            if (performance.memory) {
+                const memMB = Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
+                document.getElementById('memory').textContent = memMB + ' MB';
+            }
+
+            if (scene) {
+                const vertices = scene.getTotalVertices();
+                document.getElementById('vertices').textContent = vertices.toLocaleString();
+            }
+
+            updateResolutionDisplay();
+        }
+
+        function updateResolutionDisplay() {
+            if (!engine) return;
+            const canvas = engine.getRenderingCanvas();
+            const width = engine.getRenderWidth();
+            const height = engine.getRenderHeight();
+            document.getElementById('currentResolution').textContent = `${width}x${height}`;
+        }
+
+        function updateRendererBadge() {
+            const badge = currentRendererType === 'WebGPU'
+                ? `<span class="renderer-badge renderer-webgpu">WebGPU</span>`
+                : `<span class="renderer-badge renderer-webgl">WebGL</span>`;
+            document.getElementById('currentRenderer').innerHTML = badge;
+
+            // Update button states
+            document.getElementById('btnWebGL').classList.toggle('active', currentRendererType === 'WebGL');
+            document.getElementById('btnWebGPU').classList.toggle('active', currentRendererType === 'WebGPU');
+        }
+
+        // Drag & Drop handlers
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.add('active');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('active');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('active');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                loadModelFromFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                loadModelFromFile(files[0]);
+            }
+        }
+
+        // Loading overlay
+        function showLoading(text, subtext = '') {
+            loadingText.textContent = text;
+            loadingSubtext.textContent = subtext;
+            loadingOverlay.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        // Start the application
+        init();
+    </script>
+</body>
+</html>
