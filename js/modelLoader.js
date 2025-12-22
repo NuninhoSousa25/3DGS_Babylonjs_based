@@ -76,13 +76,13 @@ export function disposeCurrentModel(currentModel, currentModelType) {
 /**
  * Loads 3D Gaussian Splatting models (.splat files) using Babylon.js GaussianSplattingMesh
  * @param {BABYLON.Scene} scene - The Babylon.js scene to load the model into
- * @param {string} url - URL or path to the .splat file
+ * @param {string|File} modelSource - URL string or File object
  * @returns {Promise<BABYLON.GaussianSplattingMesh>} The loaded Gaussian Splatting mesh
  * @throws {Error} Throws error if GaussianSplattingMesh plugin is not available
  * @description Specialized loader for 3D Gaussian Splatting models with validation
  */
-export async function loadSplatModel(scene, url) {
-    debugLog(`Loading .splat model from URL: ${url}`);
+export async function loadSplatModel(scene, modelSource) {
+    debugLog(`Loading .splat model from source`);
 
     if (!BABYLON.GaussianSplattingMesh) {
         throw new Error(ErrorMessages.MODEL.SPLAT_PLUGIN_MISSING);
@@ -90,7 +90,15 @@ export async function loadSplatModel(scene, url) {
 
     const splatMesh = new BABYLON.GaussianSplattingMesh("mySplatMesh", null, scene);
 
-    await splatMesh.loadFileAsync(url);
+    if (modelSource instanceof File) {
+        const buffer = await modelSource.arrayBuffer();
+        await splatMesh.loadDataAsync(buffer);
+    } else {
+        await splatMesh.loadFileAsync(modelSource);
+    }
+
+    // Rotate the model 180 degrees around the X axis to correct the orientation
+    splatMesh.rotation.x = Math.PI;
 
     return splatMesh;
 }
@@ -430,8 +438,12 @@ async function loadSpzModel(scene, { modelSource, url, isFile }) {
     debugLog(`Loading SPZ model`);
     const result = await loadMeshFromSource(scene, modelSource, url, isFile, { useNullMeshName: true });
     const model = result.meshes[0];
-    if (model) model.position.y = 0;
-    return { model, type: 'mesh', result };
+    if (model) {
+        model.position.y = 0;
+        // Rotate the model 180 degrees around the X axis to correct the orientation
+        model.rotation.x = Math.PI;
+    }
+    return { model, type: 'splat', result };
 }
 
 /**
@@ -531,8 +543,14 @@ async function loadSogModel(scene, { modelSource, url, isFile }) {
     debugLog(`Loading .sog model`);
     const result = await loadMeshFromSource(scene, modelSource, url, isFile);
     const model = result.meshes[0];
+    
+    // Rotate the model 180 degrees around the X axis to correct the orientation
+    if (model) {
+        model.rotation.x = Math.PI;
+    }
+    
     makeResultMeshesPickable(result);
-    return { model, type: 'mesh', result };
+    return { model, type: 'splat', result };
 }
 
 /**
@@ -565,19 +583,21 @@ async function loadModelByFormat(scene, loadContext) {
             return await loadSogModel(scene, loadContext);
         case 'splat':
             debugLog(`Loading .${extension} using GaussianSplattingMesh`);
-            const splatModel = await loadSplatModel(scene, url);
+            // Pass modelSource directly to handle both File objects and URLs
+            const splatModel = await loadSplatModel(scene, isFile ? modelSource : url);
             return { model: splatModel, type: 'splat' };
         case 'ply':
             // PLY files are treated as Gaussian Splat (3DGS) format only
             debugLog(`Loading .${extension} as Gaussian splat (3DGS)`);
 
-            // Gaussian splat PLY files need blob URL if from file
-            const splatUrl = isFile ? URL.createObjectURL(modelSource) : url;
-            const gaussianModel = await loadSplatModel(scene, splatUrl);
+            // Use modelSource directly if it is a File, otherwise use the URL
+            const gaussianModel = await loadSplatModel(scene, isFile ? modelSource : url);
 
-            // Clean up blob URL if created from file
+            // Clean up blob URL if created from file (though we're likely not using it now for splats)
             if (isFile) {
-                setTimeout(() => URL.revokeObjectURL(splatUrl), 1000);
+                // If we created a URL for other purposes, we can revoke it, but loadSplatModel uses File directly now.
+                // Keeping this for safety if other parts rely on 'url' being valid temporarily.
+                setTimeout(() => URL.revokeObjectURL(url), 1000); 
             }
 
             return { model: gaussianModel, type: 'splat' };
