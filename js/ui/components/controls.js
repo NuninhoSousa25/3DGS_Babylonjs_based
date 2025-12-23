@@ -144,8 +144,9 @@ export function createToggleSwitch(id, label, checked = false) {
 /**
  * Creates a standardized range control HTML with editable input
  */
-export function createRangeControl(id, label, min, max, value, step = 1, unit = '') {
-    const precision = step < 1 ? (step.toString().split('.')[1] || '').length : 0;
+export function createRangeControl(id, label, min, max, value, step = 1, unit = '', forcedPrecision = null) {
+    const calculatedPrecision = step < 1 ? (step.toString().split('.')[1] || '').length : 0;
+    const precision = forcedPrecision !== null ? forcedPrecision : calculatedPrecision;
     const formattedValue = precision > 0 ? parseFloat(value).toFixed(precision) : value;
     
     return `

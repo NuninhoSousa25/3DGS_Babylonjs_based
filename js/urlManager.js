@@ -452,10 +452,10 @@ export function applyModelScaleFromUrl(scene) {
             
             // Update the UI slider to reflect the loaded scale
             const modelScaleRange = document.getElementById('modelScaleRange');
-            const modelScaleDisplay = document.getElementById('modelScaleRangeDisplay');
-            if (modelScaleRange && modelScaleDisplay) {
+            const modelScaleInput = document.getElementById('modelScaleRangeInput');
+            if (modelScaleRange && modelScaleInput) {
                 modelScaleRange.value = scale;
-                modelScaleDisplay.textContent = scale.toFixed(1);
+                modelScaleInput.value = scale.toFixed(2);
             }
             
             debugLog(`Applied model scale from URL: ${scale}`);

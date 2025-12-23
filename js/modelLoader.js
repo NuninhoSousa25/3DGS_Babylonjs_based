@@ -34,6 +34,7 @@ import { setMeshesPickable, ErrorMessages, LoadingSpinner, updateFileSizeDisplay
 import { CONFIG } from './config.js';
 import { detectDevice } from './deviceDetection.js';
 import { setupPickingHelpers } from './picking.js';
+import { isSharedURL } from './utils/urlUtils.js';
 
 
 /**
@@ -616,22 +617,27 @@ function postProcessModel(currentModel, scene) {
     // Ensure all meshes are pickable
     setMeshesPickable(currentModel);
 
-    // Normalize the model scale to a consistent size
-    normalizeModelScale(currentModel, CONFIG.modelLoader.defaultNormalizedSize);
+    // Check if we are loading from a shared URL
+    if (isSharedURL()) {
+        debugLog('Shared URL detected: Skipping model normalization and centering to preserve shared state.');
+    } else {
+        // Normalize the model scale to a consistent size
+        normalizeModelScale(currentModel, CONFIG.modelLoader.defaultNormalizedSize);
 
-    // Center and fit the model to view
-    const camera = scene.activeCamera;
-    if (camera) {
-        centerAndFitModel(currentModel, camera, scene);
+        // Center and fit the model to view
+        const camera = scene.activeCamera;
+        if (camera) {
+            centerAndFitModel(currentModel, camera, scene);
+        }
     }
 
     // Update the UI scale slider to reflect the actual normalized scale
     const modelScaleRange = document.getElementById('modelScaleRange');
-    const modelScaleDisplay = document.getElementById('modelScaleRangeDisplay');
-    if (modelScaleRange && modelScaleDisplay && currentModel) {
+    const modelScaleInput = document.getElementById('modelScaleRangeInput');
+    if (modelScaleRange && modelScaleInput && currentModel) {
         const actualScale = currentModel.scaling.x; // All axes should be the same due to setAll()
         modelScaleRange.value = actualScale;
-        modelScaleDisplay.textContent = actualScale.toFixed(1);
+        modelScaleInput.value = actualScale.toFixed(2); // Match the precision of the input
         debugLog(`Scale slider updated to: ${actualScale.toFixed(4)}`);
     }
 }

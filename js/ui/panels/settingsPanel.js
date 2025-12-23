@@ -68,7 +68,7 @@ function createVisualizationSection() {
             </div>
             
             ${createRangeControl('fovRange', 'Field of View', 0.4, 2.0, 0.8, 0.05, ' rad')}
-                ${createRangeControl('modelScaleRange', 'Model Scale', 0.1, 5, 1, 0.1)}
+                ${createRangeControl('modelScaleRange', 'Model Scale', 0.001, 5, 1, 0.1, '', 3)}
                 ${createColorControl('backgroundColorPicker', 'Background Color', '#191919')}
             </div>
         </div>
@@ -101,8 +101,8 @@ function createCameraLimitsSection() {
                 </label>
             </div>
             
-            ${createRangeControl('minDistanceRange', 'Min Distance', 0.1, 30, 1.0, 0.1)}
-            ${createRangeControl('maxDistanceRange', 'Max Distance', 1, 50, 15, 0.5)}
+            ${createRangeControl('minDistanceRange', 'Min Distance', 0.01, 30, 1.0, 0.1, '', 2)}
+            ${createRangeControl('maxDistanceRange', 'Max Distance', 0.1, 50, 15, 0.5)}
             
             <div class="control-group">
                 <label for="limitVerticalToggle">Limit Vertical Rotation</label>

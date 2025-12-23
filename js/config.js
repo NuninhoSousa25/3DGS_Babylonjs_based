@@ -230,7 +230,7 @@ export const CONFIG = {
             defaultPanningRestriction: true,
             visualFeedback: true,
             ranges: {
-                zoom: { min: 0.5, max: 30, step: 0.1 },
+                zoom: { min: 0.01, max: 50, step: 0.1 },
                 vertical: { min: 0, max: 180, step: 1 },
                 horizontal: { min: -360, max: 360, step: 5 },
                 panning: { min: 1, max: 50, step: 0.5 }

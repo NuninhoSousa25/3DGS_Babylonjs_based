@@ -25,6 +25,9 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - **Default Settings Configuration** - camera limits and zoom toggles now respect CONFIG defaults
 - **Background Color Picker** with full URL parameter support and real-time updates
 - **Model Scale Slider Fix** - now correctly updates when models are normalized during loading
+- **Precision Scale Control** - Model scale slider now supports values down to 0.001 with 3-decimal precision input
+- **Extended Zoom Limits** - "Max Distance" and "Min Distance" sliders now allow for much closer zoom levels (down to 0.1 and 0.01 respectively)
+- **Shared URL State Fidelity** - Shared URLs now bypass automatic model normalization to ensure the recipient sees exactly the same view (scale and position) as the sender
 - **File Size Display Fix** - properly shows file sizes for both local files and URL-loaded models
 - **Shared URL Loading Feedback** - immediate loading spinner and messages when opening shared URLs
 - **Comprehensive URL sharing** with complete state preservation
