@@ -501,7 +501,7 @@ async function setupScene(rendererType = 'WebGL') {
         if (isLoadingSharedURL) {
             setTimeout(() => {
                 removeSharedURLLoadingFeedback();
-            }, 500); // Small delay to ensure everything is rendered
+            }, 50); // Small delay to ensure everything is rendered
         }
 
         // Start render loop
