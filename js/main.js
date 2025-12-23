@@ -44,6 +44,89 @@ let gestureController = null; // For mobile gesture control
 let cameraLimits = null; // For camera movement limitations
 let resizeHandlers = []; // Track resize handlers for cleanup
 
+// PRE-FETCH MODEL AS EARLY AS POSSIBLE
+const preloadedModel = {
+    promise: null,
+    url: null,
+    progress: 0,
+    blob: null
+};
+
+/**
+ * Start pre-fetching the model even before engine initialization
+ */
+function startPreload() {
+    try {
+        const urlParams = decompressUrlParameters();
+        const modelUrl = urlParams.get('model') || CONFIG.defaultModelUrl;
+        
+        if (modelUrl) {
+            const decodedUrl = decodeURIComponent(modelUrl);
+            preloadedModel.url = decodedUrl;
+            console.log(`🚀 [Preload] Starting parallel fetch for: ${decodedUrl}`);
+            
+            preloadedModel.promise = (async () => {
+                try {
+                    const response = await fetch(decodedUrl);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    
+                    const contentLength = response.headers.get('content-length');
+                    const total = parseInt(contentLength, 10);
+                    
+                    if (isNaN(total) || !response.body) {
+                        // Fallback if no content-length or body stream
+                        const blob = await response.blob();
+                        preloadedModel.progress = 100;
+                        preloadedModel.blob = blob;
+                        return blob;
+                    }
+
+                    const reader = response.body.getReader();
+                    let loaded = 0;
+                    const chunks = [];
+                    
+                    while(true) {
+                        const {done, value} = await reader.read();
+                        if (done) break;
+                        chunks.push(value);
+                        loaded += value.length;
+                        preloadedModel.progress = Math.round((loaded / total) * 100);
+                        
+                        // Update early overlay if it exists
+                        updateEarlyLoadingProgress(preloadedModel.progress);
+                    }
+                    
+                    const blob = new Blob(chunks);
+                    preloadedModel.blob = blob;
+                    return blob;
+                } catch (error) {
+                    console.warn(`[Preload] Fetch failed:`, error);
+                    return null;
+                }
+            })();
+        }
+    } catch (e) {
+        console.warn("[Preload] Early URL parsing failed:", e);
+    }
+}
+
+/**
+ * Update the early loading overlay with progress
+ */
+function updateEarlyLoadingProgress(progress) {
+    const progressText = document.getElementById('early-loading-progress-text');
+    const progressBar = document.getElementById('early-loading-progress-bar');
+    
+    if (progressText) {
+        progressText.textContent = `Downloading model: ${progress}%`;
+    }
+    if (progressBar) {
+        progressBar.style.width = `${progress}%`;
+    }
+}
+
+// Start preload immediately
+startPreload();
 
 /**
  * Show early loading feedback for shared URLs
@@ -58,7 +141,13 @@ function showSharedURLLoadingFeedback() {
         <div class="early-loading-content">
             <div class="loading-spinner-large"></div>
             <div class="loading-text">Loading shared scene...</div>
-            <div class="loading-subtext">Initializing 3D viewer and applying settings</div>
+            <div id="early-loading-progress-text" class="loading-subtext">Initializing 3D viewer...</div>
+            <div class="early-progress-container">
+                <div id="early-loading-progress-bar" class="early-progress-bar"></div>
+            </div>
+            <div class="loading-subtext" style="margin-top: 10px; opacity: 0.6; font-size: 0.8rem;">
+                Applying camera settings and rendering pipeline
+            </div>
         </div>
     `;
     
@@ -77,11 +166,13 @@ function showSharedURLLoadingFeedback() {
             justify-content: center;
             z-index: 9999;
             color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         
         .early-loading-content {
             text-align: center;
             max-width: 400px;
+            width: 80%;
             padding: 2rem;
         }
         
@@ -106,6 +197,23 @@ function showSharedURLLoadingFeedback() {
             font-size: 0.9rem;
             color: rgba(255, 255, 255, 0.7);
             line-height: 1.4;
+            height: 1.2rem;
+        }
+
+        .early-progress-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .early-progress-bar {
+            width: 0%;
+            height: 100%;
+            background: #2196f3;
+            transition: width 0.3s ease;
         }
         
         @keyframes spin {
@@ -116,6 +224,11 @@ function showSharedURLLoadingFeedback() {
     
     document.head.appendChild(style);
     document.body.appendChild(loadingOverlay);
+    
+    // Initialize with current progress if fetch already started
+    if (preloadedModel.progress > 0) {
+        setTimeout(() => updateEarlyLoadingProgress(preloadedModel.progress), 10);
+    }
     
     return true;
 }
@@ -468,19 +581,44 @@ async function setupScene(rendererType = 'WebGL') {
         const urlParams = decompressUrlParameters();
         const modelUrl = urlParams.get('model');
 
-        
-
         if (modelUrl) {
             try {
                 const decodedModelUrl = decodeURIComponent(modelUrl);
                 console.log(`Loading model from URL parameter: ${decodedModelUrl}`);
-                await loadModel(scene, decodedModelUrl, CONFIG.modelLoader.defaultFallbackModel);
+                
+                // Use preloaded model if available and matches the URL
+                if (preloadedModel.promise && decodedModelUrl === preloadedModel.url) {
+                    const blob = await preloadedModel.promise;
+                    if (blob) {
+                        const filename = decodedModelUrl.split('/').pop() || 'model.splat';
+                        const file = new File([blob], filename);
+                        console.log(`✓ Using preloaded model data for: ${filename}`);
+                        await loadModel(scene, file, CONFIG.modelLoader.defaultFallbackModel);
+                    } else {
+                        await loadModel(scene, decodedModelUrl, CONFIG.modelLoader.defaultFallbackModel);
+                    }
+                } else {
+                    await loadModel(scene, decodedModelUrl, CONFIG.modelLoader.defaultFallbackModel);
+                }
             } catch (error) {
                 console.error(ErrorMessages.MODEL.LOAD_FAILED('from URL parameter'), error);
                 await loadModel(scene, CONFIG.modelLoader.defaultFallbackModel, CONFIG.modelLoader.defaultFallbackModel);
             }
         } else {
-            await loadModel(scene, CONFIG.defaultModelUrl, CONFIG.modelLoader.defaultFallbackModel);
+            // Check if we preloaded the default model
+            if (preloadedModel.promise && CONFIG.defaultModelUrl === preloadedModel.url) {
+                const blob = await preloadedModel.promise;
+                if (blob) {
+                    const filename = CONFIG.defaultModelUrl.split('/').pop() || 'model.splat';
+                    const file = new File([blob], filename);
+                    console.log(`✓ Using preloaded default model data`);
+                    await loadModel(scene, file, CONFIG.modelLoader.defaultFallbackModel);
+                } else {
+                    await loadModel(scene, CONFIG.defaultModelUrl, CONFIG.modelLoader.defaultFallbackModel);
+                }
+            } else {
+                await loadModel(scene, CONFIG.defaultModelUrl, CONFIG.modelLoader.defaultFallbackModel);
+            }
         }
         
         // Apply model scale from URL if present (must be after model loading)
@@ -501,7 +639,7 @@ async function setupScene(rendererType = 'WebGL') {
         if (isLoadingSharedURL) {
             setTimeout(() => {
                 removeSharedURLLoadingFeedback();
-            }, 50); // Small delay to ensure everything is rendered
+            }, 5); // Very small delay to ensure everything is rendered
         }
 
         // Start render loop
