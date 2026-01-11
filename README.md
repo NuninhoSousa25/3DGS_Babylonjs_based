@@ -73,7 +73,7 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 - Touch sensitivity for mobile devices
 
 ### **🎛️ Settings Panel**
-- **Visualization Controls**: Auto-rotation, quality presets, field of view, model scaling, background color picker
+- **Visualization Controls**: Auto-rotation, render resolution, field of view, model scaling, background color picker
 - **Camera Limits**: Comprehensive zoom, rotation, and panning restrictions
 - **Post-Processing**: Sharpening effects with intensity control, anti-aliasing options
 - **Touch Controls**: Sensitivity adjustment for mobile devices
@@ -83,27 +83,24 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 
 The viewer employs a specialized multi-strategy picking system to handle the unique challenges of 3D Gaussian Splats (which lack traditional triangle geometry).
 
-### **🔍 The 5 Picking Strategies**
+### **🔍 The 4 Picking Strategies**
 To ensure reliable interaction (like double-click to focus) across all models, the `getPickResult` function in `js/picking.js` executes the following fallbacks:
 
 1.  **Helper Mesh Picking**: Hits an invisible "Proxy Box" that perfectly wraps the model. This is the most accurate method for Gaussian Splats.
 2.  **Broader Selection**: A secondary pass that ignores strict pickability flags to find any visible mesh under the cursor.
 3.  **Ray-Sphere Intersection**: A mathematical check against a bounding sphere. Used if the proxy box is missed.
 4.  **Standard Ray Casting**: A manual ray cast from the camera through the pointer coordinates.
-5.  **Proximity Check (Last Resort)**: If a click is "close enough" to the model's center (within a screen-space threshold), it registers as a hit.
 
 ### **🛠️ Debugging & Scale Troubleshooting**
-*Current Status: Active Debugging*
 
-The following temporary measures are in place to resolve scaling-related picking issues:
+The Developer Panel includes a **Picking Strategy** dropdown that allows you to:
+-   **Force specific strategies**: Isolate and test each picking method individually (e.g., force "Helper Mesh" to see if the proxy box is correctly sized).
+-   **Disable fallbacks**: When a specific strategy is selected, the system will not fall back to others, allowing for precise debugging of failure points.
+-   **Default Behavior (ALL)**: The "ALL" option restores the standard multi-step fallback behavior.
 
--   **Visible Proxy Boxes**: Picking helpers are currently set to `visibility: 0.5` (semi-transparent red/gray boxes). If these boxes do not align with the model after scaling, the bounding box calculation is the root cause.
--   **Strategy Logging**: The browser console will log which strategy (1-5) successfully captured the click.
--   **Matrix Computation**: Every picking attempt now forces a `computeWorldMatrix(true)` on the model to ensure the bounding box reflects the latest UI scale slider value.
+For advanced debugging, you can use `togglePickingHelperVisibility(true)` in the console to visualize the invisible helper meshes.
 
-**To remove debugging once fixed:**
-1.  In `js/picking.js`, change `helperMesh.visibility = 0.5` back to `0`.
-2.  Remove `console.log` statements inside `getPickResult` and `createPickingHelperForSplat`.
+The console will also log which strategy successfully captured the click, or why a specific strategy failed.
 
 ### **📱 Mobile Interaction Fixes**
 -   **Touch Picking**: The `GestureControl` system now uses the enhanced `getPickResult` instead of standard Babylon picking.
@@ -374,7 +371,7 @@ scale            → s           │ Model scale multiplier
 Full Name        → Short Code  │ Description
 ─────────────────┼─────────────┼────────────────────────
 autoRotate       → ar          │ Auto-rotation enabled (1/0)
-quality          → q           │ Quality preset (l/m/h for low/medium/high)
+renderScale      → rs          │ Render resolution multiplier (0.1-2.0)
 sharpen          → sh          │ Sharpening enabled (1/0)  
 sharpenIntensity → si          │ Sharpening intensity (0.0-2.0)
 antiAliasing     → aa          │ Anti-aliasing type (n/f for none/fxaa)
@@ -399,12 +396,12 @@ radiusMax        → rx          │ Maximum zoom distance
 
 **Before Compression:**
 ```
-https://viewer.com/?model=https://example.com/model.splat&alpha=-1.47&beta=1.05&radius=4.00&fov=0.80&tx=0.00&ty=0.00&tz=0.00&scale=0.50&quality=low&sharpen=0&betaMin=0.175&betaMax=1.658&radiusMin=1.00&radiusMax=15.00&restrictions=vdp
+https://viewer.com/?model=https://example.com/model.splat&alpha=-1.47&beta=1.05&radius=4.00&fov=0.80&tx=0.00&ty=0.00&tz=0.00&scale=0.50&renderScale=1.0&sharpen=0&betaMin=0.175&betaMax=1.658&radiusMin=1.00&radiusMax=15.00&restrictions=vdp
 ```
 
 **After Compression:**
 ```
-https://viewer.com/?m=https://example.com/model.splat&a=-1.47&b=1.05&r=4.00&f=0.80&x=0.00&y=0.00&z=0.00&s=0.50&q=l&sh=0&bn=0.18&bx=1.66&rn=1.00&rx=15.00&rest=vdp
+https://viewer.com/?m=https://example.com/model.splat&a=-1.47&b=1.05&r=4.00&f=0.80&x=0.00&y=0.00&z=0.00&s=0.50&rs=1.0&sh=0&bn=0.18&bx=1.66&rn=1.00&rx=15.00&rest=vdp
 ```
 
 #### **🔄 Backward Compatibility**
@@ -450,24 +447,20 @@ The viewer includes a powerful export system that creates standalone viewers wit
 - **ZIP Export**: Similar size but organized for editing
 - **Compression**: Efficient encoding minimizes file size
 
-### 🎛️ Quality Settings
+### 🎛️ Render Resolution & Performance
 
-The viewer offers three quality presets to balance performance and visual fidelity:
+The viewer provides direct control over the rendering pipeline to balance visual fidelity and performance:
 
-- **High**: Best visual quality.
-  - **Hardware Scaling**: 0.7 (Renders at a higher resolution than the screen)
-  - **Anti-Aliasing (FXAA)**: Enabled
-  - **Sharpening**: Enabled
+- **Render Resolution**: A manual slider (0.1x - 2.0x) controls the hardware scaling level.
+  - **1.0x**: Native resolution (sharpest standard view).
+  - **< 1.0x**: Upscaled (improves FPS on low-end devices).
+  - **> 1.0x**: Supersampled (highest quality, heavier on GPU).
 
-- **Medium**: A balance between quality and performance (default setting).
-  - **Hardware Scaling**: 1.0 (Renders at the native screen resolution)
-  - **Anti-Aliasing (FXAA)**: Disabled
-  - **Sharpening**: Enabled
+- **Post-Processing**: Effects are independent of resolution.
+  - **Sharpening**: Enhances edge definition (configurable intensity).
+  - **FXAA**: Fast approximate anti-aliasing (can be toggled separately).
 
-- **Low**: Best performance, especially on older devices.
-  - **Hardware Scaling**: 1.5 (Renders at a lower resolution than the screen)
-  - **Anti-Aliasing (FXAA)**: Disabled
-  - **Sharpening**: Disabled
+By default, post-processing effects are disabled to ensure maximum compatibility and performance, but can be easily enabled via the Settings Panel.
 
 ### Mobile Optimizations
 - Automatic device detection

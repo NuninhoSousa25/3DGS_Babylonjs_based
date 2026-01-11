@@ -33,7 +33,6 @@
    ======================================================================== */
 
 // Import necessary UI functions for state restoration
-import { updateQualitySettings } from './ui/panels/settingsPanel.js';
 import { showToast } from './ui/components/toast.js';
 import { debugLog } from './helpers.js';
 import { CONFIG } from './config.js';
@@ -57,7 +56,8 @@ export const URL_PARAM_MAP = {
     
     // Settings panel
     'autoRotate': 'ar',
-    'quality': 'q',
+    'renderScale': 'rs',
+    'quality': 'q', // Legacy support
     'sharpen': 'sh',
     'sharpenIntensity': 'si',
     'fxaa': 'fx',
@@ -131,6 +131,8 @@ function compressUrlParameters(params) {
             compressed.set(shortKey, parseFloat(value).toFixed(1));
         } else if (shortKey === 's') { // scale
             compressed.set(shortKey, parseFloat(value).toFixed(2));
+        } else if (shortKey === 'rs') { // render scale
+            compressed.set(shortKey, parseFloat(value).toFixed(1));
         } else {
             compressed.set(shortKey, value);
         }
@@ -287,10 +289,10 @@ export function addSettingsPanelToUrl(params, camera, scene) {
         params.set('autoRotate', camera.useAutoRotationBehavior ? '1' : '0');
     }
     
-    // Quality setting
-    const qualitySelect = document.getElementById('qualitySelect');
-    if (qualitySelect && qualitySelect.value !== 'medium') {
-        params.set('quality', qualitySelect.value);
+    // Render Scale setting
+    const renderScaleRange = document.getElementById('renderScaleRange');
+    if (renderScaleRange && parseFloat(renderScaleRange.value) !== 1.0) {
+        params.set('renderScale', renderScaleRange.value);
     }
     
     // Post-processing settings
@@ -503,14 +505,37 @@ export function applySettingsPanelFromUrl(camera, scene) {
         }
     }
     
-    // Quality setting
-    if (urlParams.has('quality')) {
+    // Legacy Quality Support (maps to renderScale)
+    if (urlParams.has('quality') && !urlParams.has('renderScale')) {
         const quality = urlParams.get('quality');
-        const qualitySelect = document.getElementById('qualitySelect');
-        if (qualitySelect && ['low', 'medium', 'high'].includes(quality)) {
-            qualitySelect.value = quality;
-            // Apply quality settings using imported function
-            updateQualitySettings(quality, scene);
+        let scale = 1.0;
+        
+        if (quality === 'low') scale = 1.5;      // Low = Lower resolution (1/1.5)
+        else if (quality === 'high') scale = 0.7; // High = Supersampling (1/0.7)
+        
+        // Apply to UI and Engine
+        const renderScaleRange = document.getElementById('renderScaleRange');
+        const renderScaleDisplay = document.getElementById('renderScaleRangeDisplay');
+        if (renderScaleRange && renderScaleDisplay) {
+            renderScaleRange.value = scale;
+            renderScaleDisplay.textContent = scale.toFixed(1) + 'x';
+            scene.getEngine().setHardwareScalingLevel(1 / scale);
+        }
+        debugLog(`Applied legacy quality '${quality}' as renderScale: ${scale}`);
+    }
+    
+    // Render Scale setting
+    if (urlParams.has('renderScale')) {
+        const scale = parseFloat(urlParams.get('renderScale'));
+        if (!isNaN(scale) && scale >= 0.1 && scale <= 2.0) {
+            const renderScaleRange = document.getElementById('renderScaleRange');
+            const renderScaleDisplay = document.getElementById('renderScaleRangeDisplay');
+            if (renderScaleRange && renderScaleDisplay) {
+                renderScaleRange.value = scale;
+                renderScaleDisplay.textContent = scale.toFixed(1) + 'x';
+                // Apply scaling (HardwareScalingLevel is inverse)
+                scene.getEngine().setHardwareScalingLevel(1 / scale);
+            }
         }
     }
     

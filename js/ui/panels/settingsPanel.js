@@ -35,7 +35,6 @@ export function createSettingsSection(hasTouch) {
  */
 function createVisualizationSection() {
     const device = getDeviceInfo();
-    const defaultQuality = device.isDesktop ? 'high' : 'medium';
     
     return `
         <div class="settings-category" id="visualizationCategory">
@@ -49,14 +48,7 @@ function createVisualizationSection() {
                 </label>
             </div>
             
-            <div class="control-group">
-                 <label for="qualitySelect">Quality Preset</label>
-                <select id="qualitySelect" class="settings-select">
-                    <option value="low">Low</option>
-                    <option value="medium" ${defaultQuality === 'medium' ? 'selected' : ''}>Medium</option>
-                    <option value="high" ${defaultQuality === 'high' ? 'selected' : ''}>High</option>
-                </select>
-            </div>
+            ${createRangeControl('renderScaleRange', 'Render Resolution', 0.1, 2.0, 1.0, 0.1, 'x')}
 
             <div class="control-group">
                 <label for="rendererSelect">Renderer</label>
@@ -266,13 +258,13 @@ export function setupSettingsControls(camera, scene) {
         });
     }
     
-    // Quality selector
-    const qualitySelect = document.getElementById('qualitySelect');
-    if (qualitySelect) {
-        qualitySelect.addEventListener('change', (e) => {
-            updateQualitySettings(e.target.value, scene);
-        });
-    }
+    // Render Scale control
+    setupEnhancedRangeControl('renderScaleRange', (value) => {
+        // value is resolution scale (e.g. 1.0, 0.5, 2.0)
+        // HardwareScalingLevel is inverse (e.g. 1.0, 2.0, 0.5)
+        const engine = scene.getEngine();
+        engine.setHardwareScalingLevel(1 / value);
+    });
     
     // Renderer selector
     const rendererSelect = document.getElementById('rendererSelect');
@@ -674,47 +666,6 @@ async function handleExport(camera, scene, engine) {
     const { ViewerExporter, showExportDialog } = await import('../../export/ViewerExporter.js');
     const exporter = new ViewerExporter(scene, camera, engine);
     showExportDialog(exporter);
-}
-
-/**
- * Update rendering quality settings
- */
-export function updateQualitySettings(quality, scene) {
-    const engine = scene.getEngine();
-
-    const qualitySettings = {
-        low: { scaling: 1.5, fxaa: false, sharpen: false },      // Low: Disable sharpen for better performance
-        medium: { scaling: 1.0, fxaa: false, sharpen: true },    // Medium: Enable sharpen, no FXAA
-        high: { scaling: 0.70, fxaa: true, sharpen: true }       // High: Enable both sharpen and FXAA
-    };
-
-    const settings = qualitySettings[quality];
-    if (!settings) return;
-
-    // Apply settings
-    engine.setHardwareScalingLevel(settings.scaling);
-
-    if (scene.pipeline) {
-        scene.pipeline.fxaaEnabled = settings.fxaa;
-        scene.pipeline.sharpenEnabled = settings.sharpen;
-        
-        // Update UI toggles to match
-        const sharpenToggle = document.getElementById('sharpenToggle');
-        const sharpenIntensityRange = document.getElementById('sharpenIntensityRange');
-        const sharpenIntensityDisplay = document.getElementById('sharpenIntensityDisplay');
-        const fxaaToggle = document.getElementById('fxaaToggle');
-        
-        if (sharpenToggle) sharpenToggle.checked = settings.sharpen;
-        if (sharpenIntensityRange && settings.sharpen) {
-            sharpenIntensityRange.value = scene.pipeline.sharpen.edgeAmount;
-            if (sharpenIntensityDisplay) {
-                sharpenIntensityDisplay.textContent = scene.pipeline.sharpen.edgeAmount;
-            }
-        }
-        if (fxaaToggle) {
-            fxaaToggle.checked = settings.fxaa;
-        }
-    }
 }
 
 /**

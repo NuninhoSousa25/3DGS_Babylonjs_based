@@ -8,7 +8,7 @@ import { createElement } from './ui/components/controls.js';
 import { showToast } from './ui/components/toast.js';
 
 // Import panels
-import { createSettingsSection, setupSettingsControls, updateQualitySettings } from './ui/panels/settingsPanel.js';
+import { createSettingsSection, setupSettingsControls } from './ui/panels/settingsPanel.js';
 import { createDevSection, setupModelLoading } from './ui/panels/devPanel.js';
 import { createInfoSection } from './ui/panels/infoPanel.js';
 
@@ -644,26 +644,31 @@ function cycleQuality(scene) {
     
     const currentQuality = qualityDisplay.textContent;
     let nextQuality;
+    let scalingLevel;
     
     switch (currentQuality) {
         case 'High':
             nextQuality = 'Medium';
+            scalingLevel = 1.0;
             break;
         case 'Medium':
             nextQuality = 'Low';
+            scalingLevel = 1.5;
             break;
         case 'Low':
             nextQuality = 'High';
+            scalingLevel = 0.7;
             break;
         default:
             nextQuality = 'Medium';
+            scalingLevel = 1.0;
     }
     
     // Update display
     qualityDisplay.textContent = nextQuality;
     
-    // Apply quality settings
-    updateQualitySettings(nextQuality.toLowerCase(), scene);
+    // Apply quality settings (hardware scaling only)
+    scene.getEngine().setHardwareScalingLevel(scalingLevel);
     
     // Show feedback
     showToast(`Quality: ${nextQuality}`);

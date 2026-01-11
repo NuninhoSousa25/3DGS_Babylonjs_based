@@ -105,9 +105,9 @@ function createPickingHelperForSplat(splatMesh, scene) {
         // Don't inherit the parent's scaling (we've already accounted for it)
         helperMesh.parent = null;
         
-        // Make it visible for debugging (0.5)
+        // Make it invisible but pickable
         helperMesh.isVisible = true;
-        helperMesh.visibility = 0.5;
+        helperMesh.visibility = 0;
         helperMesh.isPickable = true;
         
         // Store reference to the original splat mesh
@@ -155,14 +155,43 @@ export function updatePickingHelpersScale(scene) {
 }
 
 /**
+ * Picking strategies for debugging
+ */
+export const PickingStrategies = {
+    ALL: 'ALL',
+    STRATEGY_1: 'STRATEGY_1', // Standard picking (helpers)
+    STRATEGY_2: 'STRATEGY_2', // Broader selection
+    STRATEGY_3: 'STRATEGY_3', // Ray-Sphere (Splat)
+    STRATEGY_4: 'STRATEGY_4'  // Standard Ray
+};
+
+let currentPickingStrategy = PickingStrategies.ALL;
+
+/**
+ * Set the active picking strategy
+ * @param {string} strategy - The strategy to use (from PickingStrategies)
+ */
+export function setPickingStrategy(strategy) {
+    if (PickingStrategies[strategy]) {
+        currentPickingStrategy = PickingStrategies[strategy];
+        console.log(`Picking strategy set to: ${strategy}`);
+    } else if (strategy === 'ALL') {
+        currentPickingStrategy = PickingStrategies.ALL;
+        console.log('Picking strategy set to: ALL (Default)');
+    } else {
+        console.warn(`Invalid picking strategy: ${strategy}`);
+    }
+}
+
+/**
  * Enhanced picking function with Gaussian Splatting and scale support
  * 
  * HOW IT WORKS:
- * 1. First tries standard mesh picking with helper meshes
- * 2. Falls back to broader selection criteria
- * 3. Uses specialized ray-sphere intersection for splats
- * 4. Tries standard ray picking as fallback
- * 5. Finally uses proximity-based selection if all else fails
+ * 1. If Splat & ALL: Tries Ray-Sphere intersection first (Strategy 3 Priority)
+ * 2. Strategy 1: Standard mesh picking with helper meshes
+ * 3. Strategy 2: Broader selection criteria
+ * 4. Strategy 3: Explicit selection only (covered by step 1 for ALL)
+ * 5. Strategy 4: Standard ray picking as fallback
  */
 export function getPickResult(scene, camera, pointerX, pointerY) {
     let pickResult = null;
@@ -172,41 +201,64 @@ export function getPickResult(scene, camera, pointerX, pointerY) {
         updatePickingHelpersScale(scene);
     }
     
-    // Strategy 1: Try standard picking first (works for regular meshes and helper meshes)
-    pickResult = scene.pick(
-        pointerX,
-        pointerY,
-        (mesh) => {
-            // Include picking helpers in the selection
-            if (mesh.metadata && mesh.metadata.isSplatHelper) {
-                return true;
-            }
-            return mesh.isPickable && mesh.isVisible;
-        },
-        false,
-        camera
-    );
+    const useAll = currentPickingStrategy === PickingStrategies.ALL;
+    const isSplat = scene.currentModel && scene.currentModelType === 'splat';
     
-    // Check if we hit a helper mesh and return the actual splat mesh
-    if (pickResult && pickResult.hit && pickResult.pickedMesh) {
-        if (pickResult.pickedMesh.metadata && pickResult.pickedMesh.metadata.isSplatHelper) {
-            // Replace the picked mesh with the actual splat mesh
-            const originalMesh = pickResult.pickedMesh.metadata.originalMesh;
-            if (originalMesh) {
-                // Create a modified pick result pointing to the actual splat
-                pickResult = {
-                    ...pickResult,
-                    pickedMesh: originalMesh,
-                    pickedPoint: pickResult.pickedPoint // Keep the intersection point
-                };
-                console.log('Picked Gaussian Splatting model via helper mesh (Strategy 1)');
-            }
+    // -------------------------------------------------------------------------
+    // PRIORITY FOR SPLATS: Strategy 3 (Ray-Sphere)
+    // The user requested that for splats, we start with method 3.
+    // -------------------------------------------------------------------------
+    if (useAll && isSplat) {
+        pickResult = pickGaussianSplatWithRay(scene, camera, pointerX, pointerY);
+        if (pickResult && pickResult.hit) {
+            console.log('Picked via ray-sphere (Strategy 3 - Priority for Splats)');
+            return pickResult;
         }
-        return pickResult;
+    }
+    
+    // Strategy 1: Try standard picking (works for regular meshes and helper meshes)
+    if (useAll || currentPickingStrategy === PickingStrategies.STRATEGY_1) {
+        pickResult = scene.pick(
+            pointerX,
+            pointerY,
+            (mesh) => {
+                // Include picking helpers in the selection
+                if (mesh.metadata && mesh.metadata.isSplatHelper) {
+                    return true;
+                }
+                return mesh.isPickable && mesh.isVisible;
+            },
+            false,
+            camera
+        );
+        
+        // Check if we hit a helper mesh and return the actual splat mesh
+        if (pickResult && pickResult.hit && pickResult.pickedMesh) {
+            if (pickResult.pickedMesh.metadata && pickResult.pickedMesh.metadata.isSplatHelper) {
+                // Replace the picked mesh with the actual splat mesh
+                const originalMesh = pickResult.pickedMesh.metadata.originalMesh;
+                if (originalMesh) {
+                    // Create a modified pick result pointing to the actual splat
+                    pickResult = {
+                        ...pickResult,
+                        pickedMesh: originalMesh,
+                        pickedPoint: pickResult.pickedPoint // Keep the intersection point
+                    };
+                    console.log('Picked Gaussian Splatting model via helper mesh (Strategy 1)');
+                }
+            }
+            // If we are enforcing Strategy 1, return result even if no hit (unless we want to fail hard, but typical pick returns result with hit=false)
+            if (currentPickingStrategy === PickingStrategies.STRATEGY_1) return pickResult;
+            // For ALL, if we got a hit, return it.
+            if (useAll && pickResult.hit) return pickResult;
+        } else if (currentPickingStrategy === PickingStrategies.STRATEGY_1) {
+             console.log('Strategy 1 failed (no hit)');
+             return pickResult; // Return the miss from Strategy 1
+        }
     }
     
     // Strategy 2: If no hit, try broader selection
-    if (!pickResult || !pickResult.hit) {
+    if ((useAll && (!pickResult || !pickResult.hit)) || currentPickingStrategy === PickingStrategies.STRATEGY_2) {
         pickResult = scene.pick(
             pointerX,
             pointerY,
@@ -214,28 +266,38 @@ export function getPickResult(scene, camera, pointerX, pointerY) {
             true,
             camera
         );
-        if (pickResult && pickResult.hit) console.log('Picked via broader selection (Strategy 2)');
+        if (pickResult && pickResult.hit) {
+            console.log('Picked via broader selection (Strategy 2)');
+            return pickResult;
+        } else if (currentPickingStrategy === PickingStrategies.STRATEGY_2) {
+            console.log('Strategy 2 failed (no hit)');
+            return pickResult;
+        }
     }
     
-    // Strategy 3: For Gaussian Splatting, try ray-based approach with scale-aware bounds
-    if ((!pickResult || !pickResult.hit) && scene.currentModelType === 'splat') {
+    // Strategy 3: Explicit Call (Ray-Sphere)
+    // Note: If useAll=true and isSplat=true, we ran this at the top.
+    // If useAll=true and isSplat=false, this returns null anyway.
+    if (currentPickingStrategy === PickingStrategies.STRATEGY_3) {
         pickResult = pickGaussianSplatWithRay(scene, camera, pointerX, pointerY);
         if (pickResult && pickResult.hit) console.log('Picked via ray-sphere (Strategy 3)');
+        else console.log('Strategy 3 failed (no hit or not splat)');
+        return pickResult;
     }
     
     // Strategy 4: Fallback to standard ray picking
-    if (!pickResult || !pickResult.hit) {
+    if ((useAll && (!pickResult || !pickResult.hit)) || currentPickingStrategy === PickingStrategies.STRATEGY_4) {
         const ray = scene.createPickingRay(pointerX, pointerY, BABYLON.Matrix.Identity(), camera);
         pickResult = scene.pickWithRay(ray, (mesh) => {
             return mesh.isVisible && mesh !== scene.skybox;
         });
-        if (pickResult && pickResult.hit) console.log('Picked via standard ray (Strategy 4)');
-    }
-    
-    // Strategy 5: If still no hit and we have a splat model, use proximity-based selection
-    if ((!pickResult || !pickResult.hit) && scene.currentModel && scene.currentModelType === 'splat') {
-        pickResult = createProximityPickResult(scene, camera, pointerX, pointerY);
-        if (pickResult && pickResult.hit) console.log('Picked via proximity (Strategy 5)');
+        if (pickResult && pickResult.hit) {
+            console.log('Picked via standard ray (Strategy 4)');
+            return pickResult;
+        } else if (currentPickingStrategy === PickingStrategies.STRATEGY_4) {
+            console.log('Strategy 4 failed (no hit)');
+            return pickResult;
+        }
     }
     
     return pickResult;
@@ -310,99 +372,6 @@ function pickGaussianSplatWithRay(scene, camera, pointerX, pointerY) {
     }
     
     return null;
-}
-
-/**
- * Create a proximity-based pick result for fallback
- * This helps when exact picking fails but user clearly intended to select the model
- */
-function createProximityPickResult(scene, camera, pointerX, pointerY) {
-    if (!scene.currentModel) {
-        return null;
-    }
-    
-    // Create a ray from the camera
-    const ray = scene.createPickingRay(pointerX, pointerY, BABYLON.Matrix.Identity(), camera);
-    
-    // Refresh bounding info for accurate center
-    scene.currentModel.refreshBoundingInfo();
-    
-    // Ensure world matrix is updated for accurate scale/position
-    scene.currentModel.computeWorldMatrix(true);
-    
-    // Get model center in world space
-    let modelCenter = BABYLON.Vector3.Zero();
-    if (scene.currentModel.getBoundingInfo) {
-        const boundingInfo = scene.currentModel.getBoundingInfo();
-        const worldMatrix = scene.currentModel.getWorldMatrix();
-        modelCenter = BABYLON.Vector3.TransformCoordinates(
-            boundingInfo.boundingSphere.center,
-            worldMatrix
-        );
-    } else if (scene.currentModel.position) {
-        modelCenter = scene.currentModel.position;
-    }
-    
-    // Find the closest point on the ray to the model center
-    const rayToModel = modelCenter.subtract(ray.origin);
-    const projectionLength = BABYLON.Vector3.Dot(rayToModel, ray.direction);
-    const closestPointOnRay = ray.origin.add(ray.direction.scale(Math.max(0, projectionLength)));
-    
-    // Check if we're reasonably close
-    const distanceToModel = BABYLON.Vector3.Distance(closestPointOnRay, modelCenter);
-    const screenDistance = getScreenDistance(scene, camera, modelCenter, closestPointOnRay);
-    
-    // Adjust threshold based on model scale
-    const scale = scene.currentModel.scaling;
-    const maxScale = Math.max(Math.abs(scale.x), Math.abs(scale.y), Math.abs(scale.z));
-    const threshold = 50 * Math.max(1, maxScale * 0.5); // Scale-aware threshold
-    
-    // If within reasonable screen distance, consider it a hit
-    if (screenDistance < threshold) {
-        console.log(`Proximity pick successful. Screen distance: ${screenDistance.toFixed(1)}px, Threshold: ${threshold.toFixed(1)}px`);
-        
-        return {
-            hit: true,
-            pickedMesh: scene.currentModel,
-            pickedPoint: closestPointOnRay,
-            distance: projectionLength,
-            ray: ray,
-            proximity: true // Flag this as a proximity pick
-        };
-    }
-    
-    return null;
-}
-
-/**
- * Calculate screen-space distance between two 3D points
- */
-function getScreenDistance(scene, camera, point1, point2) {
-    const engine = scene.getEngine();
-    const viewport = camera.viewport;
-    const width = engine.getRenderWidth();
-    const height = engine.getRenderHeight();
-    
-    // Project both points to screen space
-    const screen1 = BABYLON.Vector3.Project(
-        point1,
-        BABYLON.Matrix.Identity(),
-        scene.getTransformMatrix(),
-        viewport
-    );
-    
-    const screen2 = BABYLON.Vector3.Project(
-        point2,
-        BABYLON.Matrix.Identity(),
-        scene.getTransformMatrix(),
-        viewport
-    );
-    
-    // Calculate pixel distance
-    const dx = (screen1.x - screen2.x) * width;
-    const dy = (screen1.y - screen2.y) * height;
-    
-    return Math.sqrt(dx * dx + dy * dy);
 }
 
 /**

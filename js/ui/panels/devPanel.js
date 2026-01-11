@@ -11,6 +11,7 @@ import { setupUIUpdates, startUIUpdates, updateFileSizeDisplay,  stopUIUpdates, 
 import { CONFIG } from '../../config.js';
 import { switchRenderer } from '../../main.js';
 import { detectWebGPU } from '../../webgpu-detector.js';
+import { PickingStrategies, setPickingStrategy } from '../../picking.js';
 
 /**
  * Create developer tools section HTML
@@ -87,6 +88,23 @@ export function createDevSection() {
             </div>
             
             <div class="settings-separator"></div>
+
+            <div class="dev-section">
+                <div class="dev-title">Picking Strategy</div>
+                <div class="scene-info">
+                    <div class="info-row">
+                        <select id="pickingStrategySelect" style="width: 100%; margin-top: 5px; background: #333; color: white; border: 1px solid #555; padding: 4px; border-radius: 4px;">
+                            <option value="ALL">ALL (Default - Auto Fallback)</option>
+                            <option value="STRATEGY_1">1. Helper Mesh</option>
+                            <option value="STRATEGY_2">2. Broader Selection</option>
+                            <option value="STRATEGY_3">3. Ray-Sphere (Splat)</option>
+                            <option value="STRATEGY_4">4. Standard Ray</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-separator"></div>
             
             <div class="dev-section">
                 <div class="dev-title">Load Model</div>
@@ -149,6 +167,19 @@ export function setupModelLoading(scene) {
     }
 
     setupDevPanel(scene.getEngine());
+    setupPickingStrategyControls();
+}
+
+/**
+ * Setup picking strategy controls
+ */
+function setupPickingStrategyControls() {
+    const select = document.getElementById('pickingStrategySelect');
+    if (select) {
+        select.addEventListener('change', (e) => {
+            setPickingStrategy(e.target.value);
+        });
+    }
 }
 
 async function setupDevPanel(engine) {

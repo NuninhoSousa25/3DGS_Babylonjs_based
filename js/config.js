@@ -105,9 +105,9 @@ export const CONFIG = {
      * Post-processing effects
      */
     postProcessing: {
-        sharpenEnabled: true,
+        sharpenEnabled: false,
         sharpenEdgeAmount: 0.3,
-        fxaaEnabled: true
+        fxaaEnabled: false
     },
 
     /**
