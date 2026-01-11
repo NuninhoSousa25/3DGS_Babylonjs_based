@@ -448,7 +448,11 @@ export function applyModelScaleFromUrl(scene) {
         
         if (!isNaN(scale) && scale > 0) {
             // Apply the scale to the model
-            scene.currentModel.scaling.setAll(scale);
+            if (scene.currentModelType === 'splat') {
+                scene.currentModel.scaling.set(scale, scale, -scale);
+            } else {
+                scene.currentModel.scaling.setAll(scale);
+            }
             
             // Update the UI slider to reflect the loaded scale
             const modelScaleRange = document.getElementById('modelScaleRange');

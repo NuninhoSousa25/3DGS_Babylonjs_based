@@ -158,7 +158,7 @@ export function centerAndFitModel(model, camera, scene) {
     }
 }
 
-export function normalizeModelScale(model, targetSize = 2.0) {
+export function normalizeModelScale(model, targetSize = 2.0, modelType = 'mesh') {
     if (!model) return;
 
     try {
@@ -178,10 +178,14 @@ export function normalizeModelScale(model, targetSize = 2.0) {
         const scaleFactor = targetSize / maxDimension;
 
         // Apply the scaling factor to the model.
-        // setAll is used to ensure the scale is uniform.
-        model.scaling.setAll(scaleFactor);
+        // For Gaussian Splat models, we invert the Z scale to fix mirroring issues
+        if (modelType === 'splat') {
+            model.scaling.set(scaleFactor, scaleFactor, -scaleFactor);
+        } else {
+            model.scaling.setAll(scaleFactor);
+        }
 
-        debugLog(`Model normalized with a scale factor of: ${scaleFactor.toFixed(4)}`);
+        debugLog(`Model normalized with a scale factor of: ${scaleFactor.toFixed(6)} (Z inverted: ${modelType === 'splat'})`);
 
     } catch (error) {
         console.warn("Could not normalize model scale:", error);
@@ -209,7 +213,7 @@ function parseModelSource(modelSource, defaultModelUrl) {
         }
         
         // Create object URL only for splat files (ply files handled directly)
-        if (extension === 'splat' || extension === 'sog') {
+        if (extension === 'splat' || extension === 'sog' || extension === 'ply') {
             url = URL.createObjectURL(modelSource);
         }
         // PLY files will be passed directly to the loader
@@ -594,13 +598,6 @@ async function loadModelByFormat(scene, loadContext) {
             // Use modelSource directly if it is a File, otherwise use the URL
             const gaussianModel = await loadSplatModel(scene, isFile ? modelSource : url);
 
-            // Clean up blob URL if created from file (though we're likely not using it now for splats)
-            if (isFile) {
-                // If we created a URL for other purposes, we can revoke it, but loadSplatModel uses File directly now.
-                // Keeping this for safety if other parts rely on 'url' being valid temporarily.
-                setTimeout(() => URL.revokeObjectURL(url), 1000); 
-            }
-
             return { model: gaussianModel, type: 'splat' };
         default:
             throw new Error(ErrorMessages.MODEL.UNSUPPORTED_FORMAT(extension));
@@ -613,7 +610,7 @@ async function loadModelByFormat(scene, loadContext) {
  * @param {BABYLON.Scene} scene - The Babylon.js scene containing the model
  * @description Ensures meshes are pickable, normalizes scale, centers model, updates UI
  */
-function postProcessModel(currentModel, scene) {
+function postProcessModel(currentModel, scene, modelType) {
     // Ensure all meshes are pickable
     setMeshesPickable(currentModel);
 
@@ -622,7 +619,7 @@ function postProcessModel(currentModel, scene) {
         debugLog('Shared URL detected: Skipping model normalization and centering to preserve shared state.');
     } else {
         // Normalize the model scale to a consistent size
-        normalizeModelScale(currentModel, CONFIG.modelLoader.defaultNormalizedSize);
+        normalizeModelScale(currentModel, CONFIG.modelLoader.defaultNormalizedSize, modelType);
 
         // Center and fit the model to view
         const camera = scene.activeCamera;
@@ -637,8 +634,12 @@ function postProcessModel(currentModel, scene) {
     if (modelScaleRange && modelScaleInput && currentModel) {
         const actualScale = currentModel.scaling.x; // All axes should be the same due to setAll()
         modelScaleRange.value = actualScale;
-        modelScaleInput.value = actualScale.toFixed(2); // Match the precision of the input
-        debugLog(`Scale slider updated to: ${actualScale.toFixed(4)}`);
+        
+        // Use higher precision for small scales to avoid "0.00" display
+        const precision = actualScale < 0.01 ? 6 : 2;
+        modelScaleInput.value = actualScale.toFixed(precision); 
+        
+        debugLog(`Scale slider updated to: ${actualScale.toFixed(6)}`);
     }
 }
 
@@ -777,7 +778,7 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
         currentModelType = type;
 
         // Post-process the loaded model
-        postProcessModel(currentModel, scene);
+        postProcessModel(currentModel, scene, currentModelType);
         
     } catch (err) {
         console.error("Model loading failed:", err.message);
@@ -791,7 +792,7 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
                 const { model, type } = await loadModelByFormat(scene, fallbackContext);
                 currentModel = model;
                 currentModelType = type;
-                postProcessModel(currentModel, scene);
+                postProcessModel(currentModel, scene, currentModelType);
             } catch (fallbackErr) {
                 console.error("Fallback model failed:", fallbackErr.message);
                 ({ currentModel, currentModelType } = createFallbackModel(scene));
@@ -801,12 +802,9 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
         }
     } finally {
         // Clean up object URLs if created
-        if (isFile && (extension === 'splat' || extension === 'sog')) {
-            // Clean up SPLAT file URLs
+        if (isFile && (extension === 'splat' || extension === 'sog' || extension === 'ply')) {
+            // Clean up SPLAT, SOG, and PLY file URLs
             setTimeout(() => URL.revokeObjectURL(url), CONFIG.modelLoader.urlCleanupDelay);
-        } else if (isFile && extension === 'ply' && currentModelType === 'splat') {
-            // Clean up PLY Gaussian splat URLs (splatUrl was created in loadModelByFormat)
-            // Note: This cleanup happens in the loadModelByFormat function scope
         }
         
         // Clear progress callback

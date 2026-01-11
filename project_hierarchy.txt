@@ -1,0 +1,163 @@
+# 3D Model Viewer - Project Architecture & File Reference
+
+This document provides a detailed technical breakdown of the project structure, describing the purpose, internal logic, and dependencies of each file.
+
+## Root Directory
+
+### `index.html`
+- **Purpose**: The application entry point.
+- **Details**: Defines the DOM structure, including the main rendering `<canvas id="renderCanvas">` and the UI containers. It loads the `css/styles.css` and the ES6 module `js/main.js`.
+- **Key Dependencies**: Babylon.js (via CDN), `styles.css`, `main.js`.
+
+### `README.md`
+- **Purpose**: User and developer documentation.
+- **Details**: Contains installation instructions, feature overviews, configuration guides, and architectural summaries.
+
+---
+
+## JavaScript Core (`js/`)
+
+### `main.js`
+- **Purpose**: Application Orchestrator & Entry Point.
+- **Details**: 
+  - Initializes the Babylon.js `WebGPUEngine` (with automatic fallback to `Engine` for WebGL).
+  - Sets up the `Scene`, `ArcRotateCamera`, and lighting environment.
+  - Implements the main render loop.
+  - Coordinates the initialization sequence: `Camera -> UI -> Model Loading -> URL Parameter Restoration`.
+  - Handles global events like window resizing via `WindowEvents`.
+- **Connections**: Imports `setupCamera` (cameraControl), `loadModel` (modelLoader), `setupUI` (ui), and `urlManager`.
+
+### `config.js`
+- **Purpose**: Centralized Configuration Registry.
+- **Details**: 
+  - Exports a static `CONFIG` object containing system-wide constants.
+  - **Sections**: `camera` (defaults), `modelLoader` (formats, size limits), `engine` (WebGPU prefs), `postProcessing` (default FXAA/Sharpen), `mobile` (sensitivity overrides), and `lighting` (HDR URLs).
+- **Usage**: Imported by almost every module to ensure consistent settings and avoid "magic numbers" in code.
+
+### `ui.js`
+- **Purpose**: User Interface Manager.
+- **Details**: 
+  - Constructs the main control panel DOM dynamically.
+  - Manages the top-right icon toolbar and the "Shared Mode" (hamburger menu) state.
+  - logic for toggling between `Settings`, `Info`, and `Dev` panels.
+  - Instantiates the `UI Update Loop` via helpers to refresh stats like FPS and resolution.
+- **Connections**: Orchestrates `settingsPanel.js`, `devPanel.js`, `infoPanel.js`.
+
+### `modelLoader.js`
+- **Purpose**: 3D Asset Loading & Normalization.
+- **Details**: 
+  - Supports formats: `.splat`, `.ply`, `.sog` (Gaussian Splatting), `.gltf`, `.glb`, `.obj`, `.stl`.
+  - **Splat Handling**: Uses `BABYLON.GaussianSplattingMesh` for specialized rendering.
+  - **Normalization**: Automatically scales disparate models to a normalized bounding box size (default 2.0 units) and centers them at (0,0,0).
+  - **Mobile Logic**: Checks file size against `CONFIG.mobile.maxFileSize` before loading to prevent crashes.
+- **Connections**: Used by `main.js` (startup load) and `devPanel.js` (user load).
+
+### `cameraControl.js`
+- **Purpose**: Camera Setup & Animation.
+- **Details**: 
+  - Configures the `ArcRotateCamera` with sensitivity/inertia settings derived from `CONFIG`.
+  - Exports `animateCamera()`: A utility using `BABYLON.AnimationGroup` to smoothly transition the camera's target and radius (used for "Double Click to Focus").
+
+### `cameraLimits.js`
+- **Purpose**: Movement Constraint Logic.
+- **Details**: 
+  - Defines the `CameraLimits` class attached to `scene.cameraLimits`.
+  - **Logic**: Enforces `lowerRadiusLimit`/`upperRadiusLimit` (Zoom), `beta` limits (Vertical angle), and `alpha` limits (Horizontal rotation).
+  - **Master Toggle**: Allows enabling/disabling all restrictions dynamically.
+  - **Serialization**: capable of exporting current limits to URL parameters.
+
+### `urlManager.js`
+- **Purpose**: State Persistence (Save/Load).
+- **Details**: 
+  - **Compression**: Maps long parameter names to short codes (e.g., `alpha` → `a`, `model` → `m`) and uses Base64 encoding for long URL strings.
+  - **Functions**: `createShareUrl()` (generates link), `decompressUrlParameters()` (parses link), `applyCameraParametersFromUrl()` (restores view).
+  - **Scope**: Preserves camera position, target, model scale, and all UI settings.
+
+### `picking.js`
+- **Purpose**: 3D Interaction Engine.
+- **Details**: 
+  - Solves the difficulty of raycasting against Gaussian Splats (which have no traditional geometry).
+  - **Strategy**: Creates invisible "Proxy Meshes" (bounding boxes) matching the splat's scale to capture mouse events.
+  - **Fallback**: Implements a multi-stage picking logic: `Proxy Pick -> Ray Intersection -> Proximity Check`.
+
+### `postProcessing.js`
+- **Purpose**: Rendering Pipeline & Effects.
+- **Details**: 
+  - Manages `BABYLON.DefaultRenderingPipeline`.
+  - **Effects**: Sharpening (Edge Amount) and FXAA (Anti-aliasing).
+  - **Performance**: Includes `PerformanceMonitor` class that degrades quality (disables effects, lowers resolution) if FPS drops below thresholds on mobile.
+
+### `deviceDetection.js`
+- **Purpose**: Hardware Capability Analysis.
+- **Details**: 
+  - Detects device type (Mobile/Tablet/Desktop) via User Agent and screen size.
+  - Detects capabilities: `hasTouch`, `isIOS`, `isAndroid`.
+  - Exports `detectDevice()` used to branch logic for mobile optimizations.
+
+### `gestureControl.js`
+- **Purpose**: Custom Touch Input Processor.
+- **Details**: 
+  - Replaces default Babylon.js touch controls for finer granularity.
+  - **Gestures**: Implements One-finger Orbit, Two-finger Pan, and Two-finger Pinch-Zoom.
+  - **Logic**: Manually calculates deltas and applies them to camera `alpha`, `beta`, and `radius`.
+
+### `mobileControl.js`
+- **Purpose**: Mobile Optimization Entry Point.
+- **Details**: 
+  - Called by `main.js` if `deviceDetection` identifies a mobile device.
+  - Adjusts camera inertia/sensitivity constants for touch screens.
+  - Instantiates `GestureControl`.
+
+### `webgpu-detector.js`
+- **Purpose**: Renderer Capability Check.
+- **Details**: 
+  - Asynchronously checks if `navigator.gpu` is available and compatible.
+  - Used by `devPanel.js` to display renderer status.
+
+### `helpers.js`
+- **Purpose**: Shared Utilities.
+- **Details**: 
+  - **DOM**: Caching wrappers for `document.getElementById`.
+  - **Events**: `WindowEvents` for debounced resize handling.
+  - **UI Loop**: `setupUIUpdates` manages the requestAnimationFrame loop for updating FPS/Vertex counts only when the panel is visible.
+
+---
+
+## UI Components (`js/ui/`)
+
+### `js/ui/panels/`
+- **`settingsPanel.js`**: Logic for the Settings tab. Controls Visualization (Quality, Scale), Camera Limits (Sliders), and Post-processing.
+- **`devPanel.js`**: Logic for the Developer tab. Displays real-time stats (FPS, Vertices), Device Info, and provides the File/URL Loader interface.
+- **`infoPanel.js`**: Static HTML generation for the Help/Controls tab.
+
+### `js/ui/components/`
+- **`controls.js`**: Reusable UI generators (`createRangeControl`, `createToggleSwitch`, `createColorControl`) to ensure consistent styling.
+- **`icons.js`**: Storage for SVG icon strings used in the toolbar.
+- **`toast.js`**: Implements the ephemeral notification system (e.g., "URL Copied").
+
+---
+
+## Export System (`js/export/`)
+
+### `ViewerExporter.js`
+- **Purpose**: Self-Contained Export Logic.
+- **Details**: 
+  - Fetches all project source code (JS, CSS).
+  - Embeds the current model (if small enough) or references it.
+  - Injects the current state (Camera pos, Settings) into the exported `config.js`.
+  - Generates a downloadable ZIP or single HTML file.
+
+### `exportConfig.js`
+- **Purpose**: Templates.
+- **Details**: Contains the HTML templates and file lists required by the exporter.
+
+---
+
+## CSS (`css/`)
+
+### `styles.css`
+- **Purpose**: Global Styling.
+- **Details**: 
+  - Defines the dark theme UI variables.
+  - Handles the responsive layout for the Control Panel (slide-out on mobile, floating on desktop).
+  - Custom scrollbar styling and touch-action definitions.

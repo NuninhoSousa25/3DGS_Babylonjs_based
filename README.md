@@ -1,4 +1,3 @@
-
 # 3D Model Viewer
 
 A comprehensive 3D model viewer built with Babylon.js, specifically optimized for 3D Gaussian Splats and traditional mesh models. This viewer provides a consistent, high-performance experience across all devices, including desktop, mobile, and tablet, with advanced sharing capabilities and complete state preservation.
@@ -6,26 +5,33 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 ## 📋 Development Status
 
 ### 🔄 To Implement / Fix
-
-1. I tried to load the same splat cloud into the viewer in different formats - ply, compressed ply, and splat (the latter two after conversion to Super Splat). I noticed that the ply format model rotates much smoother than the compressed versions. Can you suggest why this might be the case? Intuitively, I expected the opposite to be true.
-   
-2, implementing sog input.(wait for oficila release) - https://playground.babylonjs.com/#QA2662#12
-
-ping pong auto rotate with horizontal rotation limit
-- low performance should be set to lower res just o make sure
-
-- performance is worst when sharpness is disabled - why?
-
-- disable pan doesnt work on mobile
-- obj import not working with materials / textures
-- loading model pop up - usually doent apear centered
+- Multiple resize callbacks instead of debounced single handler
+- Default cube after error in loading model is not cleared when a new model is loaded after
 - Loading optimization for large 3D models
+- Check behavior with auto rotate and horizontal limitation
+- Loading model popup usually doesn't appear centered
 - GLTF culling / occlusion verification
-
+- FBX format support debugging
+- Performance optimizations for large models (>100MB)
+- Code quality improvements and documentation
+- Better UI layout for smaller mobile screens
+- Revise picking logic - not consistent when trying to select 3D Gaussian Splats
 
 ### ✅ Recently Completed
+- **Gaussian Splat Orientation Fix** - Gaussian Splat models (.splat, .ply, .spz, .sog) now have their Z-axis scale inverted by default to fix mirroring issues during loading.
+- **Parallel Model Pre-fetching** - Model download now starts immediately upon page load, running in parallel with engine initialization to significantly reduce wait times
+- **Early Loading Overlay** - Real-time download progress bar and status feedback for shared URLs, eliminating "ghost loading" uncertainty
+- **Optimized Initialization** - Reduced post-loading transition delay from 50ms to 5ms for snappier experience once model is ready
+- **WebGPU Integration** - Seamlessly leverages WebGPU for 50-100% FPS improvement on compatible devices with graceful fallback to WebGL
+- **Camera Limits Master Toggle Fix** - "Enable Camera Limits" now properly controls all restrictions
+- **WordPress Embedding Support** - fixed background color inheritance issues in iframe contexts
+- **Wheel Event Prevention** - scroll wheel over viewer no longer scrolls parent page when embedded
+- **Default Settings Configuration** - camera limits and zoom toggles now respect CONFIG defaults
 - **Background Color Picker** with full URL parameter support and real-time updates
 - **Model Scale Slider Fix** - now correctly updates when models are normalized during loading
+- **Precision Scale Control** - Model scale slider now supports values down to 0.001 with 3-decimal precision input
+- **Extended Zoom Limits** - "Max Distance" and "Min Distance" sliders now allow for much closer zoom levels (down to 0.1 and 0.01 respectively)
+- **Shared URL State Fidelity** - Shared URLs now bypass automatic model normalization to ensure the recipient sees exactly the same view (scale and position) as the sender
 - **File Size Display Fix** - properly shows file sizes for both local files and URL-loaded models
 - **Shared URL Loading Feedback** - immediate loading spinner and messages when opening shared URLs
 - **Comprehensive URL sharing** with complete state preservation
@@ -39,10 +45,11 @@ ping pong auto rotate with horizontal rotation limit
 ## 🌟 Core Features
 
 ### **📁 Model Loading & Compatibility**
-- **Drag & Drop**: Easily load models by dragging files directly into the viewer
+- **Drag & Drop**: Easily load models by dragging files directly into the viewer (optimized for large splat files)
 - **File Upload**: Built-in interface to load models from your device
 - **URL Loading**: Load models from remote URLs with automatic format detection
-- **Format Support**: Compatible with GLTF, GLB, SPLAT, PLY, and SPZ formats
+- **Format Support**: Compatible with GLTF, GLB, SPLAT, PLY, SPZ, and SOG formats
+- **Automatic Orientation**: Gaussian Splat models (.splat, .ply, .spz, .sog) are automatically oriented to fix upside-down loading issues
 - **Automatic Scaling**: Intelligent model scaling based on format and size
 
 ### **🔗 Advanced URL Sharing System**
@@ -50,6 +57,12 @@ ping pong auto rotate with horizontal rotation limit
 - **Compressed URLs**: Intelligent compression reduces URL length by 30-50%
 - **Bidirectional Support**: Generate and consume shareable links seamlessly
 - **Backward Compatibility**: Works with existing URL formats
+
+### **🌐 WordPress & Iframe Embedding**
+- **WordPress Compatible**: Designed to work seamlessly in WordPress iframes
+- **Background Color Fix**: Prevents theme color inheritance issues
+- **Scroll Isolation**: Mouse wheel over viewer won't scroll parent page
+- **CSS Override Protection**: Robust styling prevents theme conflicts
 
 **📊 What Gets Shared:**
 - Camera position, rotation, and zoom level
@@ -60,35 +73,47 @@ ping pong auto rotate with horizontal rotation limit
 - Touch sensitivity for mobile devices
 
 ### **🎛️ Settings Panel**
-- **Visualization Controls**: Auto-rotation, quality presets, field of view, model scaling
+- **Visualization Controls**: Auto-rotation, quality presets, field of view, model scaling, background color picker
 - **Camera Limits**: Comprehensive zoom, rotation, and panning restrictions
 - **Post-Processing**: Sharpening effects with intensity control, anti-aliasing options
 - **Touch Controls**: Sensitivity adjustment for mobile devices
 - **Real-time Updates**: All changes instantly applied and saved to URLs
 
-### **📱 Cross-Platform Support**
-- **Desktop**: Full mouse and keyboard support with precision controls
-- **Mobile & Tablet**: Optimized touch gestures (orbit, pan, pinch-to-zoom)
-- **Responsive UI**: Unified 6-icon toolbar adapts to all screen sizes
-- **Device Detection**: Automatic optimization based on device capabilities
+## 🎯 Picking & Interaction System
 
-### **🎨 Advanced Rendering Features**
-- **Post-Processing Pipeline**: Real-time sharpening and anti-aliasing
-- **Quality Presets**: Low/Medium/High settings for performance optimization
-- **Hardware Scaling**: Dynamic resolution adjustment for performance
-- **Camera Limits**: Precise movement restrictions for focused viewing
-- **Auto-Rotation**: Customizable idle rotation with timing controls
+The viewer employs a specialized multi-strategy picking system to handle the unique challenges of 3D Gaussian Splats (which lack traditional triangle geometry).
 
-### **📤 Export Capabilities**
-- **HTML Export**: Self-contained viewers with embedded assets
-- **ZIP Packages**: Organized file structures for sharing and editing
-- **State Preservation**: Complete settings and camera state in exports
-- **Multiple Formats**: Choose between single-file or multi-file exports
+### **🔍 The 5 Picking Strategies**
+To ensure reliable interaction (like double-click to focus) across all models, the `getPickResult` function in `js/picking.js` executes the following fallbacks:
+
+1.  **Helper Mesh Picking**: Hits an invisible "Proxy Box" that perfectly wraps the model. This is the most accurate method for Gaussian Splats.
+2.  **Broader Selection**: A secondary pass that ignores strict pickability flags to find any visible mesh under the cursor.
+3.  **Ray-Sphere Intersection**: A mathematical check against a bounding sphere. Used if the proxy box is missed.
+4.  **Standard Ray Casting**: A manual ray cast from the camera through the pointer coordinates.
+5.  **Proximity Check (Last Resort)**: If a click is "close enough" to the model's center (within a screen-space threshold), it registers as a hit.
+
+### **🛠️ Debugging & Scale Troubleshooting**
+*Current Status: Active Debugging*
+
+The following temporary measures are in place to resolve scaling-related picking issues:
+
+-   **Visible Proxy Boxes**: Picking helpers are currently set to `visibility: 0.5` (semi-transparent red/gray boxes). If these boxes do not align with the model after scaling, the bounding box calculation is the root cause.
+-   **Strategy Logging**: The browser console will log which strategy (1-5) successfully captured the click.
+-   **Matrix Computation**: Every picking attempt now forces a `computeWorldMatrix(true)` on the model to ensure the bounding box reflects the latest UI scale slider value.
+
+**To remove debugging once fixed:**
+1.  In `js/picking.js`, change `helperMesh.visibility = 0.5` back to `0`.
+2.  Remove `console.log` statements inside `getPickResult` and `createPickingHelperForSplat`.
+
+### **📱 Mobile Interaction Fixes**
+-   **Touch Picking**: The `GestureControl` system now uses the enhanced `getPickResult` instead of standard Babylon picking.
+-   **Zoom Consistency**: Double-tap zoom level on mobile now matches the desktop behavior (`distance * 3.5`).
 
 ## 🚀 Getting Started
 
 ### **Prerequisites**
-- Modern web browser with WebGL support
+- Modern web browser with WebGL2 or WebGPU support
+- Secure Context (HTTPS or `localhost`) is required for WebGPU functionality.
 - Local web server (for file loading capabilities)
 
 ### **Installation**
@@ -106,6 +131,27 @@ ping pong auto rotate with horizontal rotation limit
    ```
 3. **Open your browser** and navigate to `http://localhost:8000`
 
+### **WordPress Embedding**
+To embed the viewer in WordPress or other CMS platforms:
+
+1. **Upload the viewer files** to your web server
+2. **Create an iframe** with the viewer URL:
+   ```html
+   <iframe src="https://yoursite.com/viewer/"
+           width="800" height="600"
+           frameborder="0"
+           allowfullscreen>
+   </iframe>
+   ```
+3. **Optional**: Add specific model URLs or settings via URL parameters
+4. **Responsive**: The viewer automatically adapts to iframe dimensions
+
+**✅ Embedding Features:**
+- Automatic background color correction for WordPress themes
+- Scroll wheel isolation (won't scroll parent page)
+- CSS protection against theme interference
+- Fullscreen support where permitted
+
 ### **Basic Usage**
 1. **Open the application** in your web browser
 2. **Use the 6-icon toolbar** in the top-right corner:
@@ -115,6 +161,18 @@ ping pong auto rotate with horizontal rotation limit
    - ⛶ **Fullscreen**: Toggle fullscreen mode
    - 🔧 **Dev Tools**: Load models and monitor performance
    - 📤 **Share**: Copy shareable URL with current camera position
+
+## 📚 WebGPU Testing & Diagnostics
+
+To assess and troubleshoot WebGPU functionality, the viewer includes dedicated test pages:
+
+-   **WebGPU Detection Test (`test-webgpu-detection.html`)**:
+    -   Provides detailed diagnostic information about your browser's WebGPU capabilities, including GPU adapter details, device limits, supported features, and browser information.
+    -   **Important**: WebGPU requires a **Secure Context** (HTTPS or `localhost`). If you are testing locally via an IP address (`http://192.168.1.x`), WebGPU will be unavailable.
+
+-   **WebGPU vs WebGL Performance Comparison Lab (`test-webgpu-comparison.html`)**:
+    -   An interactive environment to compare the performance of WebGPU and WebGL side-by-side.
+    -   Allows switching renderers, adjusting resolution, loading different model complexities, and monitoring real-time performance statistics.
 
 ## 🏗️ Architecture
 
@@ -152,7 +210,7 @@ viewer/
 ```
 
 ### **Technology Stack**
-- **🎮 Babylon.js**: 3D rendering engine
+- **🎮 Babylon.js**: 3D rendering engine (WebGL2 & WebGPU)
 - **🎨 CSS Custom Properties**: Theming and responsive design
 - **📱 Modern JavaScript (ES6+)**: Modular, clean code
 - **🔧 Web APIs**: Fullscreen, Clipboard, Touch Events
@@ -184,11 +242,17 @@ export const CONFIG = {
     
     // Camera movement limits and restrictions
     cameraLimits: {
+        enabled: true,                             // Master toggle default state
+        defaultRestrictions: {
+            zoom: true,                            // Enable zoom limits by default
+            vertical: true,                        // Enable vertical rotation limits
+            horizontal: false,                     // Disable horizontal limits by default
+            panning: true                          // Enable panning by default
+        },
         defaultLimits: {
             zoom: { min: 1.0, max: 15.0 },        // Distance limits
-            vertical: { min: -80, max: 5 },        // Vertical angle limits
-            horizontal: { enabled: false },         // Horizontal restrictions
-            panning: { enabled: true }              // Panning allowed
+            vertical: { upLimit: -80, downLimit: 5 }, // Vertical angle limits (degrees)
+            panning: { maxDistance: 10.0 }         // Maximum pan distance
         }
     },
     
@@ -205,7 +269,7 @@ export const CONFIG = {
     
     // Model loading configuration
     modelLoader: {
-        supportedFormats: ['splat', 'ply', 'spz', 'gltf', 'glb'],
+        supportedFormats: ['splat', 'ply', 'spz', 'sog', 'gltf', 'glb'],
         defaultFallbackModel: "https://fallback.com/model.splat",
         defaultModelScale: 1.0,
         maxFileSize: 500 * 1024 * 1024  // 500MB limit
@@ -232,6 +296,8 @@ export const CONFIG = {
     
     // Engine and rendering settings
     engine: {
+        preferWebGPU: true,                // Attempt to use WebGPU first if available
+        fallbackToWebGL: true,             // Fallback to WebGL if WebGPU initialization fails
         antialias: false,                 // Engine-level antialiasing
         stencil: true,                   // Stencil buffer
         preserveDrawingBuffer: true,      // Buffer preservation
@@ -253,14 +319,19 @@ export const CONFIG = {
 ### Desktop
 - **Left Click + Drag**: Orbit camera around the model
 - **Right Click + Drag**: Pan the camera
-- **Mouse Wheel**: Zoom in/out
+- **Mouse Wheel**: Zoom in/out (isolated when embedded in iframes)
 - **Double Click**: Focus camera on clicked point
 
 ### Mobile/Touch
 - **One Finger Drag**: Orbit camera
-- **Two Finger Drag**: Pan camera  
+- **Two Finger Drag**: Pan camera
 - **Pinch**: Zoom in/out
 - **Double Tap**: Focus camera on tapped point
+
+### Embedding Behavior
+- **Scroll Isolation**: Mouse wheel over embedded viewer won't scroll parent page
+- **Camera Limits**: Master toggle controls all movement restrictions
+- **Background Consistency**: Maintains dark theme regardless of parent page styling
 
 
 ## 🔧 Advanced Features
@@ -308,6 +379,7 @@ sharpen          → sh          │ Sharpening enabled (1/0)
 sharpenIntensity → si          │ Sharpening intensity (0.0-2.0)
 antiAliasing     → aa          │ Anti-aliasing type (n/f for none/fxaa)
 touchSensitivity → ts          │ Touch sensitivity (1-10 scale)
+backgroundColor  → bg          │ Scene background color (hex format #RRGGBB)
 ```
 
 **🎛️ Camera Limits Parameters**
@@ -379,9 +451,23 @@ The viewer includes a powerful export system that creates standalone viewers wit
 - **Compression**: Efficient encoding minimizes file size
 
 ### 🎛️ Quality Settings
-- **Low**: Better performance, reduced visual fidelity
-- **Medium**: Balanced performance and quality (default)
-- **High**: Best visual quality, may impact performance
+
+The viewer offers three quality presets to balance performance and visual fidelity:
+
+- **High**: Best visual quality.
+  - **Hardware Scaling**: 0.7 (Renders at a higher resolution than the screen)
+  - **Anti-Aliasing (FXAA)**: Enabled
+  - **Sharpening**: Enabled
+
+- **Medium**: A balance between quality and performance (default setting).
+  - **Hardware Scaling**: 1.0 (Renders at the native screen resolution)
+  - **Anti-Aliasing (FXAA)**: Disabled
+  - **Sharpening**: Enabled
+
+- **Low**: Best performance, especially on older devices.
+  - **Hardware Scaling**: 1.5 (Renders at a lower resolution than the screen)
+  - **Anti-Aliasing (FXAA)**: Disabled
+  - **Sharpening**: Disabled
 
 ### Mobile Optimizations
 - Automatic device detection
@@ -395,10 +481,11 @@ The viewer includes a powerful export system that creates standalone viewers wit
 - **FXAA**: Fast approximate anti-aliasing
 - **Hardware Scaling**: Dynamic resolution adjustment
 
-### WebGL Requirements
-- WebGL2 support required
-- Hardware-accelerated graphics recommended
-- Minimum 1GB available GPU memory for large models
+### Rendering Requirements
+- **WebGL2 Support**: Required for traditional rendering.
+- **WebGPU Support**: Recommended for optimal performance on compatible browsers.
+- Hardware-accelerated graphics recommended.
+- Minimum 1GB available GPU memory for large models.
 
 ## 📄 License
 

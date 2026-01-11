@@ -27,6 +27,7 @@
 
 import { CONFIG } from './config.js';
 import { animateCamera } from './cameraControl.js';
+import { getPickResult } from './picking.js';
 
 export class GestureControl {
     constructor(scene, camera) {
@@ -315,13 +316,12 @@ export class GestureControl {
         
         this.touchStates.isAnimating = true;
         
-        // Create a ray from the camera through the touch point
-        const pickResult = this.scene.pick(
+        // Use enhanced picking logic
+        const pickResult = getPickResult(
+            this.scene,
+            this.camera,
             touch.clientX,
-            touch.clientY,
-            (mesh) => mesh.isPickable || mesh.isVisible,
-            false,
-            this.camera
+            touch.clientY
         );
         
         if (pickResult && pickResult.hit && pickResult.pickedPoint) {
@@ -330,8 +330,9 @@ export class GestureControl {
                 pickResult.pickedPoint
             );
             
+            // Use same logic as main.js: distance * 3.5
             const targetRadius = Math.max(
-                Math.min(distanceToPoint * 1.5, this.camera.upperRadiusLimit || 10),
+                Math.min(distanceToPoint * 3.5, this.camera.upperRadiusLimit || 100),
                 this.camera.lowerRadiusLimit || 1
             );
             
@@ -339,7 +340,7 @@ export class GestureControl {
                 this.camera,
                 pickResult.pickedPoint,
                 targetRadius,
-                20,
+                30, // Use 30 frames like main.js
                 () => {
                     this.touchStates.isAnimating = false;
                 }

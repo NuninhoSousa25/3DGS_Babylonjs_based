@@ -62,6 +62,9 @@ function createPickingHelperForSplat(splatMesh, scene) {
         // Force refresh of bounding info to account for current scale
         splatMesh.refreshBoundingInfo();
         
+        // CRITICAL: Compute world matrix to ensure scaling is up to date
+        splatMesh.computeWorldMatrix(true);
+        
         if (splatMesh.getBoundingInfo) {
             boundingInfo = splatMesh.getBoundingInfo();
         } else if (splatMesh.getHierarchyBoundingVectors) {
@@ -102,8 +105,9 @@ function createPickingHelperForSplat(splatMesh, scene) {
         // Don't inherit the parent's scaling (we've already accounted for it)
         helperMesh.parent = null;
         
-        // Make it invisible but pickable
-        helperMesh.isVisible = false;
+        // Make it visible for debugging (0.5)
+        helperMesh.isVisible = true;
+        helperMesh.visibility = 0.5;
         helperMesh.isPickable = true;
         
         // Store reference to the original splat mesh
@@ -117,7 +121,9 @@ function createPickingHelperForSplat(splatMesh, scene) {
         pickingHelpers.set(splatMesh.id || splatMesh.name, helperMesh);
         
         console.log('Created scale-aware picking helper for Gaussian Splatting model');
-        console.log(`Model scale: ${splatMesh.scaling.x.toFixed(2)}, Helper size: ${size.x.toFixed(2)} x ${size.y.toFixed(2)} x ${size.z.toFixed(2)}`);
+        console.log(`Bounds Min: ${min.toString()}`);
+        console.log(`Bounds Max: ${max.toString()}`);
+        console.log(`Model scale: ${splatMesh.scaling.x.toFixed(6)}, Helper size: ${Math.abs(size.x).toFixed(2)} x ${Math.abs(size.y).toFixed(2)} x ${Math.abs(size.z).toFixed(2)}`);
         
         return helperMesh;
         
@@ -193,7 +199,7 @@ export function getPickResult(scene, camera, pointerX, pointerY) {
                     pickedMesh: originalMesh,
                     pickedPoint: pickResult.pickedPoint // Keep the intersection point
                 };
-                console.log('Picked Gaussian Splatting model via helper mesh');
+                console.log('Picked Gaussian Splatting model via helper mesh (Strategy 1)');
             }
         }
         return pickResult;
@@ -208,11 +214,13 @@ export function getPickResult(scene, camera, pointerX, pointerY) {
             true,
             camera
         );
+        if (pickResult && pickResult.hit) console.log('Picked via broader selection (Strategy 2)');
     }
     
     // Strategy 3: For Gaussian Splatting, try ray-based approach with scale-aware bounds
     if ((!pickResult || !pickResult.hit) && scene.currentModelType === 'splat') {
         pickResult = pickGaussianSplatWithRay(scene, camera, pointerX, pointerY);
+        if (pickResult && pickResult.hit) console.log('Picked via ray-sphere (Strategy 3)');
     }
     
     // Strategy 4: Fallback to standard ray picking
@@ -221,11 +229,13 @@ export function getPickResult(scene, camera, pointerX, pointerY) {
         pickResult = scene.pickWithRay(ray, (mesh) => {
             return mesh.isVisible && mesh !== scene.skybox;
         });
+        if (pickResult && pickResult.hit) console.log('Picked via standard ray (Strategy 4)');
     }
     
     // Strategy 5: If still no hit and we have a splat model, use proximity-based selection
     if ((!pickResult || !pickResult.hit) && scene.currentModel && scene.currentModelType === 'splat') {
         pickResult = createProximityPickResult(scene, camera, pointerX, pointerY);
+        if (pickResult && pickResult.hit) console.log('Picked via proximity (Strategy 5)');
     }
     
     return pickResult;
@@ -246,6 +256,9 @@ function pickGaussianSplatWithRay(scene, camera, pointerX, pointerY) {
     
     // Refresh bounding info to account for current transformations
     splatMesh.refreshBoundingInfo();
+    
+    // Ensure world matrix is updated for accurate scale/position
+    splatMesh.computeWorldMatrix(true);
     
     let boundingInfo = null;
     if (splatMesh.getBoundingInfo) {
@@ -313,6 +326,9 @@ function createProximityPickResult(scene, camera, pointerX, pointerY) {
     
     // Refresh bounding info for accurate center
     scene.currentModel.refreshBoundingInfo();
+    
+    // Ensure world matrix is updated for accurate scale/position
+    scene.currentModel.computeWorldMatrix(true);
     
     // Get model center in world space
     let modelCenter = BABYLON.Vector3.Zero();

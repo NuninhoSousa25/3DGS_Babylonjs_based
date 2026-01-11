@@ -291,7 +291,11 @@ export function setupSettingsControls(camera, scene) {
     // Model scale range control - Enhanced
     setupEnhancedRangeControl('modelScaleRange', (value) => {
         if (scene.currentModel) {
-            scene.currentModel.scaling.setAll(value);
+            if (scene.currentModelType === 'splat') {
+                scene.currentModel.scaling.set(value, value, -value);
+            } else {
+                scene.currentModel.scaling.setAll(value);
+            }
         }
     });
 
