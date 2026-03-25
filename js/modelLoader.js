@@ -10,7 +10,7 @@
    EXPORTS:
    - loadModel() - Main model loading function for all supported formats
    - disposeCurrentModel() - Clean up and dispose current model
-   - loadSplatModel() - Load Gaussian Splatting models
+   - loadSplatModel() - Load Gaussian Splatting models (.splat only)
    - centerAndFitModel() - Center model and fit camera view
    - normalizeModelScale() - Normalize model to consistent size
    
@@ -21,7 +21,7 @@
    - .fbx - FBX models with animations
    - .spz - Compressed models
    - .splat - Gaussian Splatting models (3DGS)
-   - .ply - 3D Gaussian Splatting ONLY (not regular pointclouds)
+   - .ply - 3D Gaussian Splatting (loaded via ImportMeshAsync)
    
    DEPENDENCIES:
    - Babylon.js scene loader and mesh utilities
@@ -75,12 +75,17 @@ export function disposeCurrentModel(currentModel, currentModelType) {
 }
 
 /**
- * Loads 3D Gaussian Splatting models (.splat files) using Babylon.js GaussianSplattingMesh
+ * Loads .splat format Gaussian Splatting models ONLY.
+ * 
+ * IMPORTANT: This function should ONLY be used for .splat files.
+ * PLY, SOG, and SPZ files must use ImportMeshAsync instead, because
+ * loadDataAsync expects raw .splat binary format and will produce
+ * garbled output if given PLY data.
+ * 
  * @param {BABYLON.Scene} scene - The Babylon.js scene to load the model into
- * @param {string|File} modelSource - URL string or File object
+ * @param {string|File} modelSource - URL string or File object (.splat files only)
  * @returns {Promise<BABYLON.GaussianSplattingMesh>} The loaded Gaussian Splatting mesh
  * @throws {Error} Throws error if GaussianSplattingMesh plugin is not available
- * @description Specialized loader for 3D Gaussian Splatting models with validation
  */
 export async function loadSplatModel(scene, modelSource) {
     debugLog(`Loading .splat model from source`);
@@ -105,11 +110,46 @@ export async function loadSplatModel(scene, modelSource) {
 }
 
 /**
- * NOTE: PLY files are now ONLY supported for 3D Gaussian Splatting (3DGS) format.
- * Regular pointcloud PLY files are NOT supported to avoid format detection complexity.
- *
- * If you need to support regular pointcloud PLY files, implement a separate
- * format or use a different file extension.
+ * Loads PLY files as Gaussian Splatting using ImportMeshAsync.
+ * 
+ * PLY files require the SPLATFileLoader plugin to parse the Gaussian Splatting
+ * schema (positions, scales, rotations, SH coefficients). Using
+ * GaussianSplattingMesh.loadDataAsync directly will NOT work because it
+ * expects pre-converted .splat binary format, not raw PLY data.
+ * 
+ * @param {BABYLON.Scene} scene - The Babylon.js scene to load into
+ * @param {File|string} modelSource - File object or URL string
+ * @param {string} url - The URL (may be object URL for files)
+ * @param {boolean} isFile - Whether source is a file
+ * @returns {Promise<{model: BABYLON.AbstractMesh, type: string}>} Loaded model info
+ */
+async function loadPlyModel(scene, { modelSource, url, isFile }) {
+    debugLog(`Loading .ply as Gaussian Splat via ImportMeshAsync`);
+    
+    let result;
+    if (isFile) {
+        // For File objects, ImportMeshAsync can accept a File directly
+        result = await BABYLON.SceneLoader.ImportMeshAsync("", "", modelSource, scene);
+    } else {
+        // For URLs, pass to ImportMeshAsync which will use the SPLATFileLoader
+        result = await BABYLON.SceneLoader.ImportMeshAsync("", url, "", scene);
+    }
+    
+    const model = result.meshes[0];
+    
+    if (model) {
+        // Rotate the model 180 degrees around the X axis to correct the orientation
+        model.rotation.x = Math.PI;
+    }
+    
+    return { model, type: 'splat', result };
+}
+
+/**
+ * NOTE: PLY files are now loaded via ImportMeshAsync to ensure the
+ * SPLATFileLoader properly converts the PLY Gaussian Splatting schema
+ * to the internal splat format. Using GaussianSplattingMesh.loadDataAsync
+ * directly with PLY data will produce garbled/corrupted output.
  */
 
 /**
@@ -212,11 +252,12 @@ function parseModelSource(modelSource, defaultModelUrl) {
             throw new Error('File has no extension');
         }
         
-        // Create object URL only for splat files (ply files handled directly)
-        if (extension === 'splat' || extension === 'sog' || extension === 'ply') {
+        // Create object URL for formats that need it
+        // PLY files loaded via ImportMeshAsync can use the File object directly
+        if (extension === 'splat' || extension === 'sog') {
             url = URL.createObjectURL(modelSource);
         }
-        // PLY files will be passed directly to the loader
+        // PLY files will be passed directly to ImportMeshAsync as File objects
     } else if (typeof modelSource === 'string') {
         if (!modelSource.trim()) {
             throw new Error('URL cannot be empty');
@@ -587,18 +628,18 @@ async function loadModelByFormat(scene, loadContext) {
         case 'sog':
             return await loadSogModel(scene, loadContext);
         case 'splat':
-            debugLog(`Loading .${extension} using GaussianSplattingMesh`);
-            // Pass modelSource directly to handle both File objects and URLs
+            // Only .splat files use GaussianSplattingMesh.loadDataAsync/loadFileAsync
+            // because they are already in the raw splat binary format
+            debugLog(`Loading .splat using GaussianSplattingMesh`);
             const splatModel = await loadSplatModel(scene, isFile ? modelSource : url);
             return { model: splatModel, type: 'splat' };
         case 'ply':
-            // PLY files are treated as Gaussian Splat (3DGS) format only
-            debugLog(`Loading .${extension} as Gaussian splat (3DGS)`);
-
-            // Use modelSource directly if it is a File, otherwise use the URL
-            const gaussianModel = await loadSplatModel(scene, isFile ? modelSource : url);
-
-            return { model: gaussianModel, type: 'splat' };
+            // PLY files MUST use ImportMeshAsync so the SPLATFileLoader plugin
+            // can properly convert the PLY Gaussian Splatting schema to splat format.
+            // Using GaussianSplattingMesh.loadDataAsync with raw PLY data will produce
+            // garbled/corrupted output because it expects pre-converted .splat binary data.
+            debugLog(`Loading .ply as Gaussian Splat via ImportMeshAsync (SPLATFileLoader)`);
+            return await loadPlyModel(scene, loadContext);
         default:
             throw new Error(ErrorMessages.MODEL.UNSUPPORTED_FORMAT(extension));
     }
@@ -802,8 +843,8 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
         }
     } finally {
         // Clean up object URLs if created
-        if (isFile && (extension === 'splat' || extension === 'sog' || extension === 'ply')) {
-            // Clean up SPLAT, SOG, and PLY file URLs
+        if (isFile && (extension === 'splat' || extension === 'sog')) {
+            // Clean up SPLAT and SOG file URLs (PLY no longer creates object URLs)
             setTimeout(() => URL.revokeObjectURL(url), CONFIG.modelLoader.urlCleanupDelay);
         }
         
@@ -822,4 +863,3 @@ export async function loadModel(scene, modelSource, defaultModelUrl = CONFIG.mod
 
     return { currentModel, currentModelType };
 }
-
