@@ -72,8 +72,6 @@ export function setupCamera(scene, canvas, config) {
         autoRotationBehavior.idleRotationSpinUpTime = CONFIG.camera.autoRotation.idleRotationSpinUpTime;
     }
 
-    // Camera constraints are now handled by the CameraLimits system
-
     // Set initial camera position after scene is ready
     scene.executeWhenReady(() => {
         cam.radius = config.camera.radius;

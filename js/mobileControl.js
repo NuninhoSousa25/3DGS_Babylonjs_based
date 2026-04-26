@@ -50,10 +50,18 @@ export function setupMobileControls(camera, scene) {
     
     // Initialize gesture controller for touch input
     const gestureController = new GestureControl(scene, camera);
-    
-    // Handle device orientation changes
-    setupOrientationHandler(camera, scene);
-    
+
+    // Handle device orientation changes — returns a cleanup function
+    const disposeOrientationHandler = setupOrientationHandler(camera, scene);
+
+    // Wrap gestureController.dispose() so that calling it from main.js cleanup()
+    // also removes the orientationchange listener — no changes needed in main.js.
+    const _originalDispose = gestureController.dispose.bind(gestureController);
+    gestureController.dispose = function() {
+        _originalDispose();
+        disposeOrientationHandler();
+    };
+
     return gestureController;
 }
 
@@ -105,15 +113,15 @@ function optimizeCameraForMobile(camera) {
  * @param {BABYLON.Scene} scene
  */
 function setupOrientationHandler(camera, scene) {
-    // Adjust camera and UI parameters when device orientation changes
-    window.addEventListener('orientationchange', () => {
+    // Store the handler so it can be removed on cleanup (renderer switch, dispose)
+    const handler = () => {
         console.log("Device orientation changed, adjusting camera settings...");
-        
+
         // Add a small delay to allow the browser to complete the orientation change
         setTimeout(() => {
             // Recalculate aspect ratio
             scene.getEngine().resize();
-            
+
             // Optionally adjust camera parameters based on orientation
             if (window.matchMedia("(orientation: portrait)").matches) {
                 // Portrait specific adjustments if needed
@@ -123,32 +131,10 @@ function setupOrientationHandler(camera, scene) {
                 camera.beta = Math.min(camera.beta, Math.PI / 2.5);
             }
         }, CONFIG.mobile.orientationChangeDelay);
-    });
+    };
 
-function addTouchDebugIndicator() {
-    const indicator = document.createElement('div');
-    indicator.id = 'touch-debug-indicator';
-    indicator.style.cssText = `
-        position: fixed;
-        bottom: 10px;
-        left: 10px;
-        background: rgba(0, 255, 0, 0.7);
-        color: white;
-        padding: 5px 10px;
-        border-radius: 5px;
-        font-size: 12px;
-        z-index: 10000;
-        pointer-events: none;
-    `;
-    indicator.textContent = 'Touch Controls Active';
-    document.body.appendChild(indicator);
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-        if (indicator.parentNode) {
-            indicator.parentNode.removeChild(indicator);
-        }
-    }, CONFIG.mobile.touchIndicatorDuration);
-}
+    window.addEventListener('orientationchange', handler);
 
+    // Return cleanup function — called by setupMobileControls via dispose wrapper
+    return () => window.removeEventListener('orientationchange', handler);
 }

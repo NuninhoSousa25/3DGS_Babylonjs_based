@@ -261,7 +261,7 @@ export class MobileMemoryManager {
         
         if (usagePercent > 80) {
             console.warn(`High memory usage: ${usedMB}MB/${limitMB}MB (${usagePercent.toFixed(1)}%)`);
-            this.performEmergencyCleanup();
+            // this.performEmergencyCleanup(); // Disabled per user request
         } else if (usagePercent > 60) {
             console.log(`Memory usage: ${usedMB}MB/${limitMB}MB (${usagePercent.toFixed(1)}%)`);
         }
@@ -294,7 +294,8 @@ export class MobileMemoryManager {
             if (info) {
                 const pressure = (info.usedJSHeapSize / info.jsHeapSizeLimit);
                 if (pressure > 0.8) {
-                    this.performEmergencyCleanup();
+                    // this.performEmergencyCleanup(); // Disabled per user request
+                    console.warn(`High memory pressure: ${(pressure * 100).toFixed(1)}%`);
                 }
             }
         };

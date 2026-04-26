@@ -193,6 +193,9 @@ export const Events = {
  */
 export const WindowEvents = {
     resizeCallbacks: new Set(),
+    // Map keyed by stable string → allows safe replacement of callbacks that are
+    // re-created as new function references on each renderer switch (see addResizeCallback).
+    _namedCallbacks: new Map(),
     resizeDebounceTimer: null,
     resizeDebounceDelay: 16, // ~60fps, good balance between responsiveness and performance
 
@@ -227,25 +230,40 @@ export const WindowEvents = {
     /**
      * Add a resize callback
      * @param {Function} callback - Function to call on window resize
+     * @param {string|null} [key=null] - Optional stable key. When provided, any previously
+     *        registered callback with the same key is automatically replaced before adding
+     *        the new one — even if it is a different function reference. Use this for
+     *        callbacks that are re-created on each renderer switch so they cannot accumulate
+     *        if cleanup is ever skipped. Example keys: 'engine-resize', 'resolution-update'.
      */
-    addResizeCallback(callback) {
+    addResizeCallback(callback, key = null) {
         this.init(); // Ensure listener is initialized
-        
-        // Check if callback already exists (for debugging)
-        if (this.resizeCallbacks.has(callback)) {
+
+        if (key !== null) {
+            // Keyed path: auto-replace any existing callback registered under the same key.
+            const existing = this._namedCallbacks.get(key);
+            if (existing) {
+                this.resizeCallbacks.delete(existing);
+                debugLog(`Replaced resize callback for key "${key}"`);
+            }
+            this._namedCallbacks.set(key, callback);
+        } else if (this.resizeCallbacks.has(callback)) {
+            // Anonymous path: fall back to reference-equality deduplication.
             debugLog('Duplicate resize callback prevented:', callback.name || 'anonymous');
             return;
         }
-        
+
         this.resizeCallbacks.add(callback);
     },
 
     /**
      * Remove a resize callback
      * @param {Function} callback - Function to remove
+     * @param {string|null} [key=null] - Stable key used during addResizeCallback (if any)
      */
-    removeResizeCallback(callback) {
+    removeResizeCallback(callback, key = null) {
         this.resizeCallbacks.delete(callback);
+        if (key !== null) this._namedCallbacks.delete(key);
     },
 
     /**
@@ -588,8 +606,6 @@ export function restartUIUpdates() {
         startUIUpdates();
     }
 }
-
-// In helpers.js, add a new function
 
 /**
  * Updates the file size display in the developer panel with formatted size information

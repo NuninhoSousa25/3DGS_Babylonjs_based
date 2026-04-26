@@ -243,31 +243,6 @@ function createContentArea(hasTouch) {
     return contentArea;
 }
 
-/**
- * Create simplified quality section for shared URLs
- */
-function createSimplifiedQualitySection() {
-    const device = detectDevice();
-    const defaultQuality = device.isDesktop ? 'high' : 'medium';
-    
-    return `
-        <div id="qualityContent" class="content-section">
-            <h4>Quality Settings</h4>
-            <div class="control-group">
-                <label for="qualitySelect">Rendering Quality</label>
-                <select id="qualitySelect" class="settings-select">
-                    <option value="low">Low (Better Performance)</option>
-                    <option value="medium" ${defaultQuality === 'medium' ? 'selected' : ''}>Medium (Balanced)</option>
-                    <option value="high" ${defaultQuality === 'high' ? 'selected' : ''}>High (Better Quality)</option>
-                </select>
-            </div>
-            <div class="quality-description">
-                <small>Adjust rendering quality based on your device performance. Lower settings improve frame rate on slower devices.</small>
-            </div>
-        </div>
-    `;
-}
-
 /* ========================================================================
    EVENT HANDLERS
    ======================================================================== */
@@ -311,7 +286,7 @@ function setupIconButtonHandlers(camera, scene, engine) {
 
         // Reset all button states (different for shared vs full UI)
         if (isShared) {
-            [infoButton, qualityButton].forEach(btn => {
+            [infoButton, qualityToggle].forEach(btn => {
                 if (btn) btn.classList.remove('active');
             });
         } else {
@@ -331,8 +306,8 @@ function setupIconButtonHandlers(camera, scene, engine) {
             if (isShared) {
                 if (sectionToShow.id === 'infoContent' && infoButton) {
                     infoButton.classList.add('active');
-                } else if (sectionToShow.id === 'qualityContent' && qualityButton) {
-                    qualityButton.classList.add('active');
+                } else if (sectionToShow.id === 'qualityContent' && qualityToggle) {
+                    qualityToggle.classList.add('active');
                 }
             } else {
                 if (sectionToShow.id === 'settingsContent' && settingsButton) {

@@ -4,43 +4,40 @@ A comprehensive 3D model viewer built with Babylon.js, specifically optimized fo
 
 ## 📋 Development Status
 
-### 🔄 To Implement / Fix
-- Multiple resize callbacks instead of debounced single handler
-- Default cube after error in loading model is not cleared when a new model is loaded after
-- Loading optimization for large 3D models
-- Check behavior with auto rotate and horizontal limitation
-- Loading model popup usually doesn't appear centered
-- GLTF culling / occlusion verification
-- FBX format support debugging
-- Performance optimizations for large models (>100MB)
-- Code quality improvements and documentation
-- Better UI layout for smaller mobile screens
-- Revise picking logic - not consistent when trying to select 3D Gaussian Splats
+> **Last maintenance session: 2026-03-05** — Phases 1–4 of the structured roadmap completed.
+> See `ROADMAP.md` (project root) for the full plan and `DEVELOPER.md` for architecture details.
 
-### ✅ Recently Completed
-- **Gaussian Splat Orientation Fix** - Gaussian Splat models (.splat, .ply, .spz, .sog) now have their Z-axis scale inverted by default to fix mirroring issues during loading.
-- **Parallel Model Pre-fetching** - Model download now starts immediately upon page load, running in parallel with engine initialization to significantly reduce wait times
-- **Early Loading Overlay** - Real-time download progress bar and status feedback for shared URLs, eliminating "ghost loading" uncertainty
-- **Optimized Initialization** - Reduced post-loading transition delay from 50ms to 5ms for snappier experience once model is ready
-- **WebGPU Integration** - Seamlessly leverages WebGPU for 50-100% FPS improvement on compatible devices with graceful fallback to WebGL
-- **Camera Limits Master Toggle Fix** - "Enable Camera Limits" now properly controls all restrictions
-- **WordPress Embedding Support** - fixed background color inheritance issues in iframe contexts
-- **Wheel Event Prevention** - scroll wheel over viewer no longer scrolls parent page when embedded
-- **Default Settings Configuration** - camera limits and zoom toggles now respect CONFIG defaults
-- **Background Color Picker** with full URL parameter support and real-time updates
-- **Model Scale Slider Fix** - now correctly updates when models are normalized during loading
-- **Precision Scale Control** - Model scale slider now supports values down to 0.001 with 3-decimal precision input
-- **Extended Zoom Limits** - "Max Distance" and "Min Distance" sliders now allow for much closer zoom levels (down to 0.1 and 0.01 respectively)
-- **Shared URL State Fidelity** - Shared URLs now bypass automatic model normalization to ensure the recipient sees exactly the same view (scale and position) as the sender
-- **File Size Display Fix** - properly shows file sizes for both local files and URL-loaded models
-- **Shared URL Loading Feedback** - immediate loading spinner and messages when opening shared URLs
-- **Comprehensive URL sharing** with complete state preservation
-- **URL compression system** for shorter, cleaner shareable links
-- **Enhanced settings panel** with all options exportable via URL
-- **Camera limits system** with full URL serialization
-- **Export functionality** with HTML/ZIP package generation
-- **Post-processing pipeline** with sharpening and anti-aliasing
-- **Touch controls optimization** for mobile devices
+### 🔄 Known Issues / Remaining Work
+- Multiple resize callbacks may stack on repeated renderer switches instead of using a single debounced handler
+- Default cube fallback after a model load error is not automatically cleared when a new model loads successfully
+- Loading model popup is not always centered on all screen sizes
+- GLTF culling / occlusion behaviour not verified for all model types
+- FBX format support — may have edge-case issues with complex animations
+- Performance for very large models (>100MB) not fully optimised
+- Better UI layout needed for small mobile screens (≤375px)
+- Gaussian Splat picking inconsistency — the 4-strategy fallback system (`picking.js`) works reliably but native picking is not yet supported by Babylon.js `GaussianSplattingMesh`
+- `isSharedURL()` short params (`a`, `b`, `r`, `m`) could theoretically collide with external analytics params — documented with upgrade path in `urlUtils.js`; see `ROADMAP.md §3.2`
+
+### ✅ Completed — 2026-03-05 Maintenance Session (Phases 1–4)
+- **Babylon.js CDN pinned to v8.54.0** — stable, reproducible builds; CDN URL format corrected (`v` prefix + `loaders/` path)
+- **Dead code removed** — `exportConfig.js` deleted; `setupExportButton()` removed from `ViewerExporter.js`; empty `setTimeout` TEST CODE removed from `main.js`
+- **Touch listener leak fixed** (`gestureControl.js`) — 7 bound handler refs stored as class properties; `dispose()` now correctly removes all handlers including the 3 `gesture*` prevention listeners that were previously never cleaned up
+- **orientationchange listener leak fixed** (`mobileControl.js`) — `setupOrientationHandler()` now returns a cleanup function; `setupMobileControls()` wraps `dispose()` to include orientation cleanup automatically
+- **Dual camera limits restoration fixed** (`main.js` + `cameraLimits.js`) — call order swapped so DOM sliders are updated before toggle events read them; `restrictions` flag overwrite guarded with `urlParams.has()` to prevent clearing flags when only new-format URL params are present; fully backward compatible
+- **isSharedURL() documented** (`urlUtils.js`) — collision risk flagged, upgrade path documented, guardrail comment added
+- **Babylon 8.x API verified** — GaussianSplattingMesh picking status confirmed (proxy mesh still needed); SOG native support confirmed in 8.30.4+ (already working); WebGPU bundle ~2× smaller automatically; devPanel two-field WebGPU display clarified
+
+### ✅ Previously Completed
+- **Gaussian Splat Orientation Fix** — Z-axis scale inverted by default to fix mirroring issues
+- **Parallel Model Pre-fetching** — model download starts immediately, parallel with engine init
+- **Early Loading Overlay** — real-time download progress for shared URLs
+- **WebGPU Integration** — 50–100% FPS improvement on compatible devices with WebGL fallback
+- **Camera Limits Master Toggle Fix** — master toggle correctly controls all restrictions
+- **WordPress Embedding Support** — background color, scroll isolation, CSS override protection
+- **Comprehensive URL sharing** with compression, complete state preservation, backward compatibility
+- **Export functionality** — HTML single-file and ZIP package export
+- **Post-processing pipeline** — sharpening, FXAA, hardware scaling
+- **Touch controls optimisation** — gesture handling, pinch zoom, double-tap focus
 
 ## 🌟 Core Features
 
@@ -176,41 +173,45 @@ To assess and troubleshoot WebGPU functionality, the viewer includes dedicated t
 ### **File Structure**
 ```
 viewer/
-├── index.html              # Main HTML file
+├── index.html                  # Entry point; loads pinned CDN scripts (Babylon v8.54.0), mounts canvas
 ├── css/
-│   └── styles.css          # Unified, organized stylesheet
+│   └── styles.css              # Unified stylesheet
 ├── js/
-│   ├── main.js            # Application entry point & scene initialization
-│   ├── ui.js              # UI controller with URL compression system
-│   ├── config.js          # Configuration settings & constants
-│   ├── helpers.js         # Utility functions & DOM management
-│   ├── modelLoader.js     # Model loading functionality
-│   ├── cameraControl.js   # Camera control system
-│   ├── cameraLimits.js    # Camera movement restrictions
-│   ├── gestureControl.js  # Touch gesture handling
-│   ├── deviceDetection.js # Device capability detection
-│   ├── mobileControl.js   # Mobile-specific controls
-│   ├── postProcessing.js  # Rendering pipeline & effects
-│   ├── picking.js         # 3D object interaction
+│   ├── main.js                 # Application entry point — engine init, scene setup, URL restoration
+│   ├── ui.js                   # Top-level UI wiring
+│   ├── config.js               # All defaults & constants (CONFIG object)
+│   ├── helpers.js              # Shared utilities, DOM helpers, WindowEvents bus
+│   ├── modelLoader.js          # Model loading — SPLAT, PLY, SPZ, SOG, GLTF, OBJ, STL, FBX
+│   ├── cameraControl.js        # ArcRotateCamera setup, inertia, sensitivity
+│   ├── cameraLimits.js         # Camera movement restrictions (zoom, vertical, horizontal, pan)
+│   ├── urlManager.js           # URL compression, sharing, state serialization/restoration
+│   ├── gestureControl.js       # Touch gesture handling (pinch, rotate, tap)
+│   ├── deviceDetection.js      # UA-based device detection
+│   ├── mobileControl.js        # Mobile-specific controls & orientation handler
+│   ├── postProcessing.js       # DefaultRenderingPipeline — sharpening, FXAA, hardware scaling
+│   ├── picking.js              # 4-strategy picking system with Gaussian Splat proxy mesh support
+│   ├── webgpu-detector.js      # WebGPU hardware capability check (dev panel display only)
 │   ├── export/
-│   │   └── ViewerExporter.js # HTML/ZIP export functionality
+│   │   └── ViewerExporter.js   # HTML / ZIP export (lazily imported from devPanel)
 │   └── ui/
 │       ├── components/
-│       │   ├── controls.js    # Reusable UI controls
-│       │   ├── icons.js       # SVG icon definitions
-│       │   └── toast.js       # Notification system
-│       └── panels/
-│           ├── settingsPanel.js # Settings & quality controls
-│           ├── devPanel.js      # Developer tools & model loading
-│           └── infoPanel.js     # Control information & help
-└── README.md              # This documentation
+│       │   ├── controls.js     # Reusable range/toggle control builders
+│       │   ├── icons.js        # SVG icon definitions
+│       │   └── toast.js        # Notification toasts
+│       ├── panels/
+│       │   ├── settingsPanel.js  # Settings panel — camera limits, post-processing, render scale
+│       │   ├── devPanel.js       # Developer tools — model loading, renderer switch, diagnostics
+│       │   └── infoPanel.js      # Controls help / info panel
+│       └── utils/
+│           └── urlUtils.js       # isSharedURL(), getCurrentUrlParams(), getBaseUrl()
+└── README.md                   # This file
 ```
 
 ### **Technology Stack**
-- **🎮 Babylon.js**: 3D rendering engine (WebGL2 & WebGPU)
+- **🎮 Babylon.js v8.54.0** (pinned): 3D rendering engine (WebGL2 & WebGPU); WGSL-native since 8.0 (~2× smaller WebGPU bundle); SOG native since 8.30.4
 - **🎨 CSS Custom Properties**: Theming and responsive design
-- **📱 Modern JavaScript (ES6+)**: Modular, clean code
-- **🔧 Web APIs**: Fullscreen, Clipboard, Touch Events
+- **📱 Modern JavaScript (ES6+)**: Modular ES modules, no bundler, no build step
+- **🔧 Web APIs**: Fullscreen, Clipboard, Touch Events, WebGPU
 - **📐 CSS Grid & Flexbox**: Responsive layouts
 
 ## ⚙️ Configuration
@@ -372,6 +373,7 @@ Full Name        → Short Code  │ Description
 ─────────────────┼─────────────┼────────────────────────
 autoRotate       → ar          │ Auto-rotation enabled (1/0)
 renderScale      → rs          │ Render resolution multiplier (0.1-2.0)
+quality          → q           │ [Legacy] Maps to scale (l=1.5, m=1.0, h=0.7)
 sharpen          → sh          │ Sharpening enabled (1/0)  
 sharpenIntensity → si          │ Sharpening intensity (0.0-2.0)
 antiAliasing     → aa          │ Anti-aliasing type (n/f for none/fxaa)
@@ -410,6 +412,36 @@ https://viewer.com/?m=https://example.com/model.splat&a=-1.47&b=1.05&r=4.00&f=0.
 - Mixed parameter formats supported in same URL
 - Graceful fallback for unrecognized parameters
 
+## ☯️ The Dual Philosophy: Editor vs. Viewer
+
+This application is designed with a dual purpose, bridging the gap between content authoring and end-user consumption.
+
+### **1. The Editor (Authoring Mode)**
+*For Developers & Content Creators*
+
+When you open the viewer directly (e.g., via `localhost` or the main domain), you are in **Editor Mode**.
+- **Goal**: Configure the perfect scene.
+- **Workflow**:
+    - **Load & Compose**: Drag-and-drop your model and find the best opening angle.
+    - **Debug**: Use the Dev Panel to test picking strategies and monitor performance.
+    - **Constraint**: Set **Camera Limits** to define exactly what the user can see (and hide what they shouldn't).
+    - **Optimize**: Set an initial **Render Resolution** that balances quality for your intended audience.
+- **The "Save" Action**: The **Share Button** generates a compressed URL that encapsulates your entire configuration.
+
+### **2. The Viewer (Consumption Mode)**
+*For End Users & Clients*
+
+When a user opens a shared link, the application enters **Viewer Mode**.
+- **Goal**: Focused, high-performance consumption.
+- **Experience**:
+    - **Simplified UI**: Full toolbars are hidden in favor of a clean, minimalist interface (or hamburger menu).
+    - **Preserved State**: The camera starts exactly where the creator intended.
+    - **Boundaries**: The user is guided by the creator's predefined Camera Limits.
+    - **Performance Override**: While the URL provides initial render settings, the **Viewer UI and Device Logic** take precedence. The viewer can automatically downscale resolution or allow the user to manually toggle quality to ensure the scene remains stable and fluid on their specific hardware (e.g., mobile vs. high-end PC).
+
+**The Workflow Loop:**
+**Open Editor** → **Load & Tweak** → **Generate URL** → **Publish/Embed (Viewer Mode)**
+
 ### 📤 Export System
 
 The viewer includes a powerful export system that creates standalone viewers with complete state preservation.
@@ -438,7 +470,7 @@ The viewer includes a powerful export system that creates standalone viewers wit
 
 #### **🔧 How to Export**
 1. **Set Up Your View**: Configure camera, settings, and model
-2. **Click Export Button**: Located next to the share button in toolbar
+2. **Click Export Button**: Located in the Dev Tools panel (🔧)
 3. **Choose Format**: Select HTML (single file) or ZIP (package)
 4. **Download**: File automatically downloads with timestamp
 

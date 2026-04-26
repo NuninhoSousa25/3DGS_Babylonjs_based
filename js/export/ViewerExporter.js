@@ -9,7 +9,6 @@
    
    EXPORTS:
    - ViewerExporter - Class for creating exportable viewer packages
-   - setupExportButton() - Add export functionality to UI
    - showExportDialog() - Display export options dialog
    
    FEATURES:
@@ -782,37 +781,6 @@ ${exportData.metadata.originalUrl}
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
     }
-}
-
-// Export for use in UI
-export function setupExportButton(camera, scene, engine) {
-    const exporter = new ViewerExporter(scene, camera, engine);
-    
-    // Add export button to UI (next to share button)
-    const iconBar = document.getElementById('iconBar');
-    if (iconBar) {
-        const exportButton = document.createElement('button');
-        exportButton.id = 'exportButton';
-        exportButton.className = 'icon-button';
-        exportButton.title = 'Export Viewer';
-        exportButton.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="currentColor">
-                <path d="M0 0h24v24H0V0z" fill="none"/>
-                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-            </svg>
-        `;
-        
-        // Insert before share button
-        const shareButton = document.getElementById('shareButton');
-        iconBar.insertBefore(exportButton, shareButton);
-        
-        // Add click handler with options
-        exportButton.addEventListener('click', () => {
-            showExportDialog(exporter);
-        });
-    }
-    
-    return exporter;
 }
 
 /**

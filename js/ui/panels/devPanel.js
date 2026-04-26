@@ -16,10 +16,6 @@ import { PickingStrategies, setPickingStrategy } from '../../picking.js';
 /**
  * Create developer tools section HTML
  */
-
-/**
- * Create developer tools section HTML
- */
 export function createDevSection() {
     return `
         <div id="devContent" class="content-section">
@@ -183,6 +179,18 @@ function setupPickingStrategyControls() {
 }
 
 async function setupDevPanel(engine) {
+    // NOTE — two separate WebGPU fields, intentionally different:
+    //
+    //  • 'deviceWebGPU' (detectWebGPU)  — answers "can this browser/GPU *use* WebGPU?"
+    //    Uses the raw navigator.gpu API. Shows hardware/browser capability.
+    //
+    //  • 'controlPanelRenderer' (engine.engineType) — answers "what is the engine *actually* using?"
+    //    Reflects the live engine instance created by main.js via WebGPUEngine.IsSupportedAsync.
+    //
+    // They intentionally can show different values — e.g. "WebGPU: Yes / Renderer: WebGL" is
+    // valid when the user forced WebGL mode, or when WebGPUEngine.IsSupportedAsync failed at
+    // init time despite the raw API being present. This split helps developers distinguish
+    // hardware capability from the renderer actually in use.
     const webGpuAvailable = await detectWebGPU();
     const deviceWebGPU = document.getElementById('deviceWebGPU');
     if (deviceWebGPU) {

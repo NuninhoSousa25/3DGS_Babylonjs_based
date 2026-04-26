@@ -23,7 +23,7 @@ import { setupCamera, animateCamera } from './cameraControl.js';
 import { loadModel, disposeCurrentModel } from './modelLoader.js';
 import { setupUI } from './ui.js';
 import { decompressUrlParameters, applyCameraParametersFromUrl, applyModelScaleFromUrl, applySettingsPanelFromUrl, getBackgroundColorFromUrl } from './urlManager.js';
-import { addPostEffects } from './postProcessing.js';
+import { addPostEffects, initializeMobilePerformance } from './postProcessing.js';
 import { getPickResult } from './picking.js';
 import { disposePickingHelpers } from './picking.js';
 import { CONFIG, setupLighting } from './config.js';  // Import the centralized configuration and lighting
@@ -42,7 +42,7 @@ let engine, scene, camera;
 let pipeline = null; // For post-process reuse
 let gestureController = null; // For mobile gesture control
 let cameraLimits = null; // For camera movement limitations
-let resizeHandlers = []; // Track resize handlers for cleanup
+let resizeHandlers = []; // Track resize handlers for cleanup — each entry is { handler, key }
 
 // PRE-FETCH MODEL AS EARLY AS POSSIBLE
 const preloadedModel = {
@@ -444,7 +444,7 @@ function configureAutoRotation(camera) {
 function cleanup(scene, engine) {
     // Remove resize handlers
     if (resizeHandlers.length > 0) {
-        resizeHandlers.forEach(handler => WindowEvents.removeResizeCallback(handler));
+        resizeHandlers.forEach(({ handler, key }) => WindowEvents.removeResizeCallback(handler, key));
         resizeHandlers = [];
     }
 
@@ -537,10 +537,6 @@ async function setupScene(rendererType = 'WebGL') {
         cameraLimits = new CameraLimits(scene, camera);
         scene.cameraLimits = cameraLimits; // Make it accessible from scene
         
-        // TEST CODE - Verify camera limits integration
-        setTimeout(() => {
-        }, 2000);
-        
         // Configure camera auto-rotation
         configureAutoRotation(camera);
 
@@ -576,6 +572,9 @@ async function setupScene(rendererType = 'WebGL') {
 
         // UI
         setupUI(camera, scene, engine, initialPixelRatio);
+
+        // Initialize mobile performance monitoring (adaptive resolution & GC)
+        initializeMobilePerformance(scene, engine);
 
         // Attempt to load a model from URL param or default
         const urlParams = decompressUrlParameters();
@@ -627,13 +626,28 @@ async function setupScene(rendererType = 'WebGL') {
         // Trigger vertices update for dev panel after initial model load
         triggerVerticesUpdate();
         
-        // Apply camera limits from URL if present
+        // --- Dual-path camera limits restoration (order is critical) ---
+        //
+        // PATH 1 — DOM / toggle path (runs first):
+        //   applySettingsPanelFromUrl() fires synthetic 'change' on limit toggles and
+        //   'input' on sliders.  It updates each slider's DOM value BEFORE dispatching
+        //   the toggle event, so when the toggle handler reads the slider it gets the
+        //   URL-correct value.  This path also sets isEnabled via the master toggle.
+        //
+        // PATH 2 — direct API path (runs second, authoritative):
+        //   cameraLimits.applyLimitsFromUrl() directly writes this.limits from the
+        //   old-format params (restrictions, betaMin/Max, radiusMin/Max, …).
+        //   Running it LAST means it always wins over any DOM-derived intermediate
+        //   state, so the actual camera constraints match the URL exactly.
+        //   Every assignment is individually guarded with urlParams.has(), so only
+        //   params that are present overwrite; PATH 1 values for absent params survive.
+        //
+        // Backward compatibility: no URL parameter names or formats have changed.
+        applySettingsPanelFromUrl(camera, scene);
+
         if (cameraLimits && urlParams.toString()) {
             cameraLimits.applyLimitsFromUrl(urlParams);
         }
-        
-        // Apply settings panel state from URL if present (must be after UI setup)
-        applySettingsPanelFromUrl(camera, scene);
 
         // Remove early loading overlay once everything is initialized
         if (isLoadingSharedURL) {
@@ -649,17 +663,19 @@ async function setupScene(rendererType = 'WebGL') {
             }
         });
 
-        // Handle window resize using centralized handler
+        // Handle window resize using centralized handler.
+        // Keys ensure stale callbacks are auto-replaced if switchRenderer() somehow
+        // re-runs setupScene() without cleanup() having cleared resizeHandlers first.
         const engineResizeHandler = WindowEvents.createEngineResizeHandler(engine);
-        WindowEvents.addResizeCallback(engineResizeHandler);
-        resizeHandlers.push(engineResizeHandler);
-        
+        WindowEvents.addResizeCallback(engineResizeHandler, 'engine-resize');
+        resizeHandlers.push({ handler: engineResizeHandler, key: 'engine-resize' });
+
         // Add resolution update trigger for dev panel
         const resolutionUpdateHandler = () => {
             triggerResolutionUpdate();
         };
-        WindowEvents.addResizeCallback(resolutionUpdateHandler);
-        resizeHandlers.push(resolutionUpdateHandler);
+        WindowEvents.addResizeCallback(resolutionUpdateHandler, 'resolution-update');
+        resizeHandlers.push({ handler: resolutionUpdateHandler, key: 'resolution-update' });
 
         // Handle scene disposal for cleanup
         scene.onDisposeObservable.add(() => {

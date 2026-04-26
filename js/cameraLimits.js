@@ -264,27 +264,41 @@ export class CameraLimits {
 
 
     /**
-     * Apply limits from URL parameters
+     * Apply limits from URL parameters.
+     *
+     * DESIGN NOTE — dual-path restoration:
+     * On shared URL load, main.js runs applySettingsPanelFromUrl() first (which
+     * restores DOM toggles + slider values via synthetic events), then calls this
+     * method second as the authoritative overwrite for actual constraint values.
+     *
+     * Guard rules:
+     *  - Restriction flags (h/v/d/p) are ONLY overwritten when the 'restrictions'
+     *    param is explicitly present. Without this guard, a URL that uses the new
+     *    toggle-param format (limitVertical, limitHorizontal…) but lacks the old
+     *    'restrictions' string would silently clear all flags.
+     *  - Numeric limit values are already individually guarded with urlParams.has().
      */
     applyLimitsFromUrl(urlParams) {
-        const restrictions = urlParams.get('restrictions') || '';
-        
-        // Apply restriction flags
-        this.limits.restrictHorizontal = restrictions.includes('h');
-        this.limits.restrictVertical = restrictions.includes('v');
-        this.limits.restrictDistance = restrictions.includes('d');
-        this.limits.enablePanning = restrictions.includes('p');
-        
-        // Apply limit values
-        if (urlParams.has('alphaMin')) this.limits.alphaMin = parseFloat(urlParams.get('alphaMin'));
-        if (urlParams.has('alphaMax')) this.limits.alphaMax = parseFloat(urlParams.get('alphaMax'));
-        if (urlParams.has('betaMin')) this.limits.betaMin = parseFloat(urlParams.get('betaMin'));
-        if (urlParams.has('betaMax')) this.limits.betaMax = parseFloat(urlParams.get('betaMax'));
+        // Only overwrite restriction flags when the param is explicitly present.
+        // Absence means the URL uses only the new toggle-param format (limitVertical,
+        // limitHorizontal, …) whose toggle events have already set the flags via
+        // applySettingsPanelFromUrl(). Do not clear those flags here.
+        if (urlParams.has('restrictions')) {
+            const restrictions = urlParams.get('restrictions');
+            this.limits.restrictHorizontal = restrictions.includes('h');
+            this.limits.restrictVertical   = restrictions.includes('v');
+            this.limits.restrictDistance   = restrictions.includes('d');
+            this.limits.enablePanning      = restrictions.includes('p');
+        }
+
+        // Apply numeric limit values — each individually guarded (unchanged behaviour)
+        if (urlParams.has('alphaMin'))  this.limits.alphaMin  = parseFloat(urlParams.get('alphaMin'));
+        if (urlParams.has('alphaMax'))  this.limits.alphaMax  = parseFloat(urlParams.get('alphaMax'));
+        if (urlParams.has('betaMin'))   this.limits.betaMin   = parseFloat(urlParams.get('betaMin'));
+        if (urlParams.has('betaMax'))   this.limits.betaMax   = parseFloat(urlParams.get('betaMax'));
         if (urlParams.has('radiusMin')) this.limits.radiusMin = parseFloat(urlParams.get('radiusMin'));
         if (urlParams.has('radiusMax')) this.limits.radiusMax = parseFloat(urlParams.get('radiusMax'));
-        
-        // Panning is now just enabled/disabled via the 'p' restriction flag
-        
+
         this.updateCameraConstraints();
         console.log("Applied camera limits from URL:", this.limits);
     }

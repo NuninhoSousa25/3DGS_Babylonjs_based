@@ -71,6 +71,16 @@ export class GestureControl {
             tapMaxDistance: 10
         };
 
+        // Store bound handler references so dispose() can remove the exact same functions.
+        // Anonymous arrow functions cannot be removed by removeEventListener — references must match.
+        this._boundTouchStart    = (e) => this._onTouchStart(e);
+        this._boundTouchMove     = (e) => this._onTouchMove(e);
+        this._boundTouchEnd      = (e) => this._onTouchEnd(e);
+        this._boundTouchCancel   = (e) => this._onTouchCancel(e);
+        this._boundGestureStart  = (e) => e.preventDefault();
+        this._boundGestureChange = (e) => e.preventDefault();
+        this._boundGestureEnd    = (e) => e.preventDefault();
+
         this._disableDefaultCameraControls();
         this._init();
     }
@@ -98,16 +108,16 @@ export class GestureControl {
         // Use a more direct approach - capture all touch events on the canvas
         const canvas = this.scene.getEngine().getRenderingCanvas();
         
-        // Touch event handlers
-        canvas.addEventListener('touchstart', (e) => this._onTouchStart(e), { passive: false });
-        canvas.addEventListener('touchmove', (e) => this._onTouchMove(e), { passive: false });
-        canvas.addEventListener('touchend', (e) => this._onTouchEnd(e), { passive: false });
-        canvas.addEventListener('touchcancel', (e) => this._onTouchCancel(e), { passive: false });
-        
-        // Prevent default touch behaviors
-        canvas.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
-        canvas.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
-        canvas.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
+        // Touch event handlers — use stored references so dispose() can remove them
+        canvas.addEventListener('touchstart',    this._boundTouchStart,    { passive: false });
+        canvas.addEventListener('touchmove',     this._boundTouchMove,     { passive: false });
+        canvas.addEventListener('touchend',      this._boundTouchEnd,      { passive: false });
+        canvas.addEventListener('touchcancel',   this._boundTouchCancel,   { passive: false });
+
+        // Prevent default touch behaviors — also stored for cleanup
+        canvas.addEventListener('gesturestart',  this._boundGestureStart,  { passive: false });
+        canvas.addEventListener('gesturechange', this._boundGestureChange, { passive: false });
+        canvas.addEventListener('gestureend',    this._boundGestureEnd,    { passive: false });
     }
 
     _onTouchStart(event) {
@@ -379,13 +389,27 @@ export class GestureControl {
 
     dispose() {
         const canvas = this.scene.getEngine().getRenderingCanvas();
-        
-        // Remove all event listeners
-        canvas.removeEventListener('touchstart', this._onTouchStart);
-        canvas.removeEventListener('touchmove', this._onTouchMove);
-        canvas.removeEventListener('touchend', this._onTouchEnd);
-        canvas.removeEventListener('touchcancel', this._onTouchCancel);
-        
+
+        // Remove touch handlers using the stored bound references
+        canvas.removeEventListener('touchstart',    this._boundTouchStart);
+        canvas.removeEventListener('touchmove',     this._boundTouchMove);
+        canvas.removeEventListener('touchend',      this._boundTouchEnd);
+        canvas.removeEventListener('touchcancel',   this._boundTouchCancel);
+
+        // Remove gesture prevention handlers (were previously never cleaned up)
+        canvas.removeEventListener('gesturestart',  this._boundGestureStart);
+        canvas.removeEventListener('gesturechange', this._boundGestureChange);
+        canvas.removeEventListener('gestureend',    this._boundGestureEnd);
+
+        // Null out references to allow GC
+        this._boundTouchStart    = null;
+        this._boundTouchMove     = null;
+        this._boundTouchEnd      = null;
+        this._boundTouchCancel   = null;
+        this._boundGestureStart  = null;
+        this._boundGestureChange = null;
+        this._boundGestureEnd    = null;
+
         this.touchStates.activeTouches.clear();
         this._resetGestureState();
     }

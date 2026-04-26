@@ -9,9 +9,12 @@
     <canvas id="renderCanvas"></canvas>
 
     <!-- Include BabylonJS Core and Loaders -->
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/babylonjs-fbx-loader@latest/dist/babylonjs-fbx-loader.min.js"></script>
+    <!-- Versions pinned 2026-03-05 — update deliberately after testing, not automatically -->
+    <!-- CDN format: cdn.babylonjs.com/v{version}/babylon.js and v{version}/loaders/... -->
+    <!-- FBX loader: does NOT use Babylon version numbers — track https://www.npmjs.com/package/babylonjs-fbx-loader separately -->
+    <script src="https://cdn.babylonjs.com/v8.54.0/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/v8.54.0/loaders/babylonjs.loaders.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/babylonjs-fbx-loader@1.1.0/dist/babylonjs-fbx-loader.min.js"></script>
 
     <!-- Babylon.js has native GaussianSplattingMesh support since v8.0 -->
 

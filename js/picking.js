@@ -79,11 +79,26 @@ function createPickingHelperForSplat(splatMesh, scene) {
         
         // Get the world matrix to account for scaling
         const worldMatrix = splatMesh.getWorldMatrix();
-        
-        // Transform bounding box to world space
-        const min = BABYLON.Vector3.TransformCoordinates(boundingInfo.minimum, worldMatrix);
-        const max = BABYLON.Vector3.TransformCoordinates(boundingInfo.maximum, worldMatrix);
-        
+
+        // Transform all 8 corners of the local AABB to world space, then derive
+        // the world-space AABB. Transforming only min/max gives inverted axes when
+        // the world matrix contains an odd-axis rotation (e.g. rotation.x = Math.PI).
+        const lo = boundingInfo.minimum;
+        const hi = boundingInfo.maximum;
+        const corners = [
+            new BABYLON.Vector3(lo.x, lo.y, lo.z),
+            new BABYLON.Vector3(hi.x, lo.y, lo.z),
+            new BABYLON.Vector3(lo.x, hi.y, lo.z),
+            new BABYLON.Vector3(hi.x, hi.y, lo.z),
+            new BABYLON.Vector3(lo.x, lo.y, hi.z),
+            new BABYLON.Vector3(hi.x, lo.y, hi.z),
+            new BABYLON.Vector3(lo.x, hi.y, hi.z),
+            new BABYLON.Vector3(hi.x, hi.y, hi.z),
+        ].map(c => BABYLON.Vector3.TransformCoordinates(c, worldMatrix));
+
+        const min = corners.reduce((acc, c) => BABYLON.Vector3.Minimize(acc, c), corners[0].clone());
+        const max = corners.reduce((acc, c) => BABYLON.Vector3.Maximize(acc, c), corners[0].clone());
+
         // Calculate size and center in world space
         const size = max.subtract(min);
         const center = min.add(max).scale(0.5);
